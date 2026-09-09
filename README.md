@@ -9,11 +9,24 @@ Tout le monde reçoit un mot secret (un joueur, un stade, un moment légendaire�
 ont un mot proche (Neymar / Vinícius Jr) et que le **carton blanc** n'a rien du tout. Chacun décrit son mot en
 une phrase, on vote, on élimine. Barème : titulaire gagnant +2, undercover gagnant +10, carton blanc gagnant +6.
 
-Deux langues, réglables depuis le drapeau de l'accueil : la langue des **menus** et la langue des **mots**
-(les 200 mots de base existent en français et en anglais, dans `src/data/words.ts`).
+Deux langues, réglables depuis le drapeau de l'accueil : la langue des **menus** et la langue des **mots**.
+
+Les mots sont organisés en **groupes de mots proches** (`src/data/groups/`) : à chaque partie le moteur tire
+deux mots différents d'un groupe, donc les duos changent (Coupe du monde / Euro une fois, Coupe du monde /
+Ligue des champions la fois suivante ; Pavard avec Desailly, puis avec Umtiti…). Environ 500 mots gratuits
+(60 % de joueurs) et plus de 1 100 mots dans le pack Pro, en français et en anglais, huit catégories
+(joueurs, clubs, trophées, stades, compétitions, moments légendaires, memes, styles de jeu).
 
 Les équipes se créent toutes seules au lancement d'une partie (TEAM 1, TEAM 2… renommables) ; dans une liste
 de joueurs, un glissement vers la gauche supprime, un appui modifie ou sélectionne.
+
+## Monétisation
+
+Version gratuite avec publicités AdMob (bannière hors écrans de partie, interstitiel toutes les 3 parties) et
+achat intégré unique « Version Pro » via RevenueCat (plus de pub, mots Pro). Tout est dans
+`src/monetization/` ; les identifiants de test de Google sont en place tant que `USE_TEST_ADS` est vrai.
+La marche à suivre complète (comptes, identifiants, captures, TestFlight, Play Console) est dans
+[store/README.md](store/README.md).
 
 ## Lancer en développement
 
