@@ -6,6 +6,7 @@ import { Button, Confirm, Screen, SectionTitle, Segmented, Setting, Toggle } fro
 import { BASE_WORD_COUNT, PRO_WORD_COUNT } from '../data/words';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
+import { requestProPromo } from '../monetization/promo';
 import { isNative } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
@@ -80,6 +81,18 @@ export function Settings() {
             <Setting label={T.settings.proToggle} hint={T.settings.proToggleHint}>
               <Toggle on={s.premium} label={T.settings.proToggle} onChange={(v) => set({ premium: v })} />
             </Setting>
+          ) : null}
+          {!s.premium ? (
+            <button type="button" className="link-row" onClick={() => requestProPromo()}>
+              <SparkIcon />
+              <span className="grow">
+                <span className="t">{T.promo.preview}</span>
+                <span className="s" style={{ display: 'block' }}>
+                  {T.promo.previewHint}
+                </span>
+              </span>
+              <ChevronIcon size={18} />
+            </button>
           ) : null}
         </div>
 

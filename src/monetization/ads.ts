@@ -13,6 +13,7 @@ import {
   BannerAdPluginEvents,
   BannerAdPosition,
   BannerAdSize,
+  InterstitialAdPluginEvents,
   type AdMobBannerSize,
 } from '@capacitor-community/admob';
 import { AD_UNITS, INTERSTITIAL_EVERY_GAMES, USE_TEST_ADS } from './config';
@@ -143,8 +144,19 @@ export async function showInterstitialIfDue(gamesPlayed: number): Promise<boolea
     return false;
   }
   try {
+    // On attend la fermeture de l'annonce (60 s max) : ce qui suit (promo Pro) ne doit pas passer dessous.
+    const dismissed = new Promise<void>((resolve) => {
+      const timer = window.setTimeout(resolve, 60_000);
+      void AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
+        window.clearTimeout(timer);
+        resolve();
+      }).then((handle) => {
+        void dismissed.then(() => handle.remove());
+      });
+    });
     await AdMob.showInterstitial();
     interstitialReady = false;
+    await dismissed;
     void prepareInterstitial();
     return true;
   } catch {

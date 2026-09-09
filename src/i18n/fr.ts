@@ -334,6 +334,14 @@ export const fr = {
     meme: 'Meme',
     style: 'Style de jeu',
   },
+  promo: {
+    title: '+1 000 mots nouveaux',
+    sub: 'Et plus aucune publicité, pour toujours.',
+    cta: (price: string) => `Passer en Pro · ${price}`,
+    later: 'Plus tard',
+    preview: 'Aperçu de la fenêtre Pro',
+    previewHint: 'Telle qu\'elle apparaît de temps en temps après une publicité.',
+  },
   quit: {
     title: 'Quitter la partie ?',
     text: 'La partie en cours sera abandonnée. Aucun point ne sera compté.',

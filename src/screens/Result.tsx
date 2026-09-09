@@ -7,6 +7,7 @@ import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { showInterstitialIfDue } from '../monetization/ads';
+import { promoDue, requestProPromo } from '../monetization/promo';
 import { notify } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
@@ -44,10 +45,15 @@ export function Result() {
     recorded.current = game.id;
     dispatch({ type: 'result/record', game });
     void notify('success');
-    // Version gratuite : un interstitiel toutes les N parties, après les confettis.
+    // Version gratuite : un interstitiel toutes les N parties, après les confettis,
+    // puis de temps en temps la fenêtre Version Pro.
     if (!state.settings.premium) {
       const played = state.gamesPlayed + 1;
-      window.setTimeout(() => void showInterstitialIfDue(played), 1800);
+      window.setTimeout(() => {
+        void showInterstitialIfDue(played).then((shown) => {
+          if (promoDue(played, shown)) requestProPromo();
+        });
+      }, 1800);
     }
     const colors =
       result.winner === 'civils' ? ['#dcdcdc', '#8e8e8e', '#ff2b2b'] : result.winner === 'undercovers' ? ['#ff2b2b', '#ff7a1a', '#f5f5f5'] : ['#ffffff', '#f5f5f5', '#c9c9c9'];

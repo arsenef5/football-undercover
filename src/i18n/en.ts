@@ -327,6 +327,14 @@ export const en: Strings = {
     meme: 'Meme',
     style: 'Playing style',
   },
+  promo: {
+    title: '+1,000 new words',
+    sub: 'And no more ads, ever.',
+    cta: (price: string) => `Go Pro · ${price}`,
+    later: 'Not now',
+    preview: 'Preview the Pro popup',
+    previewHint: 'As it appears from time to time after an ad.',
+  },
   quit: {
     title: 'Quit the game?',
     text: 'The current game will be abandoned. No points will be counted.',

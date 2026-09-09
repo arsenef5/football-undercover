@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DotsIcon, PlayIcon, PodiumIcon, ShieldIcon } from './components/Icons';
+import { ProPromo } from './components/ProPromo';
 import { GameProvider, useGame } from './game/useGame';
 import { setLang, T } from './i18n';
 import { hideBanner, initAds, setAdsEnabled, showBanner } from './monetization/ads';
+import { onProPromo } from './monetization/promo';
 import { fetchProActive, onProChange, purchasesAvailable } from './monetization/purchases';
 import { onHardwareBack, setHapticsEnabled, setupNativeUi, tap } from './native';
 import { NavProvider, TABS, useNav, type Route, type TabName } from './nav';
@@ -103,9 +105,13 @@ function Shell() {
   const isTab = (TABS as string[]).includes(route.name);
   const isGameRoute = GAME_ROUTES.includes(route.name);
   const premium = state.settings.premium;
+  const [promoOpen, setPromoOpen] = useState(false);
 
   // Langue des menus : appliquée avant le rendu des écrans.
   setLang(state.settings.uiLang);
+
+  // Fenêtre Version Pro : demandée par l'écran de résultat après une pub (ou l'aperçu dans Plus).
+  useEffect(() => onProPromo(() => setPromoOpen(true)), []);
 
   useEffect(() => {
     void setupNativeUi();
@@ -156,6 +162,7 @@ function Shell() {
       </div>
       {isGameRoute && !game ? null : <CurrentScreen key={key} route={route} />}
       {isTab ? <TabBar current={route.name as TabName} /> : null}
+      <ProPromo open={promoOpen && !premium} onClose={() => setPromoOpen(false)} />
     </div>
   );
 }
