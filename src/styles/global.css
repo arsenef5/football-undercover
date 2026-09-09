@@ -1285,13 +1285,18 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   color: var(--muted);
-  font-size: 10px;
+  /* « CLASSEMENT » doit tenir dans un quart d'écran, même sur 360 px de large. */
+  font-size: clamp(9px, 2.7vw, 11px);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-variation-settings: 'wdth' 110, 'wght' 750;
+  letter-spacing: 0.04em;
+  font-variation-settings: 'wdth' 118, 'wght' 900;
   transition: color 120ms ease;
+}
+
+.tabbar button svg {
+  stroke-width: 2.4;
 }
 
 .tabbar button.is-on {
