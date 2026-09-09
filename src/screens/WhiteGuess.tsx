@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CardIcon } from '../components/Icons';
 import { QuitGame } from '../components/QuitGame';
 import { Avatar, Button, Screen } from '../components/ui';
+import { useCreator } from '../creator/CreatorContext';
 import { isGuessLikelyCorrect, playerById } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
@@ -14,18 +15,27 @@ import { useNav } from '../nav';
  */
 export function WhiteGuess() {
   const { game, resolveWhite } = useGame();
+  const creator = useCreator();
   const nav = useNav();
   const [guess, setGuess] = useState('');
   const [submitted, setSubmitted] = useState<string | null>(null);
 
-  if (!game || !game.pendingWhiteId) return null;
-  const white = playerById(game, game.pendingWhiteId);
-  if (!white) return null;
+  const white = game && game.pendingWhiteId ? playerById(game, game.pendingWhiteId) : undefined;
+  useEffect(() => {
+    if (!creator.recording || !white) return;
+    creator.setScene({ type: 'guess', name: white.name, label: T.whiteGuess.prompt(white.name) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [white?.id, creator.recording]);
+
+  if (!game || !white) return null;
   const likely = submitted ? isGuessLikelyCorrect(submitted, game.civilWord) : false;
 
   const decide = (correct: boolean) => {
     const next = resolveWhite(submitted ?? '', correct);
     if (!next) return;
+    if (creator.recording) {
+      creator.popup({ kind: 'guess', name: white.name, correct, guess: submitted ?? '', label: correct ? T.creator.guessRight : T.creator.guessWrong });
+    }
     void notify(correct ? 'success' : 'error');
     if (next.phase === 'over') nav.replace({ name: 'result' });
     else nav.replace({ name: 'discuss' });

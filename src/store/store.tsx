@@ -73,6 +73,8 @@ export interface Settings {
   uiLang: Lang;
   /** Langue des mots secrets (indépendante des menus). */
   wordLang: WordLang;
+  /** Mode créateur 🎥 : filme la partie et incruste mots, votes et éliminations dans la vidéo. */
+  creatorMode: boolean;
 }
 
 export interface LastSetup {
@@ -106,6 +108,7 @@ export const DEFAULT_SETTINGS: Settings = {
   weights: { ...DEFAULT_WEIGHTS },
   uiLang: 'fr',
   wordLang: 'fr',
+  creatorMode: false,
 };
 
 export const INITIAL_STATE: AppState = {

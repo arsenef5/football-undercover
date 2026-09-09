@@ -5,6 +5,7 @@ import { ReorderSheet } from '../components/ReorderSheet';
 import { RerollButton } from '../components/RerollButton';
 import { ReviewWord } from '../components/ReviewWord';
 import { RoleCard } from '../components/RoleCard';
+import { useCreator } from '../creator/CreatorContext';
 import { Avatar, Button, ProgressBar, Screen, SpyIcon } from '../components/ui';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
@@ -19,6 +20,7 @@ import { useStore } from '../store/store';
 export function Reveal() {
   const { game, revealNext } = useGame();
   const { state } = useStore();
+  const creator = useCreator();
   const nav = useNav();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -29,10 +31,36 @@ export function Reveal() {
     setOpen(false);
   }, [game?.revealIndex, game?.id]);
 
+  const total = game?.players.length ?? 0;
+  const done = !game || game.phase !== 'reveal' || game.revealIndex >= total;
+  const player = !game || done ? null : game.players[game.revealIndex];
+
+  // Mode créateur : reprise après un rechargement (la caméra n'a pas démarré depuis la préparation).
+  useEffect(() => {
+    if (creator.enabled && creator.status === 'idle' && game && game.revealIndex === 0 && !done) void creator.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creator.enabled, game?.id]);
+
+  // La carte ouverte devient une incrustation : la tête du joueur et son mot, côte à côte.
+  useEffect(() => {
+    if (!creator.recording) return;
+    if (open && player && game) {
+      creator.setScene({
+        type: 'reveal',
+        name: player.name,
+        color: player.color,
+        word: player.word,
+        category: T.categories[game.pair.cat],
+        whiteLabel: T.roles.white,
+        wordLabel: T.reveal.yourWord,
+      });
+    } else {
+      creator.setScene({ type: 'idle' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, player?.id, creator.recording]);
+
   if (!game) return null;
-  const total = game.players.length;
-  const done = game.phase !== 'reveal' || game.revealIndex >= total;
-  const player = done ? null : game.players[game.revealIndex];
 
   const hide = () => {
     if (busy) return;

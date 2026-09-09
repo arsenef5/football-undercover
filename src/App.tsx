@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DotsIcon, PlayIcon, PodiumIcon, ShieldIcon } from './components/Icons';
 import { ProPromo } from './components/ProPromo';
+import { CreatorPip, CreatorProvider } from './creator/CreatorContext';
 import { GameProvider, useGame } from './game/useGame';
 import { setLang, T } from './i18n';
 import { initAds, setAdsEnabled, setBannerWanted } from './monetization/ads';
@@ -161,6 +162,7 @@ function Shell() {
       </div>
       {isGameRoute && !game ? null : <CurrentScreen key={key} route={route} />}
       {isTab ? <TabBar current={route.name as TabName} /> : null}
+      {isGameRoute ? <CreatorPip /> : null}
       <ProPromo open={promoOpen && !premium} onClose={() => setPromoOpen(false)} />
     </div>
   );
@@ -170,9 +172,11 @@ export function App() {
   return (
     <StoreProvider>
       <GameProvider>
-        <NavProvider initial={{ name: 'home' }}>
-          <Shell />
-        </NavProvider>
+        <CreatorProvider>
+          <NavProvider initial={{ name: 'home' }}>
+            <Shell />
+          </NavProvider>
+        </CreatorProvider>
       </GameProvider>
     </StoreProvider>
   );

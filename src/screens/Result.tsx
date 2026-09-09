@@ -1,14 +1,15 @@
 import confetti from 'canvas-confetti';
-import { useEffect, useMemo, useRef } from 'react';
-import { CardIcon, GlassesIcon, JerseyIcon, RefreshIcon } from '../components/Icons';
-import { Avatar, Button, RoleBadge, Screen, SectionTitle } from '../components/ui';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CardIcon, GlassesIcon, JerseyIcon, RefreshIcon, TrashIcon, VideoIcon } from '../components/Icons';
+import { Avatar, Button, RoleBadge, Screen, SectionTitle, useToast } from '../components/ui';
+import { useCreator } from '../creator/CreatorContext';
 import { groupsFor } from '../data/words';
 import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { showInterstitialIfDue } from '../monetization/ads';
 import { promoDue, requestProPromo } from '../monetization/promo';
-import { notify } from '../native';
+import { isNative, notify } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
 
@@ -34,10 +35,40 @@ function burst(colors: string[]) {
 export function Result() {
   const { game, start, clear } = useGame();
   const { state, dispatch } = useStore();
+  const creator = useCreator();
   const nav = useNav();
   const recorded = useRef<string | null>(null);
+  const [toast, showToast] = useToast();
+  const [saving, setSaving] = useState(false);
 
   const result = game?.result ?? null;
+
+  // Mode créateur : la scène de fin reste 4 s à l'image, puis la vidéo est finalisée.
+  useEffect(() => {
+    if (!creator.recording || !game || !result) return;
+    const undercoverCount = game.players.filter((p) => p.role === 'undercover').length;
+    creator.setScene({
+      type: 'result',
+      title:
+        result.winner === 'civils' ? T.result.winStarters : result.winner === 'undercovers' ? T.result.winUndercovers(undercoverCount) : T.result.winWhite,
+      sub: result.winner === 'civils' ? T.result.subStarters : result.winner === 'undercovers' ? T.result.subUndercovers : T.result.subWhite,
+      civilWord: game.civilWord,
+      undercoverWord: game.undercoverWord,
+      civilLabel: T.result.startersWord,
+      undercoverLabel: T.result.undercoverWord,
+    });
+    const t = window.setTimeout(() => void creator.stop(), 4000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id, creator.recording]);
+
+  const saveVideo = async () => {
+    if (saving) return;
+    setSaving(true);
+    const ok = await creator.save();
+    setSaving(false);
+    showToast(ok ? T.creator.saved : T.creator.saveFailed);
+  };
 
   // Une seule inscription au palmarès par partie (le store garde aussi un garde-fou).
   useEffect(() => {
@@ -95,6 +126,7 @@ export function Result() {
       lang: state.settings.wordLang,
       whiteCanStart: state.settings.whiteCanStart,
     });
+    if (state.settings.creatorMode) void creator.start();
     nav.replace({ name: 'reveal' });
   };
 
@@ -103,7 +135,10 @@ export function Result() {
     nav.reset({ name: 'home' });
   };
 
+  const showVideo = creator.recording || creator.status === 'starting' || creator.hasVideo;
+
   return (
+    <>
     <Screen
       title={T.result.title}
       footer={
@@ -136,6 +171,33 @@ export function Result() {
         <p className="muted">{sub}</p>
         {lastWhite?.whiteGuess ? <span className="badge">{T.result.guessed(lastWhite.whiteGuess)}</span> : null}
       </div>
+
+      {showVideo ? (
+        <div className={`card video-ready ${creator.hasVideo ? 'is-ready' : ''}`}>
+          <div className="vr-head">
+            <span className="vr-icon">
+              <VideoIcon size={22} />
+            </span>
+            <div className="grow">
+              <div className="display h3">{creator.hasVideo ? T.creator.ready : T.creator.finishing}</div>
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                {creator.hasVideo ? T.creator.readyHint : T.creator.title}
+              </p>
+            </div>
+          </div>
+          {creator.hasVideo ? (
+            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <Button onClick={() => void saveVideo()} disabled={saving}>
+                <VideoIcon size={18} />
+                {isNative ? T.creator.share : T.creator.save}
+              </Button>
+              <Button variant="secondary" onClick={() => creator.discard()} aria-label={T.creator.discard}>
+                <TrashIcon size={18} />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <SectionTitle right={<span className="badge">{T.categories[game.pair.cat]}</span>}>{T.result.words}</SectionTitle>
       <div className="words-box">
@@ -183,5 +245,7 @@ export function Result() {
         ))}
       </div>
     </Screen>
+    {toast}
+    </>
   );
 }

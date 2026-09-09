@@ -5,6 +5,7 @@ import { ReorderSheet } from '../components/ReorderSheet';
 import { RerollButton } from '../components/RerollButton';
 import { ReviewWord } from '../components/ReviewWord';
 import { Avatar, Button, IconButton, RoleBadge, Screen, SectionTitle } from '../components/ui';
+import { useCreator } from '../creator/CreatorContext';
 import { counts, playerById } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
@@ -54,10 +55,29 @@ function useCountdown(seconds: number) {
 export function Discuss() {
   const { game, goToVote } = useGame();
   const { state } = useStore();
+  const creator = useCreator();
   const nav = useNav();
   const timer = useCountdown(state.settings.timerSeconds);
   const [review, setReview] = useState(false);
   const [reorder, setReorder] = useState(false);
+
+  const orderKey = game ? `${game.round}:${game.speakingOrder.join(',')}` : '';
+  useEffect(() => {
+    if (!creator.recording || !game) return;
+    const rows = game.speakingOrder
+      .map((id) => playerById(game, id))
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .map((p) => ({ name: p.name, word: p.word, role: p.role, color: p.color }));
+    creator.setScene({
+      type: 'discuss',
+      round: game.round,
+      title: T.discuss.round(game.round),
+      orderLabel: T.creator.speakingOrder,
+      order: rows,
+      whiteLabel: T.roles.white,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderKey, creator.recording]);
 
   if (!game) return null;
   const c = counts(game.players);

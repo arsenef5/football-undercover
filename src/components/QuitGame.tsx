@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useCreator } from '../creator/CreatorContext';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { useNav } from '../nav';
@@ -9,6 +10,7 @@ import { Confirm, IconButton } from './ui';
 export function QuitGame() {
   const [open, setOpen] = useState(false);
   const game = useGame();
+  const creator = useCreator();
   const nav = useNav();
   return (
     <>
@@ -24,6 +26,7 @@ export function QuitGame() {
         onCancel={() => setOpen(false)}
         onConfirm={() => {
           setOpen(false);
+          creator.discard();
           game.clear();
           nav.reset({ name: 'home' });
         }}

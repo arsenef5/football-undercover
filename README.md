@@ -24,6 +24,13 @@ Ligue des champions la fois suivante ; Pavard avec Desailly, puis avec Umtiti…
 Les équipes se créent toutes seules au lancement d'une partie (TEAM 1, TEAM 2… renommables) ; dans une liste
 de joueurs, un glissement vers la gauche supprime, un appui modifie ou sélectionne.
 
+## Mode créateur 🎥
+
+Dans « Nouvelle partie », active **Mode créateur** : la caméra avant filme la table et l'app incruste en direct
+le nom et le mot de chaque joueur à la révélation, l'ordre de parole pendant la discussion, les votes et
+l'élimination (carte animée). À la fin, la vidéo 9:16 (MP4 ou WebM selon l'appareil) se partage ou se
+télécharge, prête pour TikTok. Sans caméra, les incrustations sont enregistrées sur un fond stade.
+
 ## Monétisation
 
 Version gratuite avec publicités AdMob (bannière hors écrans de partie, interstitiel toutes les 3 parties) et

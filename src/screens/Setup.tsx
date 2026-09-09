@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon } from '../components/Icons';
 import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
-import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Slider, useToast } from '../components/ui';
+import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
+import { useCreator } from '../creator/CreatorContext';
 import { randomAvatar, randomColor } from '../data/avatars';
 import { CATEGORY_ORDER, countWordsByCategory, groupsFor } from '../data/words';
 import {
@@ -35,6 +36,7 @@ function detectPreset(weights: Record<Category, number>): Preset {
 export function Setup() {
   const { state, dispatch, addPlayer, addTeam } = useStore();
   const game = useGame();
+  const creator = useCreator();
   const nav = useNav();
   const [toast, showToast] = useToast();
   const routeTeamId = nav.route.name === 'setup' ? nav.route.teamId : undefined;
@@ -166,6 +168,12 @@ export function Setup() {
         whiteCanStart: state.settings.whiteCanStart,
       });
       void thump();
+      // Mode créateur : la caméra démarre dans le geste utilisateur (exigé par certains navigateurs).
+      if (state.settings.creatorMode) {
+        void creator.start().then((ok) => {
+          if (!ok) showToast(T.creator.unsupported);
+        });
+      }
       nav.go({ name: 'reveal' });
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -315,6 +323,17 @@ export function Setup() {
           ]}
           onChange={(v) => dispatch({ type: 'settings/set', patch: { timerSeconds: v } })}
         />
+
+        <SectionTitle>{T.creator.title}</SectionTitle>
+        <div className={`list creator-setting ${state.settings.creatorMode ? 'is-on' : ''}`}>
+          <Setting label={T.creator.title} hint={T.creator.hint}>
+            <Toggle
+              on={state.settings.creatorMode}
+              label={T.creator.title}
+              onChange={(v) => dispatch({ type: 'settings/set', patch: { creatorMode: v } })}
+            />
+          </Setting>
+        </div>
         <div style={{ height: 8 }} />
       </Screen>
       {toast}
