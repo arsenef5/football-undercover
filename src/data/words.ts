@@ -1,5 +1,5 @@
 import type { Category, Pack, WordGroup, WordLang, WordPair } from '../game/types';
-import { BASE } from './groups/base';
+import { BASE, BASE_EXTRA } from './groups/base';
 import { PRO_ERAS } from './groups/pro-eras';
 import { PRO_MORE } from './groups/pro-more';
 import { PRO_PLAYERS } from './groups/pro-players';
@@ -28,7 +28,7 @@ function build(defs: GroupDef[], pack: Pack): WordGroup[] {
 }
 
 export const BASE_GROUPS: WordGroup[] = build(BASE, 'base');
-export const PRO_GROUPS: WordGroup[] = build([...PRO_PLAYERS, ...PRO_ERAS, ...PRO_MORE], 'pro');
+export const PRO_GROUPS: WordGroup[] = build([...BASE_EXTRA, ...PRO_PLAYERS, ...PRO_ERAS, ...PRO_MORE], 'pro');
 export const ALL_GROUPS: WordGroup[] = [...BASE_GROUPS, ...PRO_GROUPS];
 
 /** Groupes disponibles selon la version (gratuite ou Pro). */

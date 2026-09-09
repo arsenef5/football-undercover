@@ -42,6 +42,9 @@ export const PRO_PRODUCT_ID = 'fu_pro';
 /** Prix de référence affiché tant que la boutique n'a pas répondu (le vrai prix vient du store). */
 export const PRO_PRICE_LABEL = '2,99 €';
 
+/** Promesse marketing « +1 000 mots » : arrondi volontaire, toujours inférieur au vrai nombre de mots Pro. */
+export const PRO_WORDS_CLAIM = 1000;
+
 /** Identifiant du droit (« entitlement ») configuré dans RevenueCat. */
 export const PRO_ENTITLEMENT_ID = 'pro';
 

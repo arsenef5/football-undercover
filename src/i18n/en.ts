@@ -290,7 +290,7 @@ export const en: Strings = {
     title: 'Pro version',
     headline: 'Go Pro',
     perks: ['No more ads', 'Extra words', 'One-time payment, forever', 'You support development'],
-    perkWords: (n: number) => `Discover ${n} extra words`,
+    perkWords: (n: number) => `Discover +${n.toLocaleString('en-GB')} extra words`,
     cta: 'Coming soon',
     note: 'In-app purchase arrives with the store release.',
     active: 'Pro version active',

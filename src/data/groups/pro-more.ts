@@ -76,6 +76,10 @@ export const PRO_MORE: GroupDef[] = [
   {
     cat: 'competition',
     words: [
+      ['Championnat portugais', 'Portuguese league'],
+      ['Championnat turc', 'Turkish league'],
+      ['Championnat japonais', 'Japanese league'],
+      ['Championnat mexicain', 'Mexican league'],
       ['Championnat coréen', 'Korean league'],
       ['Championnat australien', 'Australian league'],
       ['Championnat chinois', 'Chinese league'],

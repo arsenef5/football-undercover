@@ -58,11 +58,11 @@ function idsWithRole(g: Game, role: string, alive = true) {
 }
 
 describe('la base de mots', () => {
-  it('offre au moins 400 mots gratuits (60 % de joueurs) et 1 000 mots au total', () => {
-    expect(BASE_WORD_COUNT).toBeGreaterThanOrEqual(400);
+  it('offre exactement 200 mots gratuits (60 % de joueurs) et plus de 1 000 mots en Pro', () => {
+    expect(BASE_WORD_COUNT).toBe(200);
     const byCat = countWordsByCategory(BASE_GROUPS);
     expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.55);
-    expect(TOTAL_WORD_COUNT).toBeGreaterThanOrEqual(1000);
+    expect(countWords(PRO_GROUPS)).toBeGreaterThanOrEqual(1000);
     expect(countWords(PRO_GROUPS)).toBe(TOTAL_WORD_COUNT - BASE_WORD_COUNT);
   });
 

@@ -297,7 +297,7 @@ export const fr = {
     title: 'Version Pro',
     headline: 'Passe en Pro',
     perks: ['Fin des publicités', 'Des mots en plus', 'Paiement unique, à vie', 'Tu soutiens le développement'],
-    perkWords: (n: number) => `Découvre ${n} mots supplémentaires`,
+    perkWords: (n: number) => `Découvre +${n.toLocaleString('fr-FR')} mots supplémentaires`,
     cta: 'Bientôt disponible',
     note: "Le paiement in-app arrive avec la publication sur les stores.",
     active: 'Version Pro active',
