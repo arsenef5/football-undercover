@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { COLORS, randomAvatar, randomColor } from '../data/avatars';
 import { T } from '../i18n';
 import type { Player } from '../store/store';
@@ -29,7 +29,8 @@ export function PlayerSheet({
   const [color, setColor] = useState(COLORS[0]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Pré-remplissage avant la peinture : pas de champ vide affiché un instant.
+  useLayoutEffect(() => {
     if (!open) return;
     setError(null);
     if (initial) {

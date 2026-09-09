@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { clampConfig, MIN_PLAYERS, suggestConfig } from '../game/engine';
 import type { GameConfig } from '../game/types';
 import { T } from '../i18n';
@@ -47,7 +47,7 @@ export function TeamSheet({
   const [quick, setQuick] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     setError(null);
     setQuick('');

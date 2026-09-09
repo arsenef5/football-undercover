@@ -294,8 +294,61 @@ input {
   padding-top: calc(var(--safe-top) + 14px);
 }
 
+.screen-body.fixed > * {
+  flex-shrink: 0;
+}
+
 .screen-body.fixed .hero-art {
   width: min(66%, 260px, 30dvh);
+}
+
+/* Petits écrans (iPhone SE…) : tout doit tenir sans défiler. */
+@media (max-height: 720px) {
+  .screen-body.fixed .hero {
+    padding: calc(var(--safe-top) + 6px) 0 6px;
+  }
+
+  .screen-body.fixed .hero-art {
+    width: min(58%, 200px, 24dvh);
+    margin-bottom: 10px;
+  }
+
+  .screen-body.fixed .hero .tag {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+
+  .screen-body.fixed .stats {
+    margin: 10px 0;
+    gap: 8px;
+  }
+
+  .screen-body.fixed .stat {
+    padding: 8px 6px;
+  }
+
+  .screen-body.fixed .stat .v {
+    font-size: 20px;
+  }
+
+  .screen-body.fixed .home-actions {
+    gap: 8px;
+  }
+
+  .screen-body.fixed .home-actions .btn {
+    min-height: 50px;
+  }
+
+  .screen-body.fixed .link-row {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-height: 600px) {
+  .screen-body.fixed {
+    overflow-y: auto;
+    justify-content: flex-start;
+  }
 }
 
 .screen-footer.with-tabbar {
@@ -1395,8 +1448,10 @@ p {
   --ry: 0deg;
   --gx: 50%;
   --gy: 30%;
-  width: 100%;
-  max-width: 340px;
+  /* La carte ne dépasse jamais l'espace disponible : en-tête, « passe le téléphone » et bouton du bas réservés. */
+  --card-reserve: 300px;
+  width: min(100%, 340px, calc((100vh - var(--card-reserve)) * 0.714));
+  width: min(100%, 340px, calc((100dvh - var(--card-reserve)) * 0.714));
   aspect-ratio: 3 / 4.2;
   perspective: 1100px;
   touch-action: none;
