@@ -75,6 +75,7 @@ export function Discuss() {
             <IconButton label={T.reveal.review} onClick={() => setReview(true)}>
               <EyeIcon />
             </IconButton>
+            <RerollButton icon afterReroll={() => nav.replace({ name: 'reveal' })} />
             <QuitGame />
           </div>
         }
@@ -122,12 +123,11 @@ export function Discuss() {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
+        <div style={{ marginTop: 10 }}>
           <Button variant="ghost" small onClick={() => setReorder(true)}>
             <UsersIcon size={16} />
             {T.reveal.reorder}
           </Button>
-          <RerollButton small afterReroll={() => nav.replace({ name: 'reveal' })} />
         </div>
 
         {dead.length > 0 ? (

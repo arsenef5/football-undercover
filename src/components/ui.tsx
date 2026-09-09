@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Role } from '../game/types';
 import { T } from '../i18n';
@@ -304,6 +304,40 @@ export function Slider({
       style={{ ['--pct' as string]: `${pct}%`, ['--c' as string]: color ?? 'var(--red)' }}
       onChange={(e) => onChange(Number(e.target.value))}
     />
+  );
+}
+
+/**
+ * Texte qui rétrécit jusqu'à tenir dans son conteneur, sans jamais couper un mot
+ * (« CHAMPIONNAT BRÉSILIEN » passe sur deux lignes entières, jamais « CHAMPIONNA-T »).
+ */
+export function FitText({
+  text,
+  className = '',
+  max,
+  min = 16,
+}: {
+  text: string;
+  className?: string;
+  max: number;
+  min?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let size = max;
+    el.style.fontSize = `${size}px`;
+    // Un mot plus large que la carte déborde horizontalement : on descend d'un cran jusqu'à ce que ça tienne.
+    while (size > min && el.scrollWidth > el.clientWidth + 1) {
+      size -= 1;
+      el.style.fontSize = `${size}px`;
+    }
+  }, [text, max, min]);
+  return (
+    <div ref={ref} className={className} style={{ fontSize: max, overflowWrap: 'normal', wordBreak: 'keep-all', hyphens: 'none', width: '100%' }}>
+      {text}
+    </div>
   );
 }
 

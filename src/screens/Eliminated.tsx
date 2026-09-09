@@ -39,10 +39,10 @@ export function Eliminated() {
             {T.eliminated.was}
           </div>
         </div>
-        <div className={`role display ${player.role}`} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <RoleIcon role={player.role} size={40} />
-          {T.roles[player.role]}
+        <div className={`elim-icon ${player.role}`} aria-hidden>
+          <RoleIcon role={player.role} size={56} />
         </div>
+        <div className={`role display ${player.role}`}>{T.roles[player.role]}</div>
         {game.phase === 'whiteGuess' ? (
           <p className="text-2" style={{ maxWidth: 300 }}>
             {T.eliminated.whiteNext}

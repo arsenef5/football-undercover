@@ -235,11 +235,12 @@ export function BallIcon({ size, ...p }: P) {
   );
 }
 
+/** Flèche « rejouer » épaisse, au poids des titres. */
 export function RefreshIcon({ size, ...p }: P) {
   return (
-    <svg {...base(size, p)}>
-      <path d="M20 12a8 8 0 1 1-2.3-5.7" />
-      <path d="M20 4v5h-5" />
+    <svg {...base(size, p)} strokeWidth={3.2}>
+      <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1" />
+      <path d="M21 3.5v5.5h-5.5" fill="currentColor" stroke="currentColor" strokeWidth={1.2} />
     </svg>
   );
 }

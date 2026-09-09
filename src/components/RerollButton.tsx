@@ -6,7 +6,7 @@ import { T } from '../i18n';
 import { thump } from '../native';
 import { useStore } from '../store/store';
 import { RefreshIcon } from './Icons';
-import { Button, Confirm } from './ui';
+import { Button, Confirm, IconButton } from './ui';
 
 /**
  * « Relancer le mot » : mot inconnu d'un joueur → on retire un nouveau mot ET de nouveaux rôles
@@ -16,11 +16,14 @@ export function RerollButton({
   label,
   small,
   variant = 'ghost',
+  icon,
   afterReroll,
 }: {
   label?: string;
   small?: boolean;
   variant?: 'ghost' | 'secondary';
+  /** Icône seule (en-tête d'écran) au lieu d'un bouton texte. */
+  icon?: boolean;
   afterReroll?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,10 +47,16 @@ export function RerollButton({
 
   return (
     <>
-      <Button variant={variant} small={small} onClick={() => setOpen(true)}>
-        <RefreshIcon size={16} />
-        {label ?? T.reveal.reroll}
-      </Button>
+      {icon ? (
+        <IconButton label={label ?? T.reveal.reroll} onClick={() => setOpen(true)}>
+          <RefreshIcon size={20} />
+        </IconButton>
+      ) : (
+        <Button variant={variant} small={small} onClick={() => setOpen(true)}>
+          <RefreshIcon size={16} />
+          {label ?? T.reveal.reroll}
+        </Button>
+      )}
       <Confirm
         open={open}
         title={T.reveal.rerollTitle}

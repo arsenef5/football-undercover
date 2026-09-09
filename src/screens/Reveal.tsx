@@ -48,7 +48,12 @@ export function Reveal() {
     <>
       <Screen
         title={T.reveal.title}
-        right={<QuitGame />}
+        right={
+          <div style={{ display: 'flex', gap: 6 }}>
+            <RerollButton icon />
+            <QuitGame />
+          </div>
+        }
         footer={
           done ? (
             <>
@@ -62,14 +67,10 @@ export function Reveal() {
                   {T.reveal.reorder}
                 </Button>
               </div>
-              <RerollButton small />
               <Button onClick={() => nav.replace({ name: 'discuss' })}>{T.reveal.startGame}</Button>
             </>
           ) : open ? (
-            <>
-              <RerollButton small label={T.reveal.unknownWord} />
-              <Button onClick={hide}>{T.reveal.memorized}</Button>
-            </>
+            <Button onClick={hide}>{T.reveal.memorized}</Button>
           ) : (
             <div className="center muted" style={{ fontSize: 12 }}>
               {T.reveal.secret}

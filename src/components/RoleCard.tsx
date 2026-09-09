@@ -3,7 +3,7 @@ import type { Category, GamePlayer } from '../game/types';
 import { T } from '../i18n';
 import { thump } from '../native';
 import { SpyIcon } from './Icons';
-import { nb } from './ui';
+import { FitText, nb } from './ui';
 
 /**
  * La carte de rôle : recto avec le nom du joueur, verso avec son mot.
@@ -52,6 +52,10 @@ export function RoleCard({
   const isWhite = player.role === 'white';
   const catLabel = T.categories[category];
   const showCat = isWhite ? whiteSeesCategory : showCategory;
+  // Tailles maximales (les mêmes que les anciens clamp), réduites ensuite si un mot ne tient pas.
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 390;
+  const nameMax = Math.round(Math.min(44, Math.max(30, vw * 0.105)));
+  const wordMax = Math.round(Math.min(38, Math.max(26, vw * 0.08)));
 
   return (
     <div
@@ -80,7 +84,7 @@ export function RoleCard({
             <span className="card-mark">{T.reveal.mark}</span>
             <div className="card-mid">
               <SpyIcon className="spy" />
-              <div className="display card-name">{player.name}</div>
+              <FitText className="display card-name" text={player.name} max={nameMax} min={20} />
             </div>
             <div className="hint">{nb(T.reveal.tapToReveal)}</div>
           </div>
@@ -90,12 +94,12 @@ export function RoleCard({
             {isWhite ? (
               <div className="card-mid">
                 <span className="white-card" aria-hidden />
-                <div className="display word">{T.roles.white}</div>
+                <FitText className="display word" text={T.roles.white} max={wordMax} />
               </div>
             ) : (
               <div className="card-mid">
                 <span className="eyebrow">{T.reveal.yourWord}</span>
-                <div className="display word">{player.word}</div>
+                <FitText className="display word" text={player.word ?? ''} max={wordMax} />
               </div>
             )}
             <div className="hint">{nb(isWhite ? T.reveal.whiteHint : T.reveal.starterHint)}</div>

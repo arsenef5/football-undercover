@@ -576,6 +576,12 @@ p {
   line-height: 1.1;
 }
 
+.btn .col > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* --------------------------------------------------------------------------
    Cartes, listes, lignes
    -------------------------------------------------------------------------- */
@@ -1676,7 +1682,41 @@ p {
 }
 
 .elim .role {
-  font-size: clamp(34px, 11vw, 48px);
+  font-size: clamp(28px, 9vw, 42px);
+  max-width: 100%;
+  padding: 0 8px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Icône du rôle en grand, au centre, avec la lueur de son camp. */
+.elim-icon {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line-strong);
+  animation: pop-in 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.elim-icon.civil {
+  color: var(--role-civil);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.16);
+}
+
+.elim-icon.undercover {
+  color: var(--role-undercover);
+  border-color: rgba(255, 43, 43, 0.5);
+  box-shadow: 0 0 44px var(--red-glow);
+}
+
+.elim-icon.white {
+  color: var(--role-white);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 44px rgba(255, 255, 255, 0.3);
 }
 
 .elim .role.civil {
