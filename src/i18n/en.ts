@@ -10,7 +10,7 @@ export const en: Strings = {
   app: {
     name: 'Football Undercover',
     tagline: 'More than a game',
-    values: 'Stealth · Bluff · Legend',
+    values: "There's an impostor in the squad.",
   },
   common: {
     back: 'Back',

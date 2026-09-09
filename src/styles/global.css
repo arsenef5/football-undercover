@@ -1360,11 +1360,13 @@ p {
 
 .hero .tag {
   margin-top: 14px;
-  font-size: 11px;
-  letter-spacing: 0.34em;
+  padding: 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
-  font-variation-settings: 'wdth' 110, 'wght' 700;
+  color: var(--text-2);
+  font-variation-settings: 'wdth' 110, 'wght' 750;
+  text-wrap: balance;
 }
 
 .stats {

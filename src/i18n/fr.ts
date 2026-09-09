@@ -11,7 +11,7 @@ export const fr = {
   app: {
     name: 'Football Undercover',
     tagline: "Plus qu'un jeu",
-    values: 'Discrétion · Bluff · Légende',
+    values: "Un imposteur est dans l'équipe.",
   },
   common: {
     back: 'Retour',
