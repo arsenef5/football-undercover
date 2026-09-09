@@ -1,7 +1,11 @@
 # Football Undercover
 
 Jeu de bluff façon *Undercover*, 100 % foot, à jouer sur un seul téléphone qui passe de main en main.
-Hors ligne, en français. Construit en React + TypeScript (Vite), emballé pour iOS et Android par Capacitor.
+Hors ligne, en français et en anglais. Construit en React + TypeScript (Vite), emballé pour iOS et Android par Capacitor.
+
+- **Jouer tout de suite (web, installable sur l'écran d'accueil)** : https://arsenef5.github.io/football-undercover/
+- **APK Android de démo** : https://github.com/arsenef5/football-undercover/releases/latest/download/football-undercover.apk
+- Politique de confidentialité : https://arsenef5.github.io/football-undercover/privacy.html
 
 ## Le jeu en deux lignes
 
