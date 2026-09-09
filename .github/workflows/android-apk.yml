@@ -1,0 +1,48 @@
+# Compile un APK Android de démonstration dans le cloud (aucun outil à installer sur le PC).
+# À chaque push sur main : l'APK est disponible dans l'onglet Actions (artefact "football-undercover-apk").
+# Sur un tag v* (ex. v0.1.0) : l'APK est aussi publié dans "Releases", avec un lien direct à partager.
+# Signature de debug : parfait pour installer chez des amis, pas pour le Play Store (voir store/README.md).
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Compiler l'APK (debug)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Renommer
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk football-undercover.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: football-undercover-apk
+          path: football-undercover.apk
+      - name: Publier dans Releases (tags v* uniquement)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: football-undercover.apk
