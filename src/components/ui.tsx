@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import type { Role } from '../game/types';
 import { T } from '../i18n';
+import { releaseBanner, suppressBanner } from '../monetization/ads';
 import { tap } from '../native';
 import { BackIcon, CardIcon, CheckIcon, GlassesIcon, JerseyIcon, MinusIcon, PlusIcon, SpyIcon } from './Icons';
 
@@ -376,6 +377,13 @@ export function Sheet({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Bannière publicitaire native masquée tant que la feuille est ouverte (sinon elle cache le bas).
+  useEffect(() => {
+    if (!open) return;
+    suppressBanner();
+    return () => releaseBanner();
+  }, [open]);
 
   if (!open) return null;
   // Portail dans la coquille #app : la feuille passe au-dessus de la barre d'onglets et des écrans,

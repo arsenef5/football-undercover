@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { T } from '../i18n';
+import { releaseBanner, suppressBanner } from '../monetization/ads';
 import { PRO_PRICE_LABEL } from '../monetization/config';
 import { markPromoShown } from '../monetization/promo';
 import { thump } from '../native';
@@ -19,11 +20,15 @@ export function ProPromo({ open, onClose }: { open: boolean; onClose: () => void
     if (!open) return;
     markPromoShown();
     void thump();
+    suppressBanner();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      releaseBanner();
+    };
   }, [open, onClose]);
 
   if (!open) return null;

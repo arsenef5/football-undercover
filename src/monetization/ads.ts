@@ -80,6 +80,35 @@ export function setAdsEnabled(v: boolean): void {
   if (!v) void removeBanner();
 }
 
+/*
+ * La bannière est une vue native au-dessus de la page : elle cacherait le bas des feuilles
+ * (langues, confirmations…) et de la fenêtre promo. On la masque tant qu'une surcouche est ouverte.
+ */
+let bannerWanted = false;
+let overlays = 0;
+
+async function applyBanner(): Promise<void> {
+  if (bannerWanted && overlays === 0) await showBanner();
+  else await hideBanner();
+}
+
+/** L'App dit si la bannière a sa place sur l'écran courant (hors partie, version gratuite). */
+export function setBannerWanted(v: boolean): void {
+  bannerWanted = v;
+  void applyBanner();
+}
+
+/** Une feuille / fenêtre s'ouvre : bannière masquée jusqu'à sa fermeture. */
+export function suppressBanner(): void {
+  overlays += 1;
+  void applyBanner();
+}
+
+export function releaseBanner(): void {
+  overlays = Math.max(0, overlays - 1);
+  void applyBanner();
+}
+
 export async function showBanner(): Promise<void> {
   if (!adsAvailable || !enabled) return;
   await initAds();

@@ -3,7 +3,7 @@ import { DotsIcon, PlayIcon, PodiumIcon, ShieldIcon } from './components/Icons';
 import { ProPromo } from './components/ProPromo';
 import { GameProvider, useGame } from './game/useGame';
 import { setLang, T } from './i18n';
-import { hideBanner, initAds, setAdsEnabled, showBanner } from './monetization/ads';
+import { initAds, setAdsEnabled, setBannerWanted } from './monetization/ads';
 import { onProPromo } from './monetization/promo';
 import { fetchProActive, onProChange, purchasesAvailable } from './monetization/purchases';
 import { onHardwareBack, setHapticsEnabled, setupNativeUi, tap } from './native';
@@ -133,8 +133,7 @@ function Shell() {
   }, [premium]);
 
   useEffect(() => {
-    if (premium || isGameRoute) void hideBanner();
-    else void showBanner();
+    setBannerWanted(!premium && !isGameRoute);
   }, [premium, isGameRoute, route.name]);
 
   useEffect(() => {
