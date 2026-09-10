@@ -64,13 +64,26 @@ npm install && npm run build && npx cap sync ios && npx cap open ios
 
 Xcode : Signing & Capabilities > Team ; Product > Archive ; Distribute App > App Store Connect.
 
-### Sans Mac : Codemagic
+### Sans Mac : Codemagic (configuré le 10 septembre 2026)
 
-1. Pousser le dépôt sur GitHub (privé).
-2. Codemagic > Add application > choisir le dépôt > « codemagic.yaml ».
-3. Teams > Integrations > App Store Connect : ajouter une clé API App Store Connect (créée dans
-   App Store Connect > Users and Access > Integrations), nommée `app_store_connect` comme dans le YAML.
-4. Lancer le workflow `ios-testflight` : il compile, signe automatiquement et envoie sur TestFlight.
+Compte personnel Codemagic (GitHub `arsenef5`, gratuit, 500 minutes par mois), app `football-undercover`
+reliée au dépôt, workflow lu dans `codemagic.yaml`.
+
+Ce qui est en place, et où le retrouver si quelque chose casse :
+
+1. **Clé API App Store Connect** « Codemagic », rôle Gestionnaire d'apps (App Store Connect > Utilisateurs
+   et accès > Intégrations > API App Store Connect). Déposée dans Codemagic > Settings > Integrations >
+   Developer Portal sous le nom `app_store_connect` (celui du YAML).
+2. **Certificat Apple Distribution** généré par Codemagic avec cette clé : Settings > Code signing
+   identities > iOS certificates, référence `app_store_distribution` (expire le 10 septembre 2027).
+3. **Profil de provisionnement App Store** « Football Undercover App Store » créé sur le portail Apple
+   (Certificates, Identifiers & Profiles > Profiles), puis récupéré dans Codemagic via « Fetch profiles »,
+   référence `app_store_profile`. Le YAML référence ces deux identités explicitement.
+4. **Lancer un build** : Codemagic > football-undercover > Start new build > branche `main`,
+   workflow « iOS → TestFlight ». Le numéro de build iOS suit le compteur Codemagic.
+
+Quand le certificat ou le profil expirent (septembre 2027) : régénérer le certificat dans Codemagic,
+recréer le profil chez Apple avec ce certificat, refaire « Fetch profiles », garder les mêmes références.
 
 ## 6. App Store Connect
 
