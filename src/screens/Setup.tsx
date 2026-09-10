@@ -4,7 +4,7 @@ import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
 import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
 import { useCreator } from '../creator/CreatorContext';
-import { randomAvatar, randomColor } from '../data/avatars';
+import { DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { CATEGORY_ORDER, countWordsByCategory, groupsFor } from '../data/words';
 import {
   ALL_CATEGORIES,
@@ -121,7 +121,7 @@ export function Setup() {
     if (existing) {
       setSelected((cur) => (cur.includes(existing.id) ? cur : [...cur, existing.id]));
     } else {
-      const p = addPlayer(name, randomAvatar(), randomColor());
+      const p = addPlayer(name, randomAvatar(), DEFAULT_COLOR);
       setSelected((cur) => [...cur, p.id]);
     }
     setTeamId(null);

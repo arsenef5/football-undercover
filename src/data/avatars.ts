@@ -24,6 +24,9 @@ export function randomAvatar(exclude: readonly string[] = []): string {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+/** Couleur par défaut d'un nouveau joueur : le rouge signature (modifiable dans sa fiche). */
+export const DEFAULT_COLOR = COLORS[0];
+
 export function randomColor(exclude: readonly string[] = []): string {
   const pool = COLORS.filter((c) => !exclude.includes(c));
   const list = pool.length > 0 ? pool : COLORS;

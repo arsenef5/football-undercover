@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { CloseIcon } from '../components/Icons';
 import { QuitGame } from '../components/QuitGame';
-import { Avatar, Button, Chip, Confirm, RoleBadge, Screen, SectionTitle } from '../components/ui';
+import { Avatar, Button, Confirm, RoleBadge, Screen } from '../components/ui';
 import { useCreator } from '../creator/CreatorContext';
 import type { GamePlayer } from '../game/types';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
-import { tap, thump } from '../native';
+import { thump } from '../native';
 import { useNav } from '../nav';
 
 export function Vote() {
@@ -14,34 +14,8 @@ export function Vote() {
   const creator = useCreator();
   const nav = useNav();
   const [target, setTarget] = useState<GamePlayer | null>(null);
-  // Mode créateur : votant sélectionné + décompte des votes (incrustés dans la vidéo).
-  const [voter, setVoter] = useState<string | null>(null);
-  const [votes, setVotes] = useState<Record<string, string>>({});
 
   if (!game) return null;
-  const alive = game.players.filter((p) => p.alive);
-  const filming = creator.recording;
-  const tally = (id: string) => Object.values(votes).filter((t) => t === id).length;
-
-  const castVote = (from: GamePlayer, to: GamePlayer) => {
-    setVotes((v) => ({ ...v, [from.id]: to.id }));
-    creator.popup({ kind: 'vote', from: { name: from.name, photo: from.photo }, to: { name: to.name, photo: to.photo }, verb: T.creator.votesFor });
-    void tap();
-    // Votant suivant qui n'a pas encore voté, pour enchaîner vite.
-    const next = alive.find((p) => p.id !== from.id && !votes[p.id] && p.id !== to.id) ?? alive.find((p) => p.id !== from.id && !votes[p.id]);
-    setVoter(next ? next.id : null);
-  };
-
-  const onCard = (p: GamePlayer) => {
-    if (filming && voter) {
-      const from = alive.find((x) => x.id === voter);
-      if (from && from.id !== p.id) {
-        castVote(from, p);
-        return;
-      }
-    }
-    setTarget(p);
-  };
 
   const confirm = () => {
     if (!target) return;
@@ -49,14 +23,12 @@ export function Vote() {
     setTarget(null);
     const next = eliminate(id);
     if (!next) return;
-    if (filming) {
-      creator.popup({
-        kind: 'elim',
-        face: { name: target.name, photo: target.photo },
-        role: target.role,
-        roleLabel: T.roles[target.role],
-        outLabel: T.eliminated.was,
-      });
+    if (creator.recording) {
+      // Le groupe a tranché : « le groupe vote X » en haut, puis la carte d'élimination en bas.
+      const face = { name: target.name, photo: target.photo };
+      creator.popup({ kind: 'vote', to: face, label: T.creator.groupVote });
+      const elim = { kind: 'elim' as const, face, role: target.role, roleLabel: T.roles[target.role], outLabel: T.eliminated.was };
+      window.setTimeout(() => creator.popup(elim), 900);
     }
     void thump();
     nav.replace({ name: 'eliminated', playerId: id });
@@ -79,39 +51,15 @@ export function Vote() {
           </Button>
         }
       >
-        {filming ? (
-          <>
-            <SectionTitle right={<span className="badge red">REC</span>}>{T.creator.voter}</SectionTitle>
-            <div className="chips scroll" style={{ marginBottom: 6 }}>
-              {alive.map((p) => (
-                <Chip key={p.id} on={voter === p.id} onClick={() => setVoter(voter === p.id ? null : p.id)}>
-                  <span className="vdot" style={{ background: p.color }} />
-                  {p.name}
-                  {votes[p.id] ? <span className="n">✓</span> : null}
-                </Chip>
-              ))}
-            </div>
-            <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-              {T.creator.voterHint}
-            </p>
-          </>
-        ) : (
-          <p className="muted" style={{ fontSize: 13 }}>
-            {T.vote.hint}
-          </p>
-        )}
+        <p className="muted" style={{ fontSize: 13 }}>
+          {T.vote.hint}
+        </p>
         <div className="grid-2" style={{ marginTop: 8 }}>
           {game.players.map((p) =>
             p.alive ? (
-              <button
-                key={p.id}
-                type="button"
-                className={`vote-card ${filming && voter && voter !== p.id ? 'is-target' : ''}`}
-                onClick={() => onCard(p)}
-              >
+              <button key={p.id} type="button" className="vote-card" onClick={() => setTarget(p)}>
                 <Avatar name={p.name} color={p.color} photo={p.photo} size="lg" />
                 <span className="nm">{p.name}</span>
-                {filming && tally(p.id) > 0 ? <span className="vcount">{T.creator.voteCount(tally(p.id))}</span> : null}
               </button>
             ) : (
               <div key={p.id} className="vote-card dead" aria-label={`${p.name} : ${T.vote.out}`}>

@@ -161,22 +161,17 @@ async function main() {
   await frame(page, 'discussion');
   await shot(page, 'discussion');
 
-  // Vote filmé : un vote incrusté, puis élimination du carton blanc.
+  // Vote collectif : « le groupe vote X », puis la carte d'élimination du carton blanc.
   await click(page, 'vote');
   await sleep(500);
-  await page.evaluate(() => document.querySelectorAll('.chip')[0]?.click());
-  await sleep(150);
-  const whiteIndex = g.players.findIndex((p) => p.id === white?.id);
-  await page.evaluate((i) => [...document.querySelectorAll('.vote-card')][i]?.click(), whiteIndex);
-  await sleep(600);
-  await frame(page, 'vote');
   await shot(page, 'vote');
-  await page.evaluate(() => document.querySelector('.chip.is-on')?.click());
-  await sleep(150);
+  const whiteIndex = g.players.findIndex((p) => p.id === white?.id);
   await page.evaluate((i) => [...document.querySelectorAll('.vote-card')][i]?.click(), whiteIndex);
   await sleep(400);
   await page.evaluate(() => [...document.querySelectorAll('button')].filter((b) => /Éliminer/i.test(b.textContent || '')).pop()?.click());
-  await sleep(1150);
+  await sleep(500);
+  await frame(page, 'vote');
+  await sleep(1300);
   await frame(page, 'elimination-white');
   await sleep(1200);
   await click(page, 'Laisser deviner');
@@ -208,14 +203,14 @@ async function main() {
     await shot(page, 'elimination');
     await sleep(1200);
     await click(page, 'Voir le résultat|Tour suivant');
-    await sleep(1200);
+    await sleep(3600); // la carte d'élimination finit avant le résultat
   }
   console.log('écran :', await title(page));
   await frame(page, 'result');
   await shot(page, 'result');
 
   // Écran d'édition d'un joueur (photo).
-  await sleep(7500);
+  await sleep(6500);
   await click(page, '^Terminer$');
   await sleep(500);
   await page.evaluate(() => [...document.querySelectorAll('.tabbar button')].pop()?.click());

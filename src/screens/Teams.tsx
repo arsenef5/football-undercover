@@ -3,7 +3,7 @@ import { PencilIcon, PlayIcon, PlusIcon } from '../components/Icons';
 import { SwipeRow } from '../components/SwipeRow';
 import { TeamSheet } from '../components/TeamSheet';
 import { Avatar, Button, CheckMark, EmptyState, IconButton, Screen } from '../components/ui';
-import { randomAvatar, randomColor } from '../data/avatars';
+import { DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { clampConfig, suggestConfig } from '../game/engine';
 import { T } from '../i18n';
 import { useNav } from '../nav';
@@ -137,7 +137,7 @@ export function Teams() {
         initial={editing}
         players={state.players}
         defaultName={nextTeamName(state.teams)}
-        onCreatePlayer={(name) => addPlayer(name, randomAvatar(), randomColor())}
+        onCreatePlayer={(name) => addPlayer(name, randomAvatar(), DEFAULT_COLOR)}
         onDeletePlayer={(id) => dispatch({ type: 'player/remove', id })}
         onClose={() => setOpen(false)}
         onSave={(draft) => {

@@ -2574,32 +2574,6 @@ p,
   box-shadow: 0 0 0 1px rgba(255, 43, 43, 0.5), 0 0 28px var(--red-glow);
 }
 
-.chip .vdot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-.vote-card.is-target {
-  border-color: rgba(255, 43, 43, 0.55);
-  box-shadow: 0 0 22px var(--red-glow);
-}
-.vote-card .vcount {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--red);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  box-shadow: 0 0 14px var(--red-glow);
-}
-
 .video-ready {
   margin-top: 6px;
   border-color: rgba(255, 43, 43, 0.35);

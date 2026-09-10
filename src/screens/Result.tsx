@@ -13,8 +13,8 @@ import { isNative, notify } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
 
-/** Mode créateur : 2 s de résultat à l'image + 5 s de réactions avant la fin de la vidéo. */
-const RESULT_TAIL_MS = 7000;
+/** Mode créateur : la carte d'élimination finit (≈ 3 s), le résultat s'affiche, puis 5 s de réactions. */
+const RESULT_TAIL_MS = 9000;
 
 function burst(colors: string[]) {
   const fire = (x: number, angle: number) =>

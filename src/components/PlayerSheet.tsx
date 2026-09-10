@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { COLORS, randomAvatar, randomColor } from '../data/avatars';
+import { COLORS, DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { fileToPhoto } from '../data/photo';
 import { T } from '../i18n';
 import type { Player } from '../store/store';
@@ -46,7 +46,7 @@ export function PlayerSheet({
       setPhoto(initial.photo ?? null);
     } else {
       setName('');
-      setColor(randomColor());
+      setColor(DEFAULT_COLOR);
       setPhoto(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

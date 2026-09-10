@@ -18,7 +18,6 @@
  */
 import { Capacitor } from '@capacitor/core';
 import archivoUrl from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
-import antonUrl from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
 import type { Role } from '../game/types';
 
 export interface Face {
@@ -34,7 +33,7 @@ export type Scene =
   | { type: 'result'; title: string; sub: string; civilWord: string; undercoverWord: string; civilLabel: string; undercoverLabel: string };
 
 export type Popup =
-  | { kind: 'vote'; from: Face; to: Face; verb: string }
+  | { kind: 'vote'; to: Face; label: string }
   | { kind: 'elim'; face: Face; role: Role; roleLabel: string; outLabel: string }
   | { kind: 'guess'; face: Face; correct: boolean; guess: string; label: string };
 
@@ -52,7 +51,7 @@ const FPS = 30;
 
 /* Zones sûres (voir en-tête). */
 const SAFE_TOP = 230;
-const SAFE_BOTTOM = 1440;
+const SAFE_BOTTOM = 1500;
 const SAFE_LEFT = 60;
 const SAFE_RIGHT = 900;
 const SAFE_W = SAFE_RIGHT - SAFE_LEFT;
@@ -67,14 +66,13 @@ const LINE = 'rgba(255,255,255,0.10)';
 const GREEN = '#37d67a';
 
 const DISPLAY = '"FU Display", "Archivo Variable", Archivo, system-ui, sans-serif';
-const LOGO = '"FU Logo", Anton, Impact, sans-serif';
 
 let fontsReady: Promise<void> | null = null;
 
 /**
  * Le canvas n'utilise pas les @font-face CSS tant qu'elles ne sont pas chargées pour lui, et
- * retombe alors sur Arial sans jamais se corriger. On enregistre donc les deux polices de l'app
- * sous des noms dédiés, chargées explicitement AVANT le premier dessin.
+ * retombe alors sur Arial sans jamais se corriger. On enregistre donc la police d'affichage de l'app
+ * sous un nom dédié, chargée explicitement AVANT le premier dessin.
  */
 export function ensureCanvasFonts(): Promise<void> {
   if (!fontsReady) {
@@ -83,7 +81,6 @@ export function ensureCanvasFonts(): Promise<void> {
       try {
         const faces = [
           new FontFace('FU Display', `url(${archivoUrl})`, { weight: '100 900', stretch: '62% 125%' }),
-          new FontFace('FU Logo', `url(${antonUrl})`, { weight: '400' }),
         ];
         await Promise.all(
           faces.map(async (f) => {
@@ -242,6 +239,7 @@ export class Recorder {
   private images = new Map<string, HTMLImageElement>();
   private lastDraw = 0;
   private watchdog = 0;
+  private logo: HTMLImageElement | null = null;
 
   /** Image de fond à la place de la caméra (tests et aperçus du montage). */
   backdrop: HTMLImageElement | null = null;
@@ -260,6 +258,8 @@ export class Recorder {
     const ctx = this.canvas.getContext('2d', { alpha: false });
     if (!ctx) throw new Error('canvas 2d indisponible');
     this.ctx = ctx;
+    this.logo = new Image();
+    this.logo.src = `${import.meta.env.BASE_URL}icons/icon-512.png`;
   }
 
   subscribe(l: Listener): () => void {
@@ -559,7 +559,7 @@ export class Recorder {
       ctx.fillRect(0, 0, W, H);
     }
 
-    this.drawWordmark();
+    this.drawLogo();
     this.popups = this.popups.filter((p) => now - p.at < p.duration);
     const elimActive = this.popups.some((p) => p.popup.kind === 'elim');
     const t = (now - this.sceneAt) / 1000;
@@ -574,7 +574,9 @@ export class Recorder {
         if (!elimActive) this.drawGuess(this.scene, t);
         break;
       case 'result':
-        this.drawResult(this.scene, t);
+        // Le résultat attend la fin de la carte d'élimination, puis fait son entrée.
+        if (elimActive) this.sceneAt = now;
+        else this.drawResult(this.scene, t);
         break;
       default:
         break;
@@ -582,22 +584,24 @@ export class Recorder {
     for (const p of this.popups) this.drawPopup(p, now);
   }
 
-  /** Signature discrète en haut à gauche, dans le style du logo (Anton, blanc + rouge). */
-  private drawWordmark() {
+  /** Logo de l'app, tout petit, dans le coin haut gauche de la zone sûre. */
+  private drawLogo() {
+    const img = this.logo;
+    if (!img || !img.complete || img.naturalWidth === 0) return;
     const ctx = this.ctx;
+    const size = 84;
+    const x = SAFE_LEFT;
+    const y = SAFE_TOP + 10;
     ctx.save();
-    ctx.font = `400 34px ${LOGO}`;
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 2;
-    const y = SAFE_TOP - 24;
-    ctx.fillStyle = TEXT;
-    ctx.fillText('FOOTBALL', SAFE_LEFT, y);
-    const w = ctx.measureText('FOOTBALL ').width;
-    ctx.fillStyle = RED;
-    ctx.fillText('UNDERCOVER', SAFE_LEFT + w, y);
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 4;
+    roundRect(ctx, x, y, size, size, 19);
+    ctx.fillStyle = BG;
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.clip();
+    ctx.drawImage(img, x, y, size, size);
     ctx.restore();
   }
 
@@ -661,11 +665,19 @@ export class Recorder {
   /** Ordre de parole : photos et mots seulement, en bas à gauche. Le mot de l'undercover est en rouge. */
   private drawDiscuss(s: Extract<Scene, { type: 'discuss' }>, t: number) {
     const ctx = this.ctx;
-    const n = s.order.length;
-    const rowH = 66;
     const headH = 58;
-    const w = 540;
-    const h = headH + n * rowH + 16;
+    const textX = 132;
+    const maxTextW = SAFE_W - textX - 28;
+    // Mesures : chaque mot tient sur une ligne (28 → 20 px), sinon sur deux.
+    const rows = s.order.map((p) => {
+      const word = (p.word === null ? s.whiteLabel : p.word).toUpperCase();
+      const fit = fitLines(ctx, word, maxTextW, 28, 20, 2, 850);
+      const width = Math.max(...fit.lines.map((l) => ctx.measureText(l).width));
+      const rowH = fit.lines.length === 1 ? 66 : 66 + fit.size * 1.1;
+      return { ...p, fit, width, rowH };
+    });
+    const w = Math.min(SAFE_W, Math.max(420, textX + Math.max(...rows.map((r) => r.width)) + 28));
+    const h = headH + rows.reduce((sum, r) => sum + r.rowH, 0) + 16;
     const x = SAFE_LEFT;
     const y = SAFE_BOTTOM - h;
     ctx.save();
@@ -682,10 +694,12 @@ export class Recorder {
     displayFont(ctx, 24);
     ctx.fillText(s.title.toUpperCase(), x + 62, y + headH / 2 + 2);
 
-    s.order.forEach((p, i) => {
+    let ry = y + headH;
+    rows.forEach((p, i) => {
       const k = easeOut((t - i * 0.08) / 0.3);
+      const cy = ry + p.rowH / 2;
+      ry += p.rowH;
       if (k <= 0) return;
-      const cy = y + headH + i * rowH + rowH / 2;
       ctx.save();
       ctx.globalAlpha = k;
       ctx.translate((1 - k) * 40, 0);
@@ -696,10 +710,11 @@ export class Recorder {
       ctx.fillText(String(i + 1), x + 40, cy + 1);
       this.drawFace(p.face, x + 92, cy, 48);
       ctx.textAlign = 'left';
-      const word = p.word === null ? s.whiteLabel : p.word;
       ctx.fillStyle = p.word === null ? MUTED : wordColor(p.role);
-      displayFont(ctx, fitSize(ctx, word.toUpperCase(), w - 160, 28, 16, 850), 850);
-      ctx.fillText(word.toUpperCase(), x + 132, cy + 1);
+      displayFont(ctx, p.fit.size, 850);
+      const lineH = p.fit.size * 1.1;
+      const top = cy - ((p.fit.lines.length - 1) * lineH) / 2;
+      p.fit.lines.forEach((line, j) => ctx.fillText(line, x + textX, top + j * lineH + 1));
       ctx.restore();
     });
     ctx.restore();
@@ -785,27 +800,26 @@ export class Recorder {
     const alpha = Math.max(0, Math.min(1, t / 0.2, remaining / 0.3));
 
     if (p.popup.kind === 'vote') {
-      // « A vote pour B » : pilule compacte dans le haut de la zone sûre.
+      // « Le groupe vote X » : pilule compacte dans le haut de la zone sûre, photo de la cible à droite.
       const k = easeOutBack(t / 0.4);
       const h = 88;
-      const y = SAFE_TOP + 110;
+      const y = SAFE_TOP + 120;
       ctx.save();
       ctx.globalAlpha = alpha;
-      const line = `${p.popup.from.name.toUpperCase()}  ${p.popup.verb.toUpperCase()}  ${p.popup.to.name.toUpperCase()}`;
-      displayFont(ctx, fitSize(ctx, line, SAFE_W - 200, 30, 16, 850), 850);
+      const line = `${p.popup.label.toUpperCase()}  ${p.popup.to.name.toUpperCase()}`;
+      displayFont(ctx, fitSize(ctx, line, SAFE_W - 150, 30, 16, 850), 850);
       const tw = ctx.measureText(line).width;
-      const w = Math.min(SAFE_W, tw + 190);
+      const w = Math.min(SAFE_W, tw + 140);
       const x = SAFE_LEFT;
       ctx.translate(x + w / 2, y + h / 2);
       ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
       ctx.translate(-(x + w / 2), -(y + h / 2));
       panel(ctx, x, y, w, h, h / 2);
-      this.drawFace(p.popup.from, x + 48, y + h / 2, 60);
       this.drawFace(p.popup.to, x + w - 48, y + h / 2, 60);
       ctx.fillStyle = TEXT;
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(line, x + w / 2, y + h / 2 + 1);
+      ctx.fillText(line, x + 36, y + h / 2 + 1);
       ctx.restore();
       return;
     }
