@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import pkg from '../../package.json';
-import { ChevronIcon, InfoIcon, SparkIcon, TrashIcon, UsersIcon } from '../components/Icons';
+import { ChevronIcon, InfoIcon, SparkIcon, TrashIcon, UsersIcon, VideoIcon } from '../components/Icons';
 import { LangPickers } from '../components/LanguageSheet';
 import { Button, Confirm, Screen, SectionTitle, Segmented, Setting, Toggle } from '../components/ui';
 import { BASE_WORD_COUNT, PRO_WORD_COUNT } from '../data/words';
@@ -32,6 +32,18 @@ export function Settings() {
             <span className="t">{T.settings.players}</span>
             <span className="s" style={{ display: 'block' }}>
               {T.settings.playersHint}
+            </span>
+          </span>
+          <ChevronIcon size={18} />
+        </button>
+
+        <SectionTitle>{T.creator.title}</SectionTitle>
+        <button type="button" className="link-row" onClick={() => nav.go({ name: 'videos' })}>
+          <VideoIcon />
+          <span className="grow">
+            <span className="t">{T.videos.title}</span>
+            <span className="s" style={{ display: 'block' }}>
+              {T.videos.settingsHint}
             </span>
           </span>
           <ChevronIcon size={18} />

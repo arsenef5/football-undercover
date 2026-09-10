@@ -3,7 +3,6 @@ import { PlusIcon } from '../components/Icons';
 import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
 import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
-import { useCreator } from '../creator/CreatorContext';
 import { DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { CATEGORY_ORDER, countWordsByCategory, groupsFor } from '../data/words';
 import {
@@ -36,7 +35,6 @@ function detectPreset(weights: Record<Category, number>): Preset {
 export function Setup() {
   const { state, dispatch, addPlayer, addTeam } = useStore();
   const game = useGame();
-  const creator = useCreator();
   const nav = useNav();
   const [toast, showToast] = useToast();
   const routeTeamId = nav.route.name === 'setup' ? nav.route.teamId : undefined;
@@ -168,13 +166,8 @@ export function Setup() {
         whiteCanStart: state.settings.whiteCanStart,
       });
       void thump();
-      // Mode créateur : la caméra démarre dans le geste utilisateur (exigé par certains navigateurs).
-      if (state.settings.creatorMode) {
-        void creator.start().then((ok) => {
-          if (!ok) showToast(T.creator.unsupported);
-        });
-      }
-      nav.go({ name: 'reveal' });
+      // Mode créateur : écran Réalisation (aperçu, caméra, micro, REC) avant la distribution.
+      nav.go({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     }

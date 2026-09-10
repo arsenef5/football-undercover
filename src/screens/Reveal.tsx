@@ -35,9 +35,11 @@ export function Reveal() {
   const done = !game || game.phase !== 'reveal' || game.revealIndex >= total;
   const player = !game || done ? null : game.players[game.revealIndex];
 
-  // Mode créateur : reprise après un rechargement (la caméra n'a pas démarré depuis la préparation).
+  // Mode créateur : reprise après un rechargement → on repasse par l'écran Réalisation.
   useEffect(() => {
-    if (creator.enabled && creator.status === 'idle' && game && game.revealIndex === 0 && !done) void creator.start();
+    if (creator.enabled && creator.status === 'idle' && game && game.revealIndex === 0 && !done && creator.skippedGameId !== game.id) {
+      nav.replace({ name: 'creator' });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creator.enabled, game?.id]);
 

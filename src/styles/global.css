@@ -1486,6 +1486,26 @@ p {
   transform: rotateY(180deg);
 }
 
+.face,
+.face * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.face.front {
+  visibility: visible;
+  transition: visibility 0s linear 340ms;
+}
+.face.back {
+  visibility: hidden;
+  transition: visibility 0s linear 340ms;
+}
+.flip.is-open .face.front {
+  visibility: hidden;
+}
+.flip.is-open .face.back {
+  visibility: visible;
+}
+
 .face {
   position: absolute;
   inset: 0;
@@ -2644,4 +2664,153 @@ p,
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+
+/* Réalisation : aperçu plein cadre + bouton REC */
+.cam-preview {
+  position: relative;
+  width: min(100%, 300px, calc((100dvh - 420px) * 0.5625));
+  margin: 4px auto 0;
+  aspect-ratio: 9 / 16;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  border: 2px solid var(--red);
+  box-shadow: 0 0 34px var(--red-glow), 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+.cam-preview .cam-canvas,
+.cam-preview canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cam-preview.mirror canvas {
+  transform: scaleX(-1);
+}
+.cam-preview .cam-info {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.7);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.cam-preview .cam-off {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  background: radial-gradient(circle at 80% 0%, rgba(255, 43, 43, 0.4), #0a0a0a 70%);
+}
+.rec-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 0 30px var(--red-glow), 0 10px 24px rgba(0, 0, 0, 0.5);
+  -webkit-tap-highlight-color: transparent;
+}
+.rec-btn:disabled {
+  opacity: 0.6;
+}
+.rec-btn .dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+  animation: rec-blink 1.1s ease-in-out infinite;
+}
+.rec-btn .display {
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+.rec-btn .sub {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.rec-pip.mirror video {
+  transform: scaleX(-1);
+}
+.rec-pip:not(.mirror) video {
+  transform: none;
+}
+.rec-pip.fit-contain video {
+  object-fit: contain;
+}
+
+/* Mes vidéos */
+.videos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.video-row {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #1b1b1b, #151515);
+  border: 1px solid var(--line);
+}
+.video-row .thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  aspect-ratio: 9 / 16;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  padding: 0;
+}
+.video-row .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.video-row .thumb .play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.25);
+}
+.video-row .name {
+  font-weight: 700;
+}
+.video-row .sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.video-row .acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.video-player {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 14px;
+  background: #000;
 }

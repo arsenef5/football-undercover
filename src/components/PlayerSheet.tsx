@@ -35,6 +35,7 @@ export function PlayerSheet({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   // Pré-remplissage avant la peinture : pas de champ vide affiché un instant.
   useLayoutEffect(() => {
@@ -104,9 +105,12 @@ export function PlayerSheet({
             </span>
           </button>
           <div className="photo-actions">
-            <Button small inline variant="secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
+            <Button small inline variant="secondary" disabled={busy} onClick={() => cameraRef.current?.click()}>
               <CameraIcon size={16} />
-              {photo ? T.players.photoChange : T.players.photoAdd}
+              {T.players.photoTake}
+            </Button>
+            <Button small inline variant="secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
+              {T.players.photoPick}
             </Button>
             {photo ? (
               <Button small inline variant="ghost" onClick={() => setPhoto(null)}>
@@ -118,15 +122,8 @@ export function PlayerSheet({
           <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
             {T.players.photoHint}
           </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            aria-hidden
-            tabIndex={-1}
-            onChange={(e) => void pick(e.target.files?.[0])}
-          />
+          <input ref={fileRef} type="file" accept="image/*" hidden aria-hidden tabIndex={-1} onChange={(e) => void pick(e.target.files?.[0])} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="user" hidden aria-hidden tabIndex={-1} onChange={(e) => void pick(e.target.files?.[0])} />
         </div>
         <div className="field">
           <label className="lbl" htmlFor="player-name">

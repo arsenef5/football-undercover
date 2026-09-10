@@ -21,6 +21,8 @@ interface GameValue {
   eliminate: (playerId: string) => Game | null;
   resolveWhite: (guess: string, correct: boolean) => Game | null;
   reorder: (ids: string[]) => void;
+  /** Photo d'un joueur mise à jour pendant la partie (écran Réalisation). */
+  setPhoto: (playerId: string, photo: string | null) => void;
   clear: () => void;
 }
 
@@ -60,6 +62,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return next;
       },
       reorder: (ids) => setGame((g) => (g ? reorderSeats(g, ids) : g)),
+      setPhoto: (playerId, photo) =>
+        setGame((g) => (g ? { ...g, players: g.players.map((p) => (p.id === playerId ? { ...p, photo } : p)) } : g)),
       clear: () => setGame(null),
     }),
     [game, start],

@@ -286,6 +286,16 @@ export function CameraIcon({ size, ...p }: P) {
   );
 }
 
+export function ShareIcon({ size, ...p }: P) {
+  return (
+    <svg {...base(size, p)}>
+      <path d="M12 3v12" />
+      <path d="M8 7l4-4 4 4" />
+      <path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
+    </svg>
+  );
+}
+
 export function VideoIcon({ size, ...p }: P) {
   return (
     <svg {...base(size, p)}>

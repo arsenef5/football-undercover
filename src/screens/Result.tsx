@@ -1,15 +1,16 @@
 import confetti from 'canvas-confetti';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CardIcon, GlassesIcon, JerseyIcon, RefreshIcon, TrashIcon, VideoIcon } from '../components/Icons';
+import { CardIcon, GlassesIcon, JerseyIcon, RefreshIcon, ShareIcon, VideoIcon } from '../components/Icons';
 import { Avatar, Button, RoleBadge, Screen, SectionTitle, useToast } from '../components/ui';
 import { useCreator } from '../creator/CreatorContext';
+import { formatBytes, formatDuration, shareVideo } from '../creator/library';
 import { groupsFor } from '../data/words';
 import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { showInterstitialIfDue } from '../monetization/ads';
 import { promoDue, requestProPromo } from '../monetization/promo';
-import { isNative, notify } from '../native';
+import { notify } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
 
@@ -71,12 +72,12 @@ export function Result() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.id, creator.recording]);
 
-  const saveVideo = async () => {
-    if (saving) return;
+  const shareLast = async () => {
+    if (saving || !creator.lastSaved) return;
     setSaving(true);
-    const ok = await creator.save();
+    const ok = await shareVideo(creator.lastSaved.id);
     setSaving(false);
-    showToast(ok ? T.creator.saved : T.creator.saveFailed);
+    if (!ok) showToast(T.creator.saveFailed);
   };
 
   // Une seule inscription au palmarès par partie (le store garde aussi un garde-fou).
@@ -135,8 +136,7 @@ export function Result() {
       lang: state.settings.wordLang,
       whiteCanStart: state.settings.whiteCanStart,
     });
-    if (state.settings.creatorMode) void creator.start();
-    nav.replace({ name: 'reveal' });
+    nav.replace({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
   };
 
   const finish = () => {
@@ -144,7 +144,8 @@ export function Result() {
     nav.reset({ name: 'home' });
   };
 
-  const showVideo = creator.recording || creator.status === 'starting' || creator.hasVideo;
+  const saved = creator.lastSaved && creator.status === 'stopped' ? creator.lastSaved : null;
+  const showVideo = creator.recording || saved !== null;
 
   return (
     <>
@@ -182,26 +183,30 @@ export function Result() {
       </div>
 
       {showVideo ? (
-        <div className={`card video-ready ${creator.hasVideo ? 'is-ready' : ''}`}>
+        <div className={`card video-ready ${saved ? 'is-ready' : ''}`}>
           <div className="vr-head">
             <span className="vr-icon">
               <VideoIcon size={22} />
             </span>
             <div className="grow">
-              <div className="display h3">{creator.hasVideo ? T.creator.ready : T.creator.finishing}</div>
+              <div className="display h3">{saved ? T.creator.savedToLibrary : T.creator.finishing}</div>
               <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
-                {creator.hasVideo ? T.creator.readyHint : creator.recording && tail > 0 ? T.creator.reactions(tail) : T.creator.title}
+                {saved
+                  ? `${formatDuration(saved.durationMs)} · ${formatBytes(saved.bytes)} · ${T.creator.savedToLibraryHint}`
+                  : creator.recording && tail > 0
+                    ? T.creator.reactions(tail)
+                    : T.creator.title}
               </p>
             </div>
           </div>
-          {creator.hasVideo ? (
+          {saved ? (
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <Button onClick={() => void saveVideo()} disabled={saving}>
-                <VideoIcon size={18} />
-                {isNative ? T.creator.share : T.creator.save}
+              <Button onClick={() => void shareLast()} disabled={saving}>
+                <ShareIcon size={18} />
+                {T.creator.share}
               </Button>
-              <Button variant="secondary" onClick={() => creator.discard()} aria-label={T.creator.discard}>
-                <TrashIcon size={18} />
+              <Button variant="secondary" onClick={() => nav.go({ name: 'videos' })}>
+                {T.creator.openLibrary}
               </Button>
             </div>
           ) : null}

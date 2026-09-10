@@ -283,6 +283,7 @@ export function Slider({
   value,
   min = 0,
   max = 100,
+  step = 1,
   onChange,
   label,
   color,
@@ -290,6 +291,7 @@ export function Slider({
   value: number;
   min?: number;
   max?: number;
+  step?: number;
   onChange: (v: number) => void;
   label: string;
   color?: string;
@@ -301,7 +303,7 @@ export function Slider({
       className="slider"
       min={min}
       max={max}
-      step={1}
+      step={step}
       value={value}
       aria-label={label}
       style={{ ['--pct' as string]: `${pct}%`, ['--c' as string]: color ?? 'var(--red)' }}

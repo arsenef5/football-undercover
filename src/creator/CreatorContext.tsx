@@ -2,30 +2,47 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { useStore } from '../store/store';
-import { Recorder, type Popup, type RecorderStatus, type Scene } from './recorder';
+import { saveVideo, type VideoEntry } from './library';
+import { Recorder, type CameraInfo, type CameraOptions, type DeviceInfo, type Fit, type Popup, type RecorderStatus, type Scene } from './recorder';
 
 /**
- * MODE CRÉATEUR 🎥 : un seul enregistreur pour toute l'app. Les écrans de partie lui envoient
- * une « scène » (ce qui doit rester incrusté) et des « popups » (événements d'une seconde ou deux).
+ * MODE CRÉATEUR 🎥 : un seul enregistreur pour toute l'app. L'écran « Réalisation » ouvre la caméra
+ * en aperçu, puis les écrans de partie envoient une « scène » (ce qui reste incrusté) et des
+ * « popups » (événements d'une seconde ou deux). À l'arrêt, la vidéo est rangée dans Mes vidéos.
  */
 interface CreatorValue {
   /** Réglage activé dans la préparation de partie. */
   enabled: boolean;
   status: RecorderStatus;
   recording: boolean;
+  previewing: boolean;
   hasCamera: boolean;
   hasVideo: boolean;
   error: string | null;
+  /** Le canvas composé : à afficher UNIQUEMENT avant la partie (aucun mot dessus). */
+  canvas: HTMLCanvasElement | null;
+  openCamera: (opts?: CameraOptions) => Promise<boolean>;
+  closeCamera: () => void;
+  beginRecording: () => Promise<boolean>;
   start: () => Promise<boolean>;
-  stop: () => Promise<void>;
+  stop: () => Promise<VideoEntry | null>;
   discard: () => void;
   save: () => Promise<boolean>;
   setScene: (scene: Scene) => void;
   popup: (p: Popup) => void;
-  /** Flux caméra brut pour l'aperçu (jamais les incrustations : les mots resteraient visibles). */
+  listDevices: () => Promise<DeviceInfo[]>;
+  info: () => CameraInfo | null;
+  setZoom: (value: number) => Promise<void>;
+  fit: Fit;
+  setFit: (fit: Fit) => void;
+  /** Flux caméra brut pour l'aperçu pendant la partie (jamais les incrustations). */
   stream: MediaStream | null;
   elapsedMs: number;
-  fileName: () => string;
+  /** Dernière vidéo rangée dans la bibliothèque. */
+  lastSaved: VideoEntry | null;
+  /** Partie pour laquelle le joueur a choisi de ne pas filmer. */
+  skippedGameId: string | null;
+  skipForGame: (gameId: string) => void;
 }
 
 const CreatorContext = createContext<CreatorValue | null>(null);
@@ -49,6 +66,9 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
   }
   const [, force] = useState(0);
   const [elapsedMs, setElapsed] = useState(0);
+  const [fit, setFitState] = useState<Fit>('cover');
+  const [lastSaved, setLastSaved] = useState<VideoEntry | null>(null);
+  const [skippedGameId, setSkipped] = useState<string | null>(null);
   const enabled = state.settings.creatorMode;
 
   useEffect(() => {
@@ -69,9 +89,11 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [status]);
 
-  // Partie abandonnée pendant l'enregistrement : on jette la vidéo.
+  // Partie abandonnée pendant l'enregistrement ou l'aperçu : on jette la vidéo, on libère la caméra.
   useEffect(() => {
-    if (!game && rec.current?.status === 'recording') rec.current.discard();
+    if (game) return;
+    if (rec.current?.status === 'recording') rec.current.discard();
+    else if (rec.current?.status === 'preview') rec.current.closeCamera();
   }, [game]);
 
   const value = useMemo<CreatorValue>(() => {
@@ -80,22 +102,48 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
       enabled,
       status,
       recording: status === 'recording',
+      previewing: status === 'preview',
       hasCamera: r?.hasCamera ?? false,
       hasVideo: !!r?.lastBlob,
       error: r?.error ?? null,
+      canvas: r?.canvas ?? null,
+      openCamera: (opts) => (r ? r.openCamera(opts) : Promise.resolve(false)),
+      closeCamera: () => r?.closeCamera(),
+      beginRecording: () => (r ? r.beginRecording() : Promise.resolve(false)),
       start: () => (r ? r.start() : Promise.resolve(false)),
       stop: async () => {
-        await r?.stop();
+        if (!r) return null;
+        const durationMs = r.elapsedMs;
+        const thumb = r.thumbnail();
+        const blob = await r.stop();
+        if (!blob) return null;
+        try {
+          const entry = await saveVideo(blob, { durationMs, thumb });
+          setLastSaved(entry);
+          return entry;
+        } catch {
+          return null;
+        }
       },
       discard: () => r?.discard(),
       save: () => (r ? r.save() : Promise.resolve(false)),
       setScene: (scene) => r?.setScene(scene),
       popup: (p) => r?.popup(p),
+      listDevices: () => (r ? r.listDevices() : Promise.resolve([])),
+      info: () => r?.info() ?? null,
+      setZoom: (v) => (r ? r.setZoom(v) : Promise.resolve()),
+      fit,
+      setFit: (f) => {
+        if (r) r.fit = f;
+        setFitState(f);
+      },
       stream: r?.stream ?? null,
       elapsedMs,
-      fileName: () => r?.fileName() ?? 'football-undercover.webm',
+      lastSaved,
+      skippedGameId,
+      skipForGame: (id) => setSkipped(id),
     };
-  }, [enabled, status, elapsedMs]);
+  }, [enabled, status, elapsedMs, fit, lastSaved, skippedGameId]);
 
   return <CreatorContext.Provider value={value}>{children}</CreatorContext.Provider>;
 }
@@ -112,13 +160,14 @@ function fmt(ms: number): string {
 }
 
 /**
- * Petit retour caméra flottant (appuie pour l'agrandir). Il montre la caméra BRUTE, sans les
- * incrustations : les mots des autres n'apparaissent jamais sur le téléphone, seulement dans la vidéo.
+ * Petit retour caméra flottant pendant la partie (appuie pour l'agrandir). Il montre la caméra
+ * BRUTE, sans les incrustations : les mots des autres n'apparaissent jamais sur le téléphone.
  */
 export function CreatorPip() {
   const c = useCreator();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [big, setBig] = useState(false);
+  const mirrored = c.info()?.facing !== 'environment';
 
   useEffect(() => {
     const v = videoRef.current;
@@ -134,7 +183,7 @@ export function CreatorPip() {
   return (
     <button
       type="button"
-      className={`rec-pip ${big ? 'big' : ''} ${c.stream ? '' : 'no-cam'}`}
+      className={`rec-pip ${big ? 'big' : ''} ${c.stream ? '' : 'no-cam'} ${mirrored ? 'mirror' : ''} fit-${c.fit}`}
       aria-label={T.creator.title}
       onClick={() => setBig((v) => !v)}
     >

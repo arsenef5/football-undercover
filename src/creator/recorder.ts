@@ -16,9 +16,9 @@
  * Sans caméra (refus, navigateur de bureau), on enregistre quand même les incrustations sur
  * un fond stade : le mode ne bloque jamais la partie.
  */
-import { Capacitor } from '@capacitor/core';
 import archivoUrl from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
 import type { Role } from '../game/types';
+import { shareBlob } from './library';
 
 export interface Face {
   name: string;
@@ -43,7 +43,7 @@ interface LivePopup {
   duration: number;
 }
 
-export type RecorderStatus = 'idle' | 'starting' | 'recording' | 'stopped';
+export type RecorderStatus = 'idle' | 'preview' | 'recording' | 'stopped';
 
 const W = 1080;
 const H = 1920;
@@ -223,6 +223,31 @@ function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h
   }
 }
 
+export type Facing = 'user' | 'environment';
+export type Fit = 'cover' | 'contain';
+
+export interface CameraOptions {
+  /** Appareil précis (id de `listDevices`), sinon la caméra avant ou arrière. */
+  videoDeviceId?: string;
+  facing?: Facing;
+  audioDeviceId?: string;
+}
+
+export interface DeviceInfo {
+  id: string;
+  label: string;
+  kind: 'videoinput' | 'audioinput';
+}
+
+export interface CameraInfo {
+  width: number;
+  height: number;
+  frameRate: number;
+  facing: Facing | null;
+  label: string;
+  zoom: { min: number; max: number; step: number; value: number } | null;
+}
+
 export class Recorder {
   readonly canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -240,9 +265,12 @@ export class Recorder {
   private lastDraw = 0;
   private watchdog = 0;
   private logo: HTMLImageElement | null = null;
+  private cameraOptions: CameraOptions = { facing: 'user' };
 
   /** Image de fond à la place de la caméra (tests et aperçus du montage). */
   backdrop: HTMLImageElement | null = null;
+  /** Cadrage de la caméra dans le 9:16 : recadrée plein cadre, ou entière avec des bandes. */
+  fit: Fit = 'cover';
 
   status: RecorderStatus = 'idle';
   hasCamera = false;
@@ -282,6 +310,10 @@ export class Recorder {
     return this.hasCamera ? this.camera : null;
   }
 
+  get facing(): Facing | null {
+    return this.info()?.facing ?? null;
+  }
+
   setScene(scene: Scene) {
     this.scene = scene;
     this.sceneAt = performance.now();
@@ -291,38 +323,127 @@ export class Recorder {
     this.popups.push({ popup: p, at: performance.now(), duration });
   }
 
-  /** Démarre caméra + micro + enregistrement. Renvoie faux si l'enregistrement est impossible. */
-  async start(): Promise<boolean> {
-    if (this.status === 'recording' || this.status === 'starting') return true;
-    this.status = 'starting';
-    this.error = null;
-    this.emit();
+  /** Caméras et micros disponibles (les noms n'apparaissent qu'après une première autorisation). */
+  async listDevices(): Promise<DeviceInfo[]> {
     try {
-      await ensureCanvasFonts();
-      try {
-        this.camera = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } },
-          audio: true,
-        });
-      } catch {
-        // Caméra refusée ou absente : on tente le micro seul, sinon vidéo muette.
-        this.camera = null;
-        try {
-          this.camera = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch {
-          this.camera = null;
-        }
-      }
-      this.hasCamera = !!this.camera && this.camera.getVideoTracks().length > 0;
-      if (this.hasCamera && this.camera) {
-        const v = document.createElement('video');
-        v.muted = true;
-        v.playsInline = true;
-        v.srcObject = this.camera;
-        await v.play().catch(() => undefined);
-        this.video = v;
-      }
+      const all = await navigator.mediaDevices.enumerateDevices();
+      return all
+        .filter((d) => d.kind === 'videoinput' || d.kind === 'audioinput')
+        .map((d) => ({ id: d.deviceId, label: d.label, kind: d.kind as DeviceInfo['kind'] }));
+    } catch {
+      return [];
+    }
+  }
 
+  /** Réglages réels de la caméra ouverte. */
+  info(): CameraInfo | null {
+    const track = this.camera?.getVideoTracks()[0];
+    if (!track) return null;
+    const s = track.getSettings();
+    const caps = (typeof track.getCapabilities === 'function' ? track.getCapabilities() : {}) as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number; step?: number };
+    };
+    const zoom = caps.zoom && typeof caps.zoom.min === 'number' && typeof caps.zoom.max === 'number' && caps.zoom.max > caps.zoom.min
+      ? { min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step ?? 0.1, value: Number((s as MediaTrackSettings & { zoom?: number }).zoom ?? caps.zoom.min) }
+      : null;
+    const facing = s.facingMode === 'environment' ? 'environment' : s.facingMode === 'user' ? 'user' : null;
+    return {
+      width: this.video?.videoWidth || s.width || 0,
+      height: this.video?.videoHeight || s.height || 0,
+      frameRate: Math.round(s.frameRate ?? 0),
+      facing,
+      label: track.label,
+      zoom,
+    };
+  }
+
+  async setZoom(value: number): Promise<void> {
+    const track = this.camera?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: value } as MediaTrackConstraintSet] });
+    } catch {
+      /* zoom non pris en charge : on ignore */
+    }
+    this.emit();
+  }
+
+  /**
+   * Ouvre la caméra (et le micro) en aperçu, sans enregistrer. Réappelable pour changer d'appareil.
+   * On demande un mode 4:3 (le capteur entier, champ le plus large) : le recadrage 9:16 se fait ici.
+   */
+  async openCamera(opts: CameraOptions = this.cameraOptions): Promise<boolean> {
+    this.cameraOptions = { ...this.cameraOptions, ...opts };
+    await ensureCanvasFonts();
+    const wasRecording = this.status === 'recording';
+    const previous = this.camera;
+    const video: MediaTrackConstraints = {
+      width: { ideal: 1920 },
+      height: { ideal: 1440 },
+      frameRate: { ideal: 30 },
+    };
+    if (this.cameraOptions.videoDeviceId) video.deviceId = { exact: this.cameraOptions.videoDeviceId };
+    else video.facingMode = this.cameraOptions.facing ?? 'user';
+    const audio: MediaTrackConstraints | boolean = this.cameraOptions.audioDeviceId
+      ? { deviceId: { exact: this.cameraOptions.audioDeviceId } }
+      : true;
+    let stream: MediaStream | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video, audio });
+    } catch {
+      try {
+        // Caméra refusée ou absente : le micro seul, sinon rien.
+        stream = await navigator.mediaDevices.getUserMedia({ audio });
+      } catch {
+        stream = null;
+      }
+    }
+    // Pendant un enregistrement on garde l'ancien son (le MediaRecorder y est branché).
+    if (!wasRecording) previous?.getTracks().forEach((t) => t.stop());
+    else previous?.getVideoTracks().forEach((t) => t.stop());
+    this.camera = stream;
+    this.hasCamera = !!stream && stream.getVideoTracks().length > 0;
+    if (this.video) {
+      this.video.srcObject = null;
+      this.video = null;
+    }
+    if (this.hasCamera && stream) {
+      const v = document.createElement('video');
+      v.muted = true;
+      v.playsInline = true;
+      v.srcObject = stream;
+      await v.play().catch(() => undefined);
+      this.video = v;
+    }
+    if (this.status === 'idle' || this.status === 'stopped') {
+      this.status = 'preview';
+      this.loop();
+      window.clearInterval(this.watchdog);
+      this.watchdog = window.setInterval(() => {
+        if ((this.status === 'recording' || this.status === 'preview') && performance.now() - this.lastDraw > 120) this.safeDraw();
+      }, 66);
+    }
+    this.emit();
+    return this.hasCamera;
+  }
+
+  /** Ferme la caméra de l'aperçu sans rien enregistrer. */
+  closeCamera() {
+    if (this.status !== 'preview') return;
+    cancelAnimationFrame(this.raf);
+    window.clearInterval(this.watchdog);
+    this.releaseCamera();
+    this.status = 'idle';
+    this.scene = { type: 'idle' };
+    this.emit();
+  }
+
+  /** Démarre l'enregistrement sur la caméra ouverte (l'ouvre si besoin). */
+  async beginRecording(): Promise<boolean> {
+    if (this.status === 'recording') return true;
+    this.error = null;
+    try {
+      if (this.status !== 'preview') await this.openCamera();
       if (typeof MediaRecorder === 'undefined' || typeof this.canvas.captureStream !== 'function') {
         throw new Error('MediaRecorder indisponible');
       }
@@ -347,20 +468,22 @@ export class Recorder {
       this.recorder.start(1000);
       this.startedAt = Date.now();
       this.status = 'recording';
-      this.loop();
-      window.clearInterval(this.watchdog);
-      this.watchdog = window.setInterval(() => {
-        if (this.status === 'recording' && performance.now() - this.lastDraw > 120) this.safeDraw();
-      }, 66);
       this.emit();
       return true;
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
+      this.closeCamera();
       this.status = 'idle';
-      this.releaseCamera();
       this.emit();
       return false;
     }
+  }
+
+  /** Raccourci : caméra + enregistrement d'un coup (reprise après rechargement). */
+  async start(): Promise<boolean> {
+    if (this.status === 'recording') return true;
+    await this.openCamera();
+    return this.beginRecording();
   }
 
   /** Arrête l'enregistrement et renvoie la vidéo. */
@@ -377,6 +500,17 @@ export class Recorder {
       }
       this.releaseCamera();
     });
+  }
+
+  /** Vignette de la composition (pour la bibliothèque). */
+  thumbnail(width = 270): string {
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = Math.round((width * H) / W);
+    const ctx = c.getContext('2d');
+    if (!ctx) return '';
+    ctx.drawImage(this.canvas, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.7);
   }
 
   discard() {
@@ -419,55 +553,7 @@ export class Recorder {
   async save(): Promise<boolean> {
     const blob = this.lastBlob;
     if (!blob) return false;
-    const name = this.fileName();
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        const { Share } = await import('@capacitor/share');
-        const toBase64 = (part: Blob) =>
-          new Promise<string>((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(String(r.result).split(',')[1] ?? '');
-            r.onerror = () => reject(r.error);
-            r.readAsDataURL(part);
-          });
-        // Tranches multiples de 3 octets : chaque morceau base64 se concatène proprement.
-        const CHUNK = 6 * 1024 * 1024;
-        let uri = '';
-        for (let offset = 0; offset < blob.size; offset += CHUNK) {
-          const data = await toBase64(blob.slice(offset, Math.min(blob.size, offset + CHUNK)));
-          if (offset === 0) {
-            const written = await Filesystem.writeFile({ path: name, data, directory: Directory.Cache });
-            uri = written.uri;
-          } else {
-            await Filesystem.appendFile({ path: name, data, directory: Directory.Cache });
-          }
-        }
-        await Share.share({ title: 'Football Undercover', url: uri });
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    const file = new File([blob], name, { type: blob.type });
-    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-    if (nav.canShare && nav.canShare({ files: [file] }) && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-      try {
-        await navigator.share({ files: [file], title: 'Football Undercover' });
-        return true;
-      } catch {
-        /* l'utilisateur a annulé : on propose le téléchargement */
-      }
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    return true;
+    return shareBlob(blob, this.fileName());
   }
 
   /* ------------------------------------------------------------------ */
@@ -541,7 +627,7 @@ export class Recorder {
     ctx.fillRect(0, 0, W, H);
     const v = this.video;
     if (v && v.videoWidth > 0) {
-      const scale = Math.max(W / v.videoWidth, H / v.videoHeight);
+      const scale = (this.fit === 'contain' ? Math.min : Math.max)(W / v.videoWidth, H / v.videoHeight);
       const dw = v.videoWidth * scale;
       const dh = v.videoHeight * scale;
       ctx.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh);

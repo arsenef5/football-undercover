@@ -21,11 +21,13 @@ import { Rules } from './screens/Rules';
 import { Settings } from './screens/Settings';
 import { Setup } from './screens/Setup';
 import { Teams } from './screens/Teams';
+import { Videos } from './screens/Videos';
+import { CreatorSetup } from './screens/CreatorSetup';
 import { Vote } from './screens/Vote';
 import { WhiteGuess } from './screens/WhiteGuess';
 import { StoreProvider, useStore } from './store/store';
 
-const GAME_ROUTES: Route['name'][] = ['reveal', 'discuss', 'vote', 'eliminated', 'whiteGuess', 'result'];
+const GAME_ROUTES: Route['name'][] = ['creator', 'reveal', 'discuss', 'vote', 'eliminated', 'whiteGuess', 'result'];
 
 /** Calculé au rendu (et non au chargement du module) pour suivre la langue des menus. */
 function tabMeta(): Record<TabName, { label: string; icon: JSX.Element }> {
@@ -81,6 +83,10 @@ function CurrentScreen({ route }: { route: Route }) {
       return <Pro />;
     case 'setup':
       return <Setup />;
+    case 'videos':
+      return <Videos />;
+    case 'creator':
+      return <CreatorSetup />;
     case 'reveal':
       return <Reveal />;
     case 'discuss':
@@ -162,7 +168,7 @@ function Shell() {
       </div>
       {isGameRoute && !game ? null : <CurrentScreen key={key} route={route} />}
       {isTab ? <TabBar current={route.name as TabName} /> : null}
-      {isGameRoute ? <CreatorPip /> : null}
+      {isGameRoute && route.name !== 'creator' ? <CreatorPip /> : null}
       <ProPromo open={promoOpen && !premium} onClose={() => setPromoOpen(false)} />
     </div>
   );
