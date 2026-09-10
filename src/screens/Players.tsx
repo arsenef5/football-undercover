@@ -57,7 +57,7 @@ export function Players() {
                     showToast(`${p.name} · ${T.common.delete}`);
                   }}
                 >
-                  <Avatar name={p.name} color={p.color} size="sm" />
+                  <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
                   <div className="grow">
                     <div className="name">{p.name}</div>
                     <div className="sub">
@@ -84,7 +84,7 @@ export function Players() {
         onClose={() => setOpen(false)}
         onSave={(draft) => {
           if (editing) dispatch({ type: 'player/update', id: editing.id, patch: draft });
-          else addPlayer(draft.name, draft.avatar, draft.color);
+          else addPlayer(draft.name, draft.avatar, draft.color, draft.photo);
           setOpen(false);
         }}
       />

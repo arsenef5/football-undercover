@@ -45,6 +45,8 @@ export interface Seat {
   name: string;
   avatar: string;
   color: string;
+  /** Photo du joueur (data URL), facultative. */
+  photo?: string | null;
 }
 
 export interface GamePlayer extends Seat {

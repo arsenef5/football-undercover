@@ -181,7 +181,7 @@ export function TeamSheet({
                   onDeletePlayer(p.id);
                 }}
               >
-                <Avatar name={p.name} color={p.color} size="sm" />
+                <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
                 <span className="name">{p.name}</span>
                 <CheckMark on={on} />
               </SwipeRow>

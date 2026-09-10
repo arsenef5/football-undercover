@@ -25,7 +25,7 @@ export function Vote() {
 
   const castVote = (from: GamePlayer, to: GamePlayer) => {
     setVotes((v) => ({ ...v, [from.id]: to.id }));
-    creator.popup({ kind: 'vote', from: from.name, to: to.name, verb: T.creator.votesFor });
+    creator.popup({ kind: 'vote', from: { name: from.name, photo: from.photo }, to: { name: to.name, photo: to.photo }, verb: T.creator.votesFor });
     void tap();
     // Votant suivant qui n'a pas encore voté, pour enchaîner vite.
     const next = alive.find((p) => p.id !== from.id && !votes[p.id] && p.id !== to.id) ?? alive.find((p) => p.id !== from.id && !votes[p.id]);
@@ -52,8 +52,7 @@ export function Vote() {
     if (filming) {
       creator.popup({
         kind: 'elim',
-        name: target.name,
-        color: target.color,
+        face: { name: target.name, photo: target.photo },
         role: target.role,
         roleLabel: T.roles[target.role],
         outLabel: T.eliminated.was,
@@ -110,13 +109,13 @@ export function Vote() {
                 className={`vote-card ${filming && voter && voter !== p.id ? 'is-target' : ''}`}
                 onClick={() => onCard(p)}
               >
-                <Avatar name={p.name} color={p.color} size="lg" />
+                <Avatar name={p.name} color={p.color} photo={p.photo} size="lg" />
                 <span className="nm">{p.name}</span>
                 {filming && tally(p.id) > 0 ? <span className="vcount">{T.creator.voteCount(tally(p.id))}</span> : null}
               </button>
             ) : (
               <div key={p.id} className="vote-card dead" aria-label={`${p.name} : ${T.vote.out}`}>
-                <Avatar name={p.name} color={p.color} size="lg" dead />
+                <Avatar name={p.name} color={p.color} photo={p.photo} size="lg" dead />
                 <span className="nm">{p.name}</span>
                 <RoleBadge role={p.role} />
                 <span className="x">

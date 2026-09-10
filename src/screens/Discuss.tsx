@@ -67,12 +67,10 @@ export function Discuss() {
     const rows = game.speakingOrder
       .map((id) => playerById(game, id))
       .filter((p): p is NonNullable<typeof p> => !!p)
-      .map((p) => ({ name: p.name, word: p.word, role: p.role, color: p.color }));
+      .map((p) => ({ face: { name: p.name, photo: p.photo }, word: p.word, role: p.role }));
     creator.setScene({
       type: 'discuss',
-      round: game.round,
       title: T.discuss.round(game.round),
-      orderLabel: T.creator.speakingOrder,
       order: rows,
       whiteLabel: T.roles.white,
     });
@@ -137,7 +135,7 @@ export function Discuss() {
           {order.map((p, i) => (
             <div key={p.id} className={`row ${i === 0 ? 'first' : ''}`}>
               <span className="num">{i + 1}</span>
-              <Avatar name={p.name} color={p.color} size="sm" />
+              <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
               <span className="grow name">{p.name}</span>
               {i === 0 ? <span className="badge red">{T.discuss.starts}</span> : null}
             </div>
@@ -157,7 +155,7 @@ export function Discuss() {
               {dead.map((p) => (
                 <div key={p.id} className="row is-off">
                   <span className="num">✕</span>
-                  <Avatar name={p.name} color={p.color} size="sm" dead />
+                  <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" dead />
                   <span className="grow name">{p.name}</span>
                   <RoleBadge role={p.role} />
                 </div>

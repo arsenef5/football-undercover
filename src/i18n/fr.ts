@@ -61,6 +61,11 @@ export const fr = {
     name: 'Prénom ou surnom',
     namePlaceholder: 'Ex. : Kylian',
     avatar: 'Avatar',
+    photoAdd: 'Ajouter une photo',
+    photoChange: 'Changer la photo',
+    photoRemove: 'Retirer',
+    photoHint: "Facultatif. Elle s'affiche dans l'app et en grand dans les vidéos du mode créateur.",
+    photoFailed: 'Photo illisible, essaie une autre image.',
     color: 'Couleur',
     deleteConfirm: (name: string) => `Supprimer ${name} ? Ses points seront perdus.`,
     stats: (games: number, wins: number) =>
@@ -363,7 +368,7 @@ export const fr = {
     voteCount: (n: number) => `${n} vote${n > 1 ? 's' : ''}`,
     guessRight: 'Trouvé !',
     guessWrong: 'Raté !',
-    speakingOrder: 'Ordre de parole',
+    reactions: (s: number) => `Encore ${s} s pour les réactions…`,
   },
   quit: {
     title: 'Quitter la partie ?',

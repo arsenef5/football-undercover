@@ -22,8 +22,8 @@ interface CreatorValue {
   save: () => Promise<boolean>;
   setScene: (scene: Scene) => void;
   popup: (p: Popup) => void;
-  /** Aperçu (le canvas composé lui-même). */
-  canvas: HTMLCanvasElement | null;
+  /** Flux caméra brut pour l'aperçu (jamais les incrustations : les mots resteraient visibles). */
+  stream: MediaStream | null;
   elapsedMs: number;
   fileName: () => string;
 }
@@ -42,7 +42,11 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
   const { state } = useStore();
   const { game } = useGame();
   const rec = useRef<Recorder | null>(null);
-  if (rec.current === null && typeof document !== 'undefined') rec.current = makeRecorder();
+  if (rec.current === null && typeof document !== 'undefined') {
+    rec.current = makeRecorder();
+    // Aperçu du montage en développement (console : window.__fuRecorder.canvas).
+    if (import.meta.env.DEV) (window as unknown as { __fuRecorder?: Recorder | null }).__fuRecorder = rec.current;
+  }
   const [, force] = useState(0);
   const [elapsedMs, setElapsed] = useState(0);
   const enabled = state.settings.creatorMode;
@@ -87,7 +91,7 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
       save: () => (r ? r.save() : Promise.resolve(false)),
       setScene: (scene) => r?.setScene(scene),
       popup: (p) => r?.popup(p),
-      canvas: r?.canvas ?? null,
+      stream: r?.stream ?? null,
       elapsedMs,
       fileName: () => r?.fileName() ?? 'football-undercover.webm',
     };
@@ -107,36 +111,39 @@ function fmt(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** Petit retour caméra flottant (appuie pour l'agrandir) : rassure sur ce qui est filmé. */
+/**
+ * Petit retour caméra flottant (appuie pour l'agrandir). Il montre la caméra BRUTE, sans les
+ * incrustations : les mots des autres n'apparaissent jamais sur le téléphone, seulement dans la vidéo.
+ */
 export function CreatorPip() {
   const c = useCreator();
-  const host = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [big, setBig] = useState(false);
 
   useEffect(() => {
-    const el = host.current;
-    const canvas = c.canvas;
-    if (!el || !canvas || !c.recording) return;
-    el.appendChild(canvas);
+    const v = videoRef.current;
+    if (!v) return;
+    v.srcObject = c.stream;
+    if (c.stream) void v.play().catch(() => undefined);
     return () => {
-      if (canvas.parentNode === el) el.removeChild(canvas);
+      v.srcObject = null;
     };
-  }, [c.canvas, c.recording]);
+  }, [c.stream, c.recording]);
 
   if (!c.recording) return null;
   return (
     <button
       type="button"
-      className={`rec-pip ${big ? 'big' : ''}`}
+      className={`rec-pip ${big ? 'big' : ''} ${c.stream ? '' : 'no-cam'}`}
       aria-label={T.creator.title}
       onClick={() => setBig((v) => !v)}
     >
-      <div ref={host} className="rec-canvas" />
+      <video ref={videoRef} muted playsInline autoPlay />
       <span className="rec-tag">
         <i />
         {fmt(c.elapsedMs)}
       </span>
-      {!c.hasCamera ? <span className="rec-nocam">{T.creator.noCameraShort}</span> : null}
+      {!c.stream ? <span className="rec-nocam">{T.creator.noCameraShort}</span> : null}
     </button>
   );
 }

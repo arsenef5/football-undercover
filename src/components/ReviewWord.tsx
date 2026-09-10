@@ -72,7 +72,7 @@ export function ReviewWord({ open, onClose }: { open: boolean; onClose: () => vo
             <div className="list">
               {alive.map((p) => (
                 <button key={p.id} type="button" className="row clickable" onClick={() => setSel(p)}>
-                  <Avatar name={p.name} color={p.color} size="sm" />
+                  <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
                   <span className="grow name">{p.name}</span>
                 </button>
               ))}

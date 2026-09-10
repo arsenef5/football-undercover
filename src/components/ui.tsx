@@ -108,17 +108,19 @@ export function nb(s: string): string {
 export function Avatar({
   name,
   color,
+  photo,
   size = 'md',
   dead,
 }: {
   name: string;
   color: string;
+  photo?: string | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   dead?: boolean;
 }) {
   return (
-    <span className={`avatar ${size} ${dead ? 'dead' : ''}`} style={{ ['--c' as string]: color }} aria-hidden>
-      {initials(name)}
+    <span className={`avatar ${size} ${dead ? 'dead' : ''} ${photo ? 'has-photo' : ''}`} style={{ ['--c' as string]: color }} aria-hidden>
+      {photo ? <img src={photo} alt="" draggable={false} /> : initials(name)}
     </span>
   );
 }

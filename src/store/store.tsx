@@ -12,6 +12,8 @@ export interface Player {
   name: string;
   avatar: string;
   color: string;
+  /** Photo (data URL JPEG carrée) ; sinon les initiales. */
+  photo?: string | null;
   /** Points cumulés sur toutes les parties. */
   points: number;
   wins: number;
@@ -215,7 +217,7 @@ export function saveGame(game: Game | null): void {
 
 export type Action =
   | { type: 'player/add'; player: Player }
-  | { type: 'player/update'; id: string; patch: Partial<Pick<Player, 'name' | 'avatar' | 'color'>> }
+  | { type: 'player/update'; id: string; patch: Partial<Pick<Player, 'name' | 'avatar' | 'color' | 'photo'>> }
   | { type: 'player/remove'; id: string }
   | { type: 'team/add'; team: Team }
   | { type: 'team/update'; id: string; patch: Partial<Pick<Team, 'name' | 'playerIds' | 'undercovers' | 'white' | 'auto'>> }
@@ -310,7 +312,7 @@ export function reducer(state: AppState, action: Action): AppState {
 interface StoreValue {
   state: AppState;
   dispatch: (action: Action) => void;
-  addPlayer: (name: string, avatar: string, color: string) => Player;
+  addPlayer: (name: string, avatar: string, color: string, photo?: string | null) => Player;
   addTeam: (name: string, playerIds: string[], undercovers: number | null, white: boolean | null, auto?: boolean) => Team;
 }
 
@@ -327,12 +329,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       dispatch,
-      addPlayer: (name, avatar, color) => {
+      addPlayer: (name, avatar, color, photo = null) => {
         const player: Player = {
           id: uid('p'),
           name: name.trim(),
           avatar,
           color,
+          photo,
           points: 0,
           wins: 0,
           games: 0,

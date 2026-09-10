@@ -2,27 +2,41 @@
  * MODE CRÉATEUR 🎥 — moteur de composition vidéo.
  *
  * La caméra frontale est dessinée dans un canvas 1080×1920 (9:16) à 30 images/s, et les
- * incrustations (nom + mot à la révélation, ordre de parole en bandeau, votes, élimination,
- * résultat) sont peintes par-dessus en temps réel. Le canvas + le micro alimentent un
- * MediaRecorder : la vidéo obtenue est « montée » à la sortie, sans logiciel.
+ * incrustations (nom + mot à la révélation, ordre de parole, votes, élimination, résultat)
+ * sont peintes par-dessus en temps réel. Le canvas + le micro alimentent un MediaRecorder :
+ * la vidéo obtenue est « montée » à la sortie, sans logiciel.
+ *
+ * Direction artistique = celle de l'app : noir #0A0A0A, rouge #FF2B2B, blanc, typo large et
+ * grasse. Aucune couleur de pastille : le rouge est le seul accent.
+ *
+ * Zones sûres TikTok / Reels : le bas (légende, compte, musique) et la colonne de droite
+ * (boutons) sont couverts par l'interface des applis, le haut par la barre d'état. Toutes les
+ * incrustations restent dans le rectangle SAFE_* ci-dessous.
  *
  * Sans caméra (refus, navigateur de bureau), on enregistre quand même les incrustations sur
  * un fond stade : le mode ne bloque jamais la partie.
  */
 import { Capacitor } from '@capacitor/core';
+import archivoUrl from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
+import antonUrl from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
 import type { Role } from '../game/types';
+
+export interface Face {
+  name: string;
+  photo?: string | null;
+}
 
 export type Scene =
   | { type: 'idle' }
-  | { type: 'reveal'; name: string; color: string; word: string | null; category: string; whiteLabel: string; wordLabel: string }
-  | { type: 'discuss'; round: number; title: string; orderLabel: string; order: { name: string; word: string | null; role: Role; color: string }[]; whiteLabel: string }
-  | { type: 'guess'; name: string; label: string }
+  | { type: 'reveal'; face: Face; word: string | null; category: string; whiteLabel: string; wordLabel: string }
+  | { type: 'discuss'; title: string; order: { face: Face; word: string | null; role: Role }[]; whiteLabel: string }
+  | { type: 'guess'; face: Face; label: string }
   | { type: 'result'; title: string; sub: string; civilWord: string; undercoverWord: string; civilLabel: string; undercoverLabel: string };
 
 export type Popup =
-  | { kind: 'vote'; from: string; to: string; verb: string }
-  | { kind: 'elim'; name: string; color: string; role: Role; roleLabel: string; outLabel: string }
-  | { kind: 'guess'; name: string; correct: boolean; guess: string; label: string };
+  | { kind: 'vote'; from: Face; to: Face; verb: string }
+  | { kind: 'elim'; face: Face; role: Role; roleLabel: string; outLabel: string }
+  | { kind: 'guess'; face: Face; correct: boolean; guess: string; label: string };
 
 interface LivePopup {
   popup: Popup;
@@ -35,22 +49,70 @@ export type RecorderStatus = 'idle' | 'starting' | 'recording' | 'stopped';
 const W = 1080;
 const H = 1920;
 const FPS = 30;
+
+/* Zones sûres (voir en-tête). */
+const SAFE_TOP = 230;
+const SAFE_BOTTOM = 1440;
+const SAFE_LEFT = 60;
+const SAFE_RIGHT = 900;
+const SAFE_W = SAFE_RIGHT - SAFE_LEFT;
+const SAFE_CX = (SAFE_LEFT + SAFE_RIGHT) / 2;
+
 const RED = '#ff2b2b';
 const BG = '#0a0a0a';
+const TEXT = '#f5f5f5';
+const MUTED = '#8e8e8e';
+const PANEL = 'rgba(10,10,10,0.82)';
+const LINE = 'rgba(255,255,255,0.10)';
+const GREEN = '#37d67a';
 
-const DISPLAY = '"Archivo Variable", Archivo, system-ui, sans-serif';
-const LOGO = 'Anton, Impact, sans-serif';
+const DISPLAY = '"FU Display", "Archivo Variable", Archivo, system-ui, sans-serif';
+const LOGO = '"FU Logo", Anton, Impact, sans-serif';
+
+let fontsReady: Promise<void> | null = null;
+
+/**
+ * Le canvas n'utilise pas les @font-face CSS tant qu'elles ne sont pas chargées pour lui, et
+ * retombe alors sur Arial sans jamais se corriger. On enregistre donc les deux polices de l'app
+ * sous des noms dédiés, chargées explicitement AVANT le premier dessin.
+ */
+export function ensureCanvasFonts(): Promise<void> {
+  if (!fontsReady) {
+    fontsReady = (async () => {
+      if (typeof FontFace === 'undefined' || typeof document === 'undefined') return;
+      try {
+        const faces = [
+          new FontFace('FU Display', `url(${archivoUrl})`, { weight: '100 900', stretch: '62% 125%' }),
+          new FontFace('FU Logo', `url(${antonUrl})`, { weight: '400' }),
+        ];
+        await Promise.all(
+          faces.map(async (f) => {
+            await f.load();
+            document.fonts.add(f);
+          }),
+        );
+      } catch {
+        /* police de secours du système */
+      }
+    })();
+  }
+  return fontsReady;
+}
 
 type Listener = () => void;
 
+function clamp01(t: number): number {
+  return Math.max(0, Math.min(1, t));
+}
+
 function easeOut(t: number): number {
-  return 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+  return 1 - Math.pow(1 - clamp01(t), 3);
 }
 
 function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
-  const x = Math.max(0, Math.min(1, t));
+  const x = clamp01(t);
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
 }
 
@@ -65,9 +127,11 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-/** Police d'affichage (large et grasse), avec repli sur les navigateurs sans axe de largeur. */
+/** Police d'affichage (large et grasse), comme les titres de l'app. */
 function displayFont(ctx: CanvasRenderingContext2D, size: number, weight = 900) {
+  // Largeur 125 % (axe wdth) : mot-clé dans le raccourci ET propriété, selon ce que le moteur accepte.
   ctx.font = `${weight} ${size}px ${DISPLAY}`;
+  ctx.font = `${weight} expanded ${size}px ${DISPLAY}`;
   (ctx as unknown as { fontStretch?: string }).fontStretch = 'expanded';
 }
 
@@ -75,10 +139,53 @@ function fitSize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, 
   let size = max;
   displayFont(ctx, size, weight);
   while (size > min && ctx.measureText(text).width > maxWidth) {
-    size -= 4;
+    size -= 2;
     displayFont(ctx, size, weight);
   }
   return size;
+}
+
+/** Découpe en lignes de mots entiers ; au-delà de maxLines, la dernière est tronquée avec « … ». */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (!line || ctx.measureText(test).width <= maxWidth) line = test;
+    else {
+      lines.push(line);
+      line = w;
+    }
+  }
+  if (line) lines.push(line);
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines);
+    let last = kept[maxLines - 1];
+    while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
+    kept[maxLines - 1] = `${last}…`;
+    return kept;
+  }
+  return lines;
+}
+
+/** Plus grande taille (max → min) où le texte tient en maxLines lignes au plus. La police reste réglée. */
+function fitLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  max: number,
+  min: number,
+  maxLines: number,
+  weight = 900,
+): { size: number; lines: string[] } {
+  for (let size = max; size >= min; size -= 2) {
+    displayFont(ctx, size, weight);
+    const lines = wrapText(ctx, text, maxWidth, maxLines + 1);
+    if (lines.length <= maxLines && lines.every((l) => ctx.measureText(l).width <= maxWidth)) return { size, lines };
+  }
+  displayFont(ctx, min, weight);
+  return { size: min, lines: wrapText(ctx, text, maxWidth, maxLines) };
 }
 
 function initials(name: string): string {
@@ -88,8 +195,35 @@ function initials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-function roleColor(role: Role): string {
-  return role === 'undercover' ? RED : role === 'white' ? '#ffffff' : '#dcdcdc';
+function wordColor(role: Role): string {
+  return role === 'undercover' ? RED : TEXT;
+}
+
+/** Panneau noir translucide, liseré fin, comme les cartes de l'app. */
+function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r = 26, accent = false) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 10;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fillStyle = PANEL;
+  ctx.fill();
+  ctx.restore();
+  roundRect(ctx, x, y, w, h, r);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = LINE;
+  ctx.stroke();
+  if (accent) {
+    // Barre rouge à gauche, lueur discrète.
+    ctx.save();
+    roundRect(ctx, x, y, w, h, r);
+    ctx.clip();
+    ctx.fillStyle = RED;
+    ctx.shadowColor = 'rgba(255,43,43,0.8)';
+    ctx.shadowBlur = 24;
+    ctx.fillRect(x, y, 8, h);
+    ctx.restore();
+  }
 }
 
 export class Recorder {
@@ -105,7 +239,12 @@ export class Recorder {
   private popups: LivePopup[] = [];
   private listeners = new Set<Listener>();
   private stopResolve: ((b: Blob | null) => void) | null = null;
-  private brand = 'FOOTBALL UNDERCOVER';
+  private images = new Map<string, HTMLImageElement>();
+  private lastDraw = 0;
+  private watchdog = 0;
+
+  /** Image de fond à la place de la caméra (tests et aperçus du montage). */
+  backdrop: HTMLImageElement | null = null;
 
   status: RecorderStatus = 'idle';
   hasCamera = false;
@@ -138,8 +277,9 @@ export class Recorder {
     return this.status === 'recording' ? Date.now() - this.startedAt : 0;
   }
 
-  setBrand(text: string) {
-    this.brand = text;
+  /** Flux caméra brut (pour l'aperçu sur le téléphone : jamais les incrustations, sinon on triche). */
+  get stream(): MediaStream | null {
+    return this.hasCamera ? this.camera : null;
   }
 
   setScene(scene: Scene) {
@@ -158,6 +298,7 @@ export class Recorder {
     this.error = null;
     this.emit();
     try {
+      await ensureCanvasFonts();
       try {
         this.camera = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } },
@@ -207,6 +348,10 @@ export class Recorder {
       this.startedAt = Date.now();
       this.status = 'recording';
       this.loop();
+      window.clearInterval(this.watchdog);
+      this.watchdog = window.setInterval(() => {
+        if (this.status === 'recording' && performance.now() - this.lastDraw > 120) this.safeDraw();
+      }, 66);
       this.emit();
       return true;
     } catch (e) {
@@ -224,6 +369,7 @@ export class Recorder {
     return new Promise((resolve) => {
       this.stopResolve = resolve;
       cancelAnimationFrame(this.raf);
+      window.clearInterval(this.watchdog);
       try {
         this.recorder?.stop();
       } catch {
@@ -235,6 +381,7 @@ export class Recorder {
 
   discard() {
     cancelAnimationFrame(this.raf);
+    window.clearInterval(this.watchdog);
     try {
       if (this.recorder && this.recorder.state !== 'inactive') this.recorder.stop();
     } catch {
@@ -328,9 +475,64 @@ export class Recorder {
   /* ------------------------------------------------------------------ */
 
   private loop = () => {
-    this.draw(performance.now());
+    this.safeDraw();
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  private safeDraw() {
+    try {
+      this.draw(performance.now());
+    } catch (e) {
+      console.error('[creator] image non dessinée', e);
+    }
+    this.lastDraw = performance.now();
+  }
+
+  private image(src: string): HTMLImageElement | null {
+    let img = this.images.get(src);
+    if (!img) {
+      img = new Image();
+      img.src = src;
+      this.images.set(src, img);
+    }
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+
+  /** Photo du joueur (ronde, liseré rouge), sinon ses initiales sur fond sombre. */
+  private drawFace(face: Face, cx: number, cy: number, size: number) {
+    const ctx = this.ctx;
+    const r = size / 2;
+    const img = face.photo ? this.image(face.photo) : null;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.closePath();
+    if (img) {
+      ctx.save();
+      ctx.clip();
+      const s = Math.max(size / img.naturalWidth, size / img.naturalHeight);
+      const dw = img.naturalWidth * s;
+      const dh = img.naturalHeight * s;
+      ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#1f1f1f';
+      ctx.fill();
+      ctx.fillStyle = TEXT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      displayFont(ctx, size * 0.4);
+      ctx.fillText(initials(face.name), cx, cy + size * 0.02);
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.lineWidth = Math.max(3, size * 0.035);
+    ctx.strokeStyle = RED;
+    ctx.shadowColor = 'rgba(255,43,43,0.6)';
+    ctx.shadowBlur = size * 0.18;
+    ctx.stroke();
+    ctx.restore();
+  }
 
   private draw(now: number) {
     const ctx = this.ctx;
@@ -343,6 +545,12 @@ export class Recorder {
       const dw = v.videoWidth * scale;
       const dh = v.videoHeight * scale;
       ctx.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    } else if (this.backdrop && this.backdrop.naturalWidth > 0) {
+      const b = this.backdrop;
+      const scale = Math.max(W / b.naturalWidth, H / b.naturalHeight);
+      const dw = b.naturalWidth * scale;
+      const dh = b.naturalHeight * scale;
+      ctx.drawImage(b, (W - dw) / 2, (H - dh) / 2, dw, dh);
     } else {
       const g = ctx.createRadialGradient(W * 0.85, 0, 50, W * 0.85, 0, W);
       g.addColorStop(0, 'rgba(255,43,43,0.55)');
@@ -350,24 +558,20 @@ export class Recorder {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     }
-    // Voile bas pour la lisibilité des incrustations.
-    const shade = ctx.createLinearGradient(0, H * 0.5, 0, H);
-    shade.addColorStop(0, 'rgba(10,10,10,0)');
-    shade.addColorStop(1, 'rgba(10,10,10,0.85)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(0, H * 0.5, W, H * 0.5);
 
-    this.drawBrand(now);
+    this.drawWordmark();
+    this.popups = this.popups.filter((p) => now - p.at < p.duration);
+    const elimActive = this.popups.some((p) => p.popup.kind === 'elim');
     const t = (now - this.sceneAt) / 1000;
     switch (this.scene.type) {
       case 'reveal':
         this.drawReveal(this.scene, t);
         break;
       case 'discuss':
-        this.drawDiscuss(this.scene, t);
+        if (!elimActive) this.drawDiscuss(this.scene, t);
         break;
       case 'guess':
-        this.drawGuess(this.scene, t);
+        if (!elimActive) this.drawGuess(this.scene, t);
         break;
       case 'result':
         this.drawResult(this.scene, t);
@@ -375,156 +579,127 @@ export class Recorder {
       default:
         break;
     }
-    this.popups = this.popups.filter((p) => now - p.at < p.duration);
     for (const p of this.popups) this.drawPopup(p, now);
   }
 
-  private drawBrand(now: number) {
+  /** Signature discrète en haut à gauche, dans le style du logo (Anton, blanc + rouge). */
+  private drawWordmark() {
     const ctx = this.ctx;
     ctx.save();
-    roundRect(ctx, 40, 60, 560, 84, 42);
-    ctx.fillStyle = 'rgba(10,10,10,0.72)';
-    ctx.fill();
-    // point rouge qui clignote
-    const blink = 0.5 + 0.5 * Math.sin(now / 350);
-    ctx.fillStyle = `rgba(255,43,43,${0.45 + 0.55 * blink})`;
-    ctx.beginPath();
-    ctx.arc(90, 102, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#f5f5f5';
-    ctx.font = `400 44px ${LOGO}`;
-    ctx.textBaseline = 'middle';
+    ctx.font = `400 34px ${LOGO}`;
+    ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
-    ctx.fillText(this.brand, 124, 104);
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 2;
+    const y = SAFE_TOP - 24;
+    ctx.fillStyle = TEXT;
+    ctx.fillText('FOOTBALL', SAFE_LEFT, y);
+    const w = ctx.measureText('FOOTBALL ').width;
+    ctx.fillStyle = RED;
+    ctx.fillText('UNDERCOVER', SAFE_LEFT + w, y);
     ctx.restore();
   }
 
-  /** Carte « nom + mot » qui surgit en bas : la tête du joueur au-dessus, son mot dessous. */
+  /** Révélation : photo en grand à gauche, prénom et mot à droite. Compact, en bas de la zone sûre. */
   private drawReveal(s: Extract<Scene, { type: 'reveal' }>, t: number) {
     const ctx = this.ctx;
-    const k = easeOutBack(t / 0.45);
-    const cardW = 880;
-    const cardH = 520;
-    const x = (W - cardW) / 2;
-    const y = H - cardH - 140;
+    const k = easeOutBack(t / 0.4);
+    const w = 800;
+    const x = SAFE_LEFT;
+    const tx = x + 212;
+    const tw = w - 250;
+    const name = s.face.name.toUpperCase();
+    const nameSize = fitSize(ctx, name, tw, 50, 30);
+    const word = s.word === null ? null : fitLines(ctx, s.word.toUpperCase(), tw, 50, 26, 2);
+    const wordH = word ? word.lines.length * word.size * 1.12 : 50;
+    const h = Math.max(210, 26 + nameSize + 10 + 20 + 16 + wordH + 26);
+    const y = SAFE_BOTTOM - h;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, t / 0.25);
-    ctx.translate(W / 2, y + cardH / 2);
-    ctx.scale(0.85 + 0.15 * k, 0.85 + 0.15 * k);
-    ctx.translate(-W / 2, -(y + cardH / 2));
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 24;
-    roundRect(ctx, x, y, cardW, cardH, 44);
-    const g = ctx.createLinearGradient(0, y, 0, y + cardH);
-    g.addColorStop(0, '#242424');
-    g.addColorStop(1, '#101010');
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = s.color;
-    ctx.stroke();
-
-    // Pastille couleur + nom
-    ctx.textAlign = 'center';
+    ctx.globalAlpha = clamp01(t / 0.2);
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.scale(0.92 + 0.08 * k, 0.92 + 0.08 * k);
+    ctx.translate(-(x + w / 2), -(y + h / 2));
+    panel(ctx, x, y, w, h, 30, true);
+    this.drawFace(s.face, x + 112, y + h / 2, 150);
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = s.color;
-    ctx.beginPath();
-    ctx.arc(W / 2, y + 96, 40, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#0a0a0a';
-    displayFont(ctx, 40);
-    ctx.fillText(initials(s.name), W / 2, y + 98);
-    ctx.fillStyle = '#f5f5f5';
-    const nameSize = fitSize(ctx, s.name.toUpperCase(), cardW - 120, 96, 48);
+    ctx.fillStyle = TEXT;
     displayFont(ctx, nameSize);
-    ctx.fillText(s.name.toUpperCase(), W / 2, y + 200);
-
-    if (s.word === null) {
-      // Carton blanc : un vrai carton, sans couleur qui trahit.
+    let cy = y + 26 + nameSize / 2;
+    ctx.fillText(name, tx, cy);
+    cy += nameSize / 2 + 10 + 10;
+    ctx.fillStyle = MUTED;
+    displayFont(ctx, 20, 700);
+    ctx.fillText(`${s.wordLabel.toUpperCase()} · ${s.category.toUpperCase()}`, tx, cy);
+    cy += 10 + 16;
+    if (!word) {
+      // Carton blanc : un petit carton blanc, puis le nom du rôle.
+      const wy = cy + 25;
       ctx.save();
-      ctx.translate(W / 2, y + 340);
-      ctx.rotate(-0.15);
-      roundRect(ctx, -36, -52, 72, 104, 10);
+      ctx.translate(tx + 18, wy);
+      ctx.rotate(-0.12);
+      roundRect(ctx, -14, -22, 28, 44, 5);
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(255,255,255,0.5)';
-      ctx.shadowBlur = 40;
+      ctx.shadowColor = 'rgba(255,255,255,0.6)';
+      ctx.shadowBlur = 18;
       ctx.fill();
       ctx.restore();
-      ctx.fillStyle = '#ffffff';
-      displayFont(ctx, 54);
-      ctx.fillText(s.whiteLabel.toUpperCase(), W / 2, y + 450);
+      ctx.fillStyle = TEXT;
+      displayFont(ctx, fitSize(ctx, s.whiteLabel.toUpperCase(), tw - 60, 46, 26));
+      ctx.fillText(s.whiteLabel.toUpperCase(), tx + 52, wy);
     } else {
-      ctx.fillStyle = '#8e8e8e';
-      displayFont(ctx, 30, 700);
-      ctx.fillText(`${s.wordLabel.toUpperCase()} · ${s.category.toUpperCase()}`, W / 2, y + 290);
       ctx.fillStyle = RED;
-      const wordSize = fitSize(ctx, s.word.toUpperCase(), cardW - 100, 110, 44);
-      displayFont(ctx, wordSize);
-      ctx.shadowColor = 'rgba(255,43,43,0.55)';
-      ctx.shadowBlur = 40;
-      ctx.fillText(s.word.toUpperCase(), W / 2, y + 390);
+      displayFont(ctx, word.size);
+      ctx.shadowColor = 'rgba(255,43,43,0.45)';
+      ctx.shadowBlur = 20;
+      word.lines.forEach((line, i) => ctx.fillText(line, tx, cy + word.size / 2 + i * word.size * 1.12));
     }
     ctx.restore();
   }
 
-  /** Bandeau « ordre de parole » : chaque nom avec son mot (rouge pour l'undercover). */
+  /** Ordre de parole : photos et mots seulement, en bas à gauche. Le mot de l'undercover est en rouge. */
   private drawDiscuss(s: Extract<Scene, { type: 'discuss' }>, t: number) {
     const ctx = this.ctx;
-    const rowH = 92;
     const n = s.order.length;
-    const barH = 120 + n * rowH + 40;
-    const y = H - barH - 90;
+    const rowH = 66;
+    const headH = 58;
+    const w = 540;
+    const h = headH + n * rowH + 16;
+    const x = SAFE_LEFT;
+    const y = SAFE_BOTTOM - h;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, t / 0.3);
-    roundRect(ctx, 40, y, W - 80, barH, 40);
-    ctx.fillStyle = 'rgba(10,10,10,0.78)';
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.stroke();
-    // titre rouge
-    roundRect(ctx, 40, y, W - 80, 110, 40);
-    ctx.save();
-    ctx.clip();
+    ctx.globalAlpha = clamp01(t / 0.25);
+    panel(ctx, x, y, w, h, 26, true);
+    // En-tête : point rouge + « Tour 1 »
     ctx.fillStyle = RED;
-    ctx.fillRect(40, y, W - 80, 110);
-    ctx.restore();
-    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x + 40, y + headH / 2 + 2, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = TEXT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    displayFont(ctx, 46);
-    ctx.fillText(s.title.toUpperCase(), 90, y + 56);
-    ctx.textAlign = 'right';
-    displayFont(ctx, 30, 700);
-    ctx.fillText(s.orderLabel.toUpperCase(), W - 90, y + 56);
+    displayFont(ctx, 24);
+    ctx.fillText(s.title.toUpperCase(), x + 62, y + headH / 2 + 2);
 
     s.order.forEach((p, i) => {
-      const k = easeOut((t - i * 0.12) / 0.35);
+      const k = easeOut((t - i * 0.08) / 0.3);
       if (k <= 0) return;
-      const ry = y + 140 + i * rowH;
+      const cy = y + headH + i * rowH + rowH / 2;
       ctx.save();
       ctx.globalAlpha = k;
-      ctx.translate((1 - k) * 60, 0);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(110, ry + 40, 30, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0a0a0a';
+      ctx.translate((1 - k) * 40, 0);
+      ctx.fillStyle = MUTED;
       ctx.textAlign = 'center';
-      displayFont(ctx, 28);
-      ctx.fillText(String(i + 1), 110, ry + 42);
+      ctx.textBaseline = 'middle';
+      displayFont(ctx, 18, 800);
+      ctx.fillText(String(i + 1), x + 40, cy + 1);
+      this.drawFace(p.face, x + 92, cy, 48);
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#f5f5f5';
-      displayFont(ctx, 44);
-      ctx.fillText(p.name.toUpperCase(), 170, ry + 42);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = roleColor(p.role);
-      const w = p.word === null ? s.whiteLabel : p.word;
-      const size = fitSize(ctx, w.toUpperCase(), 520, 40, 22, 800);
-      displayFont(ctx, size, 800);
-      ctx.fillText(w.toUpperCase(), W - 90, ry + 42);
+      const word = p.word === null ? s.whiteLabel : p.word;
+      ctx.fillStyle = p.word === null ? MUTED : wordColor(p.role);
+      displayFont(ctx, fitSize(ctx, word.toUpperCase(), w - 160, 28, 16, 850), 850);
+      ctx.fillText(word.toUpperCase(), x + 132, cy + 1);
       ctx.restore();
     });
     ctx.restore();
@@ -532,55 +707,74 @@ export class Recorder {
 
   private drawGuess(s: Extract<Scene, { type: 'guess' }>, t: number) {
     const ctx = this.ctx;
+    const w = 780;
+    const h = 130;
+    const x = SAFE_LEFT;
+    const y = SAFE_BOTTOM - h;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, t / 0.3);
-    roundRect(ctx, 60, H - 330, W - 120, 200, 40);
-    ctx.fillStyle = 'rgba(10,10,10,0.8)';
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
+    ctx.globalAlpha = clamp01(t / 0.25);
+    panel(ctx, x, y, w, h, 26, true);
+    this.drawFace(s.face, x + 78, y + h / 2, 84);
+    ctx.fillStyle = TEXT;
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    displayFont(ctx, 60);
-    ctx.fillText(s.name.toUpperCase(), W / 2, H - 270);
-    ctx.fillStyle = '#c9c9c9';
-    displayFont(ctx, 34, 700);
-    ctx.fillText(s.label.toUpperCase(), W / 2, H - 190);
+    displayFont(ctx, fitSize(ctx, s.label, w - 180, 28, 16, 800), 800);
+    ctx.fillText(s.label, x + 140, y + h / 2 + 1);
     ctx.restore();
   }
 
   private drawResult(s: Extract<Scene, { type: 'result' }>, t: number) {
     const ctx = this.ctx;
     const k = easeOutBack(t / 0.6);
+    const w = SAFE_W;
+    const x = SAFE_LEFT;
+    const pad = 36;
+    const inner = w - pad * 2;
+    const title = fitLines(ctx, s.title.toUpperCase(), inner, 62, 34, 2);
+    const sub = fitLines(ctx, s.sub, inner, 24, 16, 2, 700);
+    const civ = fitLines(ctx, s.civilWord.toUpperCase(), inner, 32, 18, 2, 850);
+    const und = fitLines(ctx, s.undercoverWord.toUpperCase(), inner, 32, 18, 2, 850);
+    const titleH = title.lines.length * title.size * 1.08;
+    const subH = sub.lines.length * sub.size * 1.2;
+    const rowH = (l: { size: number; lines: string[] }) => 20 + 10 + l.lines.length * l.size * 1.15 + 16;
+    const h = pad + titleH + 10 + subH + 22 + rowH(civ) + rowH(und) + pad - 10;
+    const y = SAFE_BOTTOM - h;
     ctx.save();
-    ctx.globalAlpha = Math.min(1, t / 0.3);
-    ctx.translate(W / 2, H / 2);
-    ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
+    ctx.globalAlpha = clamp01(t / 0.3);
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
+    ctx.translate(-(x + w / 2), -(y + h / 2));
+    panel(ctx, x, y, w, h, 30, true);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(255,43,43,0.6)';
-    ctx.shadowBlur = 60;
-    const size = fitSize(ctx, s.title.toUpperCase(), W - 140, 120, 60);
-    displayFont(ctx, size);
-    ctx.fillText(s.title.toUpperCase(), 0, -160);
+    let cy = y + pad;
+    ctx.fillStyle = TEXT;
+    ctx.shadowColor = 'rgba(255,43,43,0.55)';
+    ctx.shadowBlur = 30;
+    displayFont(ctx, title.size);
+    title.lines.forEach((line, i) => ctx.fillText(line, x + w / 2, cy + title.size / 2 + i * title.size * 1.08));
     ctx.shadowColor = 'transparent';
-    ctx.fillStyle = '#c9c9c9';
-    displayFont(ctx, 38, 700);
-    ctx.fillText(s.sub, 0, -50);
-    // Les deux mots révélés
-    roundRect(ctx, -440, 40, 880, 220, 36);
-    ctx.fillStyle = 'rgba(10,10,10,0.75)';
-    ctx.fill();
-    ctx.fillStyle = '#8e8e8e';
-    displayFont(ctx, 28, 700);
-    ctx.fillText(s.civilLabel.toUpperCase(), -220, 90);
-    ctx.fillText(s.undercoverLabel.toUpperCase(), 220, 90);
-    ctx.fillStyle = '#ffffff';
-    displayFont(ctx, fitSize(ctx, s.civilWord, 400, 52, 26));
-    ctx.fillText(s.civilWord, -220, 180);
-    ctx.fillStyle = RED;
-    displayFont(ctx, fitSize(ctx, s.undercoverWord, 400, 52, 26));
-    ctx.fillText(s.undercoverWord, 220, 180);
+    cy += titleH + 10;
+    ctx.fillStyle = MUTED;
+    displayFont(ctx, sub.size, 700);
+    sub.lines.forEach((line, i) => ctx.fillText(line, x + w / 2, cy + sub.size / 2 + i * sub.size * 1.2));
+    cy += subH + 22;
+    ctx.textAlign = 'left';
+    const row = (label: string, l: { size: number; lines: string[] }, color: string) => {
+      ctx.fillStyle = LINE;
+      ctx.fillRect(x + pad, cy, inner, 2);
+      cy += 20;
+      ctx.fillStyle = MUTED;
+      displayFont(ctx, 20, 700);
+      ctx.fillText(label.toUpperCase(), x + pad, cy);
+      cy += 10 + 10;
+      ctx.fillStyle = color;
+      displayFont(ctx, l.size, 850);
+      l.lines.forEach((line, i) => ctx.fillText(line, x + pad, cy + l.size / 2 + i * l.size * 1.15));
+      cy += l.lines.length * l.size * 1.15 + 16 - 10;
+    };
+    row(s.civilLabel, civ, TEXT);
+    row(s.undercoverLabel, und, RED);
     ctx.restore();
   }
 
@@ -588,100 +782,93 @@ export class Recorder {
     const ctx = this.ctx;
     const t = (now - p.at) / 1000;
     const remaining = (p.duration - (now - p.at)) / 1000;
-    const alpha = Math.min(1, t / 0.2, remaining / 0.3);
+    const alpha = Math.max(0, Math.min(1, t / 0.2, remaining / 0.3));
+
     if (p.popup.kind === 'vote') {
+      // « A vote pour B » : pilule compacte dans le haut de la zone sûre.
       const k = easeOutBack(t / 0.4);
+      const h = 88;
+      const y = SAFE_TOP + 110;
       ctx.save();
-      ctx.globalAlpha = Math.max(0, alpha);
-      ctx.translate(W / 2, H * 0.3);
-      ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
+      ctx.globalAlpha = alpha;
+      const line = `${p.popup.from.name.toUpperCase()}  ${p.popup.verb.toUpperCase()}  ${p.popup.to.name.toUpperCase()}`;
+      displayFont(ctx, fitSize(ctx, line, SAFE_W - 200, 30, 16, 850), 850);
+      const tw = ctx.measureText(line).width;
+      const w = Math.min(SAFE_W, tw + 190);
+      const x = SAFE_LEFT;
+      ctx.translate(x + w / 2, y + h / 2);
+      ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
+      ctx.translate(-(x + w / 2), -(y + h / 2));
+      panel(ctx, x, y, w, h, h / 2);
+      this.drawFace(p.popup.from, x + 48, y + h / 2, 60);
+      this.drawFace(p.popup.to, x + w - 48, y + h / 2, 60);
+      ctx.fillStyle = TEXT;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      displayFont(ctx, 44);
-      const line = `${p.popup.from.toUpperCase()}  ${p.popup.verb.toUpperCase()}  ${p.popup.to.toUpperCase()}`;
-      const size = fitSize(ctx, line, W - 200, 48, 28);
-      displayFont(ctx, size);
-      const tw = ctx.measureText(line).width + 100;
-      roundRect(ctx, -tw / 2, -60, tw, 120, 60);
-      ctx.fillStyle = 'rgba(10,10,10,0.85)';
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = RED;
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(line, 0, 2);
+      ctx.fillText(line, x + w / 2, y + h / 2 + 1);
       ctx.restore();
       return;
     }
+
     if (p.popup.kind === 'guess') {
+      const w = 780;
+      const h = 150;
+      const x = SAFE_LEFT;
+      const y = SAFE_TOP + 110;
       ctx.save();
-      ctx.globalAlpha = Math.max(0, alpha);
-      ctx.translate(W / 2, H * 0.22);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      roundRect(ctx, -460, -150, 920, 300, 44);
-      ctx.fillStyle = 'rgba(10,10,10,0.85)';
-      ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = p.popup.correct ? '#37d67a' : RED;
+      ctx.globalAlpha = alpha;
+      panel(ctx, x, y, w, h, 26);
+      roundRect(ctx, x, y, w, h, 26);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = p.popup.correct ? GREEN : RED;
       ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      displayFont(ctx, fitSize(ctx, `« ${p.popup.guess} »`, 820, 64, 30));
-      ctx.fillText(`« ${p.popup.guess} »`, 0, -40);
-      ctx.fillStyle = p.popup.correct ? '#37d67a' : RED;
-      displayFont(ctx, 44);
-      ctx.fillText(p.popup.label.toUpperCase(), 0, 60);
+      this.drawFace(p.popup.face, x + 78, y + h / 2, 84);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = TEXT;
+      displayFont(ctx, fitSize(ctx, `« ${p.popup.guess} »`, w - 180, 34, 18));
+      ctx.fillText(`« ${p.popup.guess} »`, x + 140, y + 52);
+      ctx.fillStyle = p.popup.correct ? GREEN : RED;
+      displayFont(ctx, 28);
+      ctx.fillText(p.popup.label.toUpperCase(), x + 140, y + 104);
       ctx.restore();
       return;
     }
-    // Élimination : flash rouge puis grande carte qui claque (1 s), maintenue ensuite.
-    const flash = Math.max(0, 0.55 - t * 2.2);
+
+    // Élimination : flash rouge puis carte qui claque (1 s), maintenue ensuite, en bas de la zone sûre.
+    const flash = Math.max(0, 0.45 - t * 1.8);
     if (flash > 0) {
       ctx.fillStyle = `rgba(255,43,43,${flash})`;
       ctx.fillRect(0, 0, W, H);
     }
     const k = easeOutBack(t / 0.9);
-    const cw = 760;
-    const ch = 620;
+    const cw = 640;
+    const ch = 400;
+    const cy = SAFE_BOTTOM - ch / 2;
     ctx.save();
-    ctx.globalAlpha = Math.max(0, alpha);
-    ctx.translate(W / 2, H * 0.45);
-    ctx.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
-    ctx.rotate((1 - k) * -0.08);
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 80;
-    ctx.shadowOffsetY = 30;
-    roundRect(ctx, -cw / 2, -ch / 2, cw, ch, 48);
-    const g = ctx.createLinearGradient(0, -ch / 2, 0, ch / 2);
-    g.addColorStop(0, '#262626');
-    g.addColorStop(1, '#0f0f0f');
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = roleColor(p.popup.role);
+    ctx.globalAlpha = alpha;
+    ctx.translate(SAFE_CX, cy);
+    ctx.scale(0.55 + 0.45 * k, 0.55 + 0.45 * k);
+    ctx.rotate((1 - k) * -0.06);
+    panel(ctx, -cw / 2, -ch / 2, cw, ch, 36);
+    roundRect(ctx, -cw / 2, -ch / 2, cw, ch, 36);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = p.popup.role === 'undercover' ? RED : 'rgba(255,255,255,0.35)';
     ctx.stroke();
+    this.drawFace(p.popup.face, 0, -ch / 2 + 100, 130);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = p.popup.color;
-    ctx.beginPath();
-    ctx.arc(0, -205, 66, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#0a0a0a';
-    displayFont(ctx, 56);
-    ctx.fillText(initials(p.popup.name), 0, -201);
-    ctx.fillStyle = '#ffffff';
-    displayFont(ctx, fitSize(ctx, p.popup.name.toUpperCase(), cw - 100, 84, 40));
-    ctx.fillText(p.popup.name.toUpperCase(), 0, -70);
-    ctx.fillStyle = '#8e8e8e';
-    displayFont(ctx, 30, 700);
-    ctx.fillText(p.popup.outLabel.toUpperCase(), 0, 20);
-    ctx.fillStyle = roleColor(p.popup.role);
-    ctx.shadowColor = p.popup.role === 'undercover' ? 'rgba(255,43,43,0.7)' : 'rgba(255,255,255,0.4)';
-    ctx.shadowBlur = 50;
-    displayFont(ctx, fitSize(ctx, p.popup.roleLabel.toUpperCase(), cw - 100, 96, 44));
-    ctx.fillText(p.popup.roleLabel.toUpperCase(), 0, 130);
+    ctx.fillStyle = TEXT;
+    displayFont(ctx, fitSize(ctx, p.popup.face.name.toUpperCase(), cw - 80, 46, 24));
+    ctx.fillText(p.popup.face.name.toUpperCase(), 0, 20);
+    ctx.fillStyle = MUTED;
+    displayFont(ctx, 20, 700);
+    ctx.fillText(p.popup.outLabel.toUpperCase(), 0, 66);
+    ctx.fillStyle = p.popup.role === 'undercover' ? RED : TEXT;
+    ctx.shadowColor = p.popup.role === 'undercover' ? 'rgba(255,43,43,0.7)' : 'rgba(255,255,255,0.35)';
+    ctx.shadowBlur = 30;
+    displayFont(ctx, fitSize(ctx, p.popup.roleLabel.toUpperCase(), cw - 80, 56, 28));
+    ctx.fillText(p.popup.roleLabel.toUpperCase(), 0, 128);
     ctx.restore();
   }
 }
-

@@ -1,17 +1,21 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { COLORS, randomAvatar, randomColor } from '../data/avatars';
+import { fileToPhoto } from '../data/photo';
 import { T } from '../i18n';
 import type { Player } from '../store/store';
 import { tap } from '../native';
+import { CameraIcon, TrashIcon } from './Icons';
 import { Avatar, Button, Sheet } from './ui';
 
 export interface PlayerDraft {
   name: string;
   avatar: string;
   color: string;
+  /** Photo (data URL) ou null pour les initiales. */
+  photo: string | null;
 }
 
-/** Éditeur de joueur (création ou modification) : prénom + couleur, l'avatar affiche les initiales. */
+/** Éditeur de joueur (création ou modification) : prénom, photo (facultative) et couleur. */
 export function PlayerSheet({
   open,
   initial,
@@ -27,7 +31,10 @@ export function PlayerSheet({
 }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Pré-remplissage avant la peinture : pas de champ vide affiché un instant.
   useLayoutEffect(() => {
@@ -36,9 +43,11 @@ export function PlayerSheet({
     if (initial) {
       setName(initial.name);
       setColor(initial.color);
+      setPhoto(initial.photo ?? null);
     } else {
       setName('');
       setColor(randomColor());
+      setPhoto(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial?.id]);
@@ -50,7 +59,21 @@ export function PlayerSheet({
       (n) => n.toLowerCase() === trimmed.toLowerCase() && n.toLowerCase() !== initial?.name.toLowerCase(),
     );
     if (taken) return setError(T.players.nameTaken);
-    onSave({ name: trimmed, avatar: initial?.avatar ?? randomAvatar(), color });
+    onSave({ name: trimmed, avatar: initial?.avatar ?? randomAvatar(), color, photo });
+  };
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      setPhoto(await fileToPhoto(file));
+      setError(null);
+    } catch {
+      setError(T.players.photoFailed);
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   };
 
   return (
@@ -73,8 +96,37 @@ export function PlayerSheet({
           submit();
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <Avatar name={name.trim() || '?'} color={color} size="xl" />
+        <div className="photo-pick">
+          <button type="button" className="photo-btn" aria-label={T.players.photoAdd} disabled={busy} onClick={() => fileRef.current?.click()}>
+            <Avatar name={name.trim() || '?'} color={color} photo={photo} size="xl" />
+            <span className="cam">
+              <CameraIcon size={16} />
+            </span>
+          </button>
+          <div className="photo-actions">
+            <Button small inline variant="secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
+              <CameraIcon size={16} />
+              {photo ? T.players.photoChange : T.players.photoAdd}
+            </Button>
+            {photo ? (
+              <Button small inline variant="ghost" onClick={() => setPhoto(null)}>
+                <TrashIcon size={16} />
+                {T.players.photoRemove}
+              </Button>
+            ) : null}
+          </div>
+          <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
+            {T.players.photoHint}
+          </p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            aria-hidden
+            tabIndex={-1}
+            onChange={(e) => void pick(e.target.files?.[0])}
+          />
         </div>
         <div className="field">
           <label className="lbl" htmlFor="player-name">

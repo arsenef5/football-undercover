@@ -32,7 +32,7 @@ export function Eliminated() {
     <Screen title={T.eliminated.title} footer={<Button onClick={next}>{label}</Button>}>
       <div className="flash" />
       <div className="elim">
-        <Avatar name={player.name} color={player.color} size="xl" dead />
+        <Avatar name={player.name} color={player.color} photo={player.photo} size="xl" dead />
         <div>
           <div className="display h2">{player.name}</div>
           <div className="eyebrow" style={{ marginTop: 8 }}>

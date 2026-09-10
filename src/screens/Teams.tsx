@@ -92,7 +92,7 @@ export function Teams() {
                     <CheckMark on={on} />
                     <div className="avatar-stack">
                       {members.slice(0, 3).map((p) => (
-                        <Avatar key={p.id} name={p.name} color={p.color} size="sm" />
+                        <Avatar key={p.id} name={p.name} color={p.color} photo={p.photo} size="sm" />
                       ))}
                     </div>
                     <div className="grow">

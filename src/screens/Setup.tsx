@@ -145,7 +145,7 @@ export function Setup() {
 
   const start = () => {
     if (error || !effective) return;
-    const seats = selected.map((id) => byId.get(id)!).map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, color: p.color }));
+    const seats = selected.map((id) => byId.get(id)!).map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, color: p.color, photo: p.photo ?? null }));
 
     // Une table jouée devient une équipe réutilisable, sauf si le même effectif existe déjà.
     let tid = teamId;
@@ -249,7 +249,7 @@ export function Setup() {
               const on = selected.includes(p.id);
               return (
                 <SwipeRow key={p.id} className={`tile ${on ? 'is-on' : ''}`} onTap={() => toggle(p.id)} onDelete={() => removePlayer(p.id)}>
-                  <Avatar name={p.name} color={p.color} size="sm" />
+                  <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
                   <span className="name">{p.name}</span>
                   <CheckMark on={on} />
                 </SwipeRow>

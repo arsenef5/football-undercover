@@ -13,6 +13,9 @@ import { isNative, notify } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
 
+/** Mode créateur : 2 s de résultat à l'image + 5 s de réactions avant la fin de la vidéo. */
+const RESULT_TAIL_MS = 7000;
+
 function burst(colors: string[]) {
   const fire = (x: number, angle: number) =>
     confetti({
@@ -40,6 +43,7 @@ export function Result() {
   const recorded = useRef<string | null>(null);
   const [toast, showToast] = useToast();
   const [saving, setSaving] = useState(false);
+  const [tail, setTail] = useState(0);
 
   const result = game?.result ?? null;
 
@@ -57,8 +61,13 @@ export function Result() {
       civilLabel: T.result.startersWord,
       undercoverLabel: T.result.undercoverWord,
     });
-    const t = window.setTimeout(() => void creator.stop(), 4000);
-    return () => window.clearTimeout(t);
+    const t = window.setTimeout(() => void creator.stop(), RESULT_TAIL_MS);
+    setTail(Math.round(RESULT_TAIL_MS / 1000));
+    const tick = window.setInterval(() => setTail((v) => Math.max(0, v - 1)), 1000);
+    return () => {
+      window.clearTimeout(t);
+      window.clearInterval(tick);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.id, creator.recording]);
 
@@ -119,7 +128,7 @@ export function Result() {
   const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
 
   const again = () => {
-    const seats = game.players.map(({ id, name, avatar, color }) => ({ id, name, avatar, color }));
+    const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo }));
     start(seats, game.config, groupsFor(state.settings.premium), {
       exclude: [game.pair.id, ...state.recentPairIds],
       weights: anyWeight ? state.settings.weights : undefined,
@@ -181,7 +190,7 @@ export function Result() {
             <div className="grow">
               <div className="display h3">{creator.hasVideo ? T.creator.ready : T.creator.finishing}</div>
               <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
-                {creator.hasVideo ? T.creator.readyHint : T.creator.title}
+                {creator.hasVideo ? T.creator.readyHint : creator.recording && tail > 0 ? T.creator.reactions(tail) : T.creator.title}
               </p>
             </div>
           </div>
@@ -217,7 +226,7 @@ export function Result() {
           const pts = result.points[p.id] ?? 0;
           return (
             <div key={p.id} className="row points-row">
-              <Avatar name={p.name} color={p.color} size="sm" dead={!p.alive} />
+              <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" dead={!p.alive} />
               <div className="grow">
                 <div className="name">{p.name}</div>
                 <div className="sub">
@@ -235,7 +244,7 @@ export function Result() {
         {sessionRows.map(({ p, pts }, i) => (
           <div key={p.id} className="row">
             <span className={`rank ${i < 3 ? 'top' : ''}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
-            <Avatar name={p.name} color={p.color} size="sm" />
+            <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
             <span className="grow name">{p.name}</span>
             <span className="total">
               {pts}

@@ -2494,10 +2494,10 @@ p,
 
 .rec-pip {
   position: fixed;
-  top: calc(var(--safe-top) + 74px);
+  bottom: calc(var(--safe-bottom) + var(--ad-h, 0px) + 140px);
   right: 12px;
   z-index: 35;
-  width: 66px;
+  width: 58px;
   padding: 0;
   border: 2px solid var(--red);
   border-radius: 14px;
@@ -2511,14 +2511,16 @@ p,
 .rec-pip.big {
   width: 180px;
 }
-.rec-pip .rec-canvas {
-  display: block;
-  aspect-ratio: 9 / 16;
-}
-.rec-pip .rec-canvas canvas {
+.rec-pip video {
   display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  background: #000;
+  transform: scaleX(-1);
+}
+.rec-pip.no-cam video {
+  background: radial-gradient(circle at 80% 0%, rgba(255, 43, 43, 0.5), #0a0a0a 70%);
 }
 .rec-pip .rec-tag {
   position: absolute;
@@ -2620,4 +2622,52 @@ p,
   background: var(--red);
   color: #fff;
   box-shadow: 0 0 20px var(--red-glow);
+}
+
+
+/* Photo de joueur */
+.avatar.has-photo {
+  overflow: hidden;
+  background: #161616;
+}
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.photo-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.photo-btn {
+  position: relative;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.photo-btn .cam {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 14px var(--red-glow);
+}
+.photo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }

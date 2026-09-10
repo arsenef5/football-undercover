@@ -23,7 +23,7 @@ export function WhiteGuess() {
   const white = game && game.pendingWhiteId ? playerById(game, game.pendingWhiteId) : undefined;
   useEffect(() => {
     if (!creator.recording || !white) return;
-    creator.setScene({ type: 'guess', name: white.name, label: T.whiteGuess.prompt(white.name) });
+    creator.setScene({ type: 'guess', face: { name: white.name, photo: white.photo }, label: T.whiteGuess.prompt(white.name) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [white?.id, creator.recording]);
 
@@ -34,7 +34,7 @@ export function WhiteGuess() {
     const next = resolveWhite(submitted ?? '', correct);
     if (!next) return;
     if (creator.recording) {
-      creator.popup({ kind: 'guess', name: white.name, correct, guess: submitted ?? '', label: correct ? T.creator.guessRight : T.creator.guessWrong });
+      creator.popup({ kind: 'guess', face: { name: white.name, photo: white.photo }, correct, guess: submitted ?? '', label: correct ? T.creator.guessRight : T.creator.guessWrong });
     }
     void notify(correct ? 'success' : 'error');
     if (next.phase === 'over') nav.replace({ name: 'result' });
@@ -63,7 +63,7 @@ export function WhiteGuess() {
       }
     >
       <div className="pass-to" style={{ paddingTop: 16 }}>
-        <Avatar name={white.name} color={white.color} size="lg" dead />
+        <Avatar name={white.name} color={white.color} photo={white.photo} size="lg" dead />
         <CardIcon size={40} style={{ color: 'var(--role-white)' }} />
         <div className="display h2" style={{ maxWidth: 320 }}>
           {T.whiteGuess.prompt(white.name)}

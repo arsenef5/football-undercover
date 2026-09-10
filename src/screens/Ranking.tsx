@@ -33,7 +33,7 @@ export function Ranking() {
             {rows.map(({ p, pts }, i) => (
               <div key={p.id} className="row">
                 <span className={`rank ${i < 3 ? 'top' : ''}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
-                <Avatar name={p.name} color={p.color} size="sm" />
+                <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
                 <div className="grow">
                   <div className="name">{p.name}</div>
                   <div className="sub">{T.ranking.stats(p.games, p.wins)}</div>

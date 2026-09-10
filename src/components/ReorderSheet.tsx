@@ -61,7 +61,7 @@ export function ReorderSheet({ open, onClose }: { open: boolean; onClose: () => 
               <span className="num muted" style={{ width: 22, textAlign: 'center', fontSize: 12 }}>
                 {i + 1}
               </span>
-              <Avatar name={p.name} color={p.color} size="sm" dead={!p.alive} />
+              <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" dead={!p.alive} />
               <span className="grow name">{p.name}</span>
               {!p.alive ? <RoleBadge role={p.role} /> : null}
               <div className="actions">

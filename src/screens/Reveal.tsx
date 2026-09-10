@@ -47,8 +47,7 @@ export function Reveal() {
     if (open && player && game) {
       creator.setScene({
         type: 'reveal',
-        name: player.name,
-        color: player.color,
+        face: { name: player.name, photo: player.photo },
         word: player.word,
         category: T.categories[game.pair.cat],
         whiteLabel: T.roles.white,
@@ -121,7 +120,7 @@ export function Reveal() {
           <div className="reveal-wrap">
             <div className="pass-to">
               <span className="eyebrow">{T.reveal.passTo}</span>
-              <Avatar name={player.name} color={player.color} size="sm" />
+              <Avatar name={player.name} color={player.color} photo={player.photo} size="sm" />
             </div>
             <RoleCard
               player={player}
