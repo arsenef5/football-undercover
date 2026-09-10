@@ -584,19 +584,20 @@ export class Recorder {
     for (const p of this.popups) this.drawPopup(p, now);
   }
 
-  /** Logo de l'app, tout petit, dans le coin haut gauche de la zone sûre. */
+  /** Logo de l'app, petit, en haut à gauche. */
   private drawLogo() {
     const img = this.logo;
     if (!img || !img.complete || img.naturalWidth === 0) return;
     const ctx = this.ctx;
-    const size = 84;
+    // Deux fois plus grand qu'au premier essai, plus haut, avec une marge (pas collé dans le coin).
+    const size = 168;
     const x = SAFE_LEFT;
-    const y = SAFE_TOP + 10;
+    const y = 120;
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 16;
     ctx.shadowOffsetY = 4;
-    roundRect(ctx, x, y, size, size, 19);
+    roundRect(ctx, x, y, size, size, 38);
     ctx.fillStyle = BG;
     ctx.fill();
     ctx.shadowColor = 'transparent';
