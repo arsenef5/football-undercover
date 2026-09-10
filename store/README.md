@@ -74,7 +74,7 @@ Xcode : Signing & Capabilities > Team ; Product > Archive ; Distribute App > App
 
 ## 6. App Store Connect
 
-Créer l'app (bundle `com.footballundercover.app`), remplir la fiche depuis `metadata/fr.md` et `metadata/en.md`,
+Créer l'app (bundle `fr.footballundercover.app`), remplir la fiche depuis `metadata/fr.md` et `metadata/en.md`,
 captures 6,9" ou 6,7", URL de confidentialité, questionnaire « App Privacy », classification d'âge, prix
 (gratuit), puis choisir le build TestFlight et soumettre à la revue (1 à 3 jours en général).
 

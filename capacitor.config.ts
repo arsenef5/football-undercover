@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.footballundercover.app',
+  appId: 'fr.footballundercover.app',
   appName: 'Football Undercover',
   webDir: 'dist',
   backgroundColor: '#0A0A0A',

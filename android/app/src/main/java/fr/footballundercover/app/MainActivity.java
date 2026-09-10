@@ -1,4 +1,4 @@
-package com.footballundercover.app;
+package fr.footballundercover.app;
 
 import com.getcapacitor.BridgeActivity;
 
