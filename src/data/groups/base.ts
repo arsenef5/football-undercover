@@ -5,37 +5,62 @@ import type { GroupDef } from './types';
  * Une entrée est soit un nom identique dans les deux langues, soit [français, anglais].
  * Le jeu tire deux mots différents par groupe : les duos changent à chaque partie.
  *
- * Les groupes de joueurs sont faits par SIMILITUDE DE JEU (poste, style, époque), pas par pays :
- * c'est ce qui rend l'imposteur difficile à démasquer (décision d'Arsène, 10/09/2026).
+ * Groupes de joueurs PETITS (4 à 6 noms) et SERRÉS : même poste, même époque, même profil.
+ * Que des noms connus de tous. C'est ce qui rend l'imposteur difficile à démasquer
+ * (décisions d'Arsène, 10/09/2026).
  */
 export const BASE: GroupDef[] = [
   /* Joueurs (128) */
-  // Petits milieux techniques
-  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Pirlo', 'Verratti', 'Pedri', 'Thiago Alcântara', 'Modrić', 'David Silva', 'Bernardo Silva', 'Riquelme'] },
-  // Grands attaquants finisseurs
-  { cat: 'joueur', words: ['Kane', 'Lukaku', 'Lewandowski', 'Haaland', 'Ibrahimović', 'Giroud', 'Drogba', 'Osimhen', 'Van Nistelrooy'] },
-  // Ailiers rapides de Premier League
-  { cat: 'joueur', words: ['Henry', 'Walcott', 'Aubameyang', 'Sterling', 'Salah', 'Mané', 'Son Heung-min', 'Rashford', 'Sané', 'Saka'] },
-  // Dribbleurs flamboyants
-  { cat: 'joueur', words: ['Neymar', 'Ronaldinho', 'Vinícius Jr', 'Hazard', 'Robben', 'Ribéry', 'Garrincha', 'Okocha', 'Dembélé', 'Kvaratskhelia'] },
-  // Meneurs de jeu, numéros 10
-  { cat: 'joueur', words: ['Zidane', 'Platini', 'Totti', 'Del Piero', 'Kaká', 'Rui Costa', 'Özil', 'Bergkamp', 'De Bruyne', 'Griezmann'] },
-  // Milieux récupérateurs et box-to-box
-  { cat: 'joueur', words: ['Kanté', 'Makélélé', 'Vieira', 'Roy Keane', 'Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Rodri', 'Casemiro'] },
-  // Défenseurs centraux légendaires
-  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Sergio Ramos', 'Piqué', 'Desailly', 'Van Dijk', 'Varane', 'Chiellini', 'Terry'] },
-  // Latéraux offensifs
-  { cat: 'joueur', words: ['Roberto Carlos', 'Cafu', 'Dani Alves', 'Marcelo', 'Alexander-Arnold', 'Robertson', 'Hakimi', 'Theo Hernández', 'Lahm', 'Ashley Cole'] },
-  // Gardiens légendaires
-  { cat: 'joueur', words: ['Buffon', 'Casillas', 'Neuer', 'Courtois', 'Oblak', 'Ter Stegen', 'Donnarumma', 'Lloris', 'Barthez', 'Emiliano Martínez'] },
-  // Ballons d'Or
-  { cat: 'joueur', words: ['Messi', 'Cristiano Ronaldo', 'Ronaldo (R9)', 'Rivaldo', 'Benzema', 'Shevchenko', 'Figo', 'Nedvěd', 'Owen'] },
-  // Attaquants vifs et techniques
-  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala', 'Lautaro Martínez', 'Julián Álvarez', 'Insigne', 'David Villa', 'Fernando Torres', 'Raúl'] },
+  // Petits milieux techniques des années 2010
+  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Verratti', 'Thiago Alcântara', 'David Silva', 'Modrić'] },
+  // Milieux techniques des années 2020
+  { cat: 'joueur', words: ['Pedri', 'Gavi', 'Bernardo Silva', 'Vitinha', 'João Neves'] },
+  // Grands finisseurs des années 2020
+  { cat: 'joueur', words: ['Kane', 'Lukaku', 'Lewandowski', 'Haaland', 'Osimhen'] },
+  // Ailiers rapides de Premier League, années 2010
+  { cat: 'joueur', words: ['Henry', 'Walcott', 'Aubameyang', 'Sterling', 'Sané'] },
+  // Ailiers de Premier League, années 2020
+  { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané'] },
+  // Dribbleurs des années 2010
+  { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé'] },
+  // Dribbleurs des années 2020
+  { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão'] },
+  // Dribbleurs de légende
+  { cat: 'joueur', words: ['Ronaldinho', 'Garrincha', 'Okocha', 'Robinho', 'Quaresma'] },
+  // Meneurs de jeu des années 2000
+  { cat: 'joueur', words: ['Zidane', 'Kaká', 'Totti', 'Del Piero', 'Rui Costa', 'Riquelme'] },
+  // Créateurs des années 2010–2020
+  { cat: 'joueur', words: ['De Bruyne', 'Özil', 'Griezmann', 'Ødegaard', 'Bruno Fernandes'] },
+  // Récupérateurs des années 2000
+  { cat: 'joueur', words: ['Makélélé', 'Vieira', 'Roy Keane', 'Gattuso', 'Essien'] },
+  // Sentinelles des années 2010–2020
+  { cat: 'joueur', words: ['Kanté', 'Rodri', 'Casemiro', 'Busquets', 'Tchouaméni'] },
+  // Box-to-box
+  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Bellingham'] },
+  // Défenseurs centraux des années 2000
+  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry'] },
+  // Défenseurs centraux des années 2010–2020
+  { cat: 'joueur', words: ['Sergio Ramos', 'Piqué', 'Van Dijk', 'Varane', 'Chiellini'] },
+  // Latéraux des années 2000
+  { cat: 'joueur', words: ['Roberto Carlos', 'Cafu', 'Lahm', 'Ashley Cole', 'Evra'] },
+  // Latéraux des années 2010–2020
+  { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Alexander-Arnold', 'Robertson', 'Hakimi'] },
+  // Gardiens de légende
+  { cat: 'joueur', words: ['Buffon', 'Casillas', 'Kahn', 'Barthez', 'Čech'] },
+  // Gardiens d'aujourd'hui
+  { cat: 'joueur', words: ['Neuer', 'Courtois', 'Oblak', 'Ter Stegen', 'Donnarumma'] },
+  // Ballons d'Or des années 2000
+  { cat: 'joueur', words: ['Ronaldo (R9)', 'Rivaldo', 'Figo', 'Shevchenko', 'Nedvěd', 'Owen'] },
+  // Ballons d'Or des années 2010–2020
+  { cat: 'joueur', words: ['Messi', 'Cristiano Ronaldo', 'Benzema', 'Rodri', 'Dembélé'] },
+  // Attaquants vifs des années 2010
+  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala', 'Fernando Torres'] },
+  // Attaquants des années 2020
+  { cat: 'joueur', words: ['Lautaro Martínez', 'Julián Álvarez', 'Mbappé', 'Kolo Muani', 'Marcus Thuram'] },
   // Jeunes cracks des années 2020
-  { cat: 'joueur', words: ['Lamine Yamal', 'Bellingham', 'Musiala', 'Gavi', 'Wirtz', 'Zaïre-Emery', 'Désiré Doué', 'Endrick', 'Kenan Yıldız', 'Cubarsí'] },
-  // Bleus d'aujourd'hui
-  { cat: 'joueur', words: ['Mbappé', 'Tchouaméni', 'Camavinga', 'Saliba', 'Koundé', 'Maignan', 'Rabiot', 'Kolo Muani', 'Marcus Thuram', 'Olise'] },
+  { cat: 'joueur', words: ['Musiala', 'Wirtz', 'Zaïre-Emery', 'Endrick', 'Kenan Yıldız'] },
+  // Icônes absolues
+  { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini', 'Beckenbauer'] },
 
   /* Clubs (14) */
   {
