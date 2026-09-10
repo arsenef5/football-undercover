@@ -20,25 +20,23 @@ export const BASE: GroupDef[] = [
   // Ailiers rapides de Premier League, années 2010
   { cat: 'joueur', words: ['Henry', 'Walcott', 'Aubameyang', 'Sterling', 'Sané'] },
   // Ailiers de Premier League, années 2020
-  { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané'] },
+  { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané', 'Hazard'] },
   // Dribbleurs des années 2010
   { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé'] },
   // Dribbleurs des années 2020
   { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão'] },
   // Dribbleurs de légende
   { cat: 'joueur', words: ['Ronaldinho', 'Garrincha', 'Okocha', 'Robinho', 'Quaresma'] },
-  // Meneurs de jeu des années 2000
-  { cat: 'joueur', words: ['Zidane', 'Kaká', 'Totti', 'Del Piero', 'Rui Costa', 'Riquelme'] },
   // Créateurs des années 2010–2020
   { cat: 'joueur', words: ['De Bruyne', 'Özil', 'Griezmann', 'Ødegaard', 'Bruno Fernandes'] },
   // Récupérateurs des années 2000
-  { cat: 'joueur', words: ['Makélélé', 'Vieira', 'Roy Keane', 'Gattuso', 'Essien'] },
+  { cat: 'joueur', words: ['Makélélé', 'Vieira', 'Gattuso', 'Essien'] },
   // Sentinelles des années 2010–2020
   { cat: 'joueur', words: ['Kanté', 'Rodri', 'Casemiro', 'Busquets', 'Tchouaméni'] },
   // Box-to-box
-  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba'] },
+  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Rodri'] },
   // Défenseurs centraux des années 2000
-  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry'] },
+  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry', 'Piqué'] },
   // Défenseurs centraux des années 2010–2020
   { cat: 'joueur', words: ['Sergio Ramos', 'Piqué', 'Van Dijk', 'Varane', 'Chiellini'] },
   // Latéraux des années 2000
@@ -62,17 +60,17 @@ export const BASE: GroupDef[] = [
   // Milieux techniques, toutes époques
   { cat: 'joueur', words: ['Vitinha', 'Modrić', 'Iniesta', 'Bruno Fernandes', 'Verratti'] },
   // Champions du monde 2018
-  { cat: 'joueur', words: ['Pogba', 'Griezmann', 'Kanté'] },
+  { cat: 'joueur', words: ['Pogba', 'Griezmann', 'Kanté', 'Matuidi'] },
   // Les magiciens
-  { cat: 'joueur', words: ['Ronaldinho', 'Neymar', 'Lamine Yamal'] },
+  { cat: 'joueur', words: ['Ronaldinho', 'Neymar', 'Lamine Yamal', 'Messi'] },
   // Ailiers de Ligue des champions
-  { cat: 'joueur', words: ['Bale', 'Robben', 'Di María', 'Hazard', 'Vinícius Jr'] },
+  { cat: 'joueur', words: ['Bale', 'Robben', 'Di María', 'Hazard', 'Vinícius Jr', 'Mbappé'] },
   // Patrons de défense
   { cat: 'joueur', words: ['Marquinhos', 'Van Dijk', 'Sergio Ramos', 'Thiago Silva'] },
   // Les trois Ronaldo
   { cat: 'joueur', words: ['Cristiano Ronaldo', 'Ronaldo (R9)', 'Ronaldinho'] },
   // Les plus grands de l'histoire
-  { cat: 'joueur', words: ['Ronaldo (R9)', 'Pelé', 'Maradona', 'Messi', 'Cristiano Ronaldo', 'Zidane'] },
+  { cat: 'joueur', words: ['Ronaldo (R9)', 'Pelé', 'Maradona', 'Messi', 'Cristiano Ronaldo', 'Zidane', 'Mbappé'] },
   // Milieux de très haut niveau : sentinelles et relayeurs
   { cat: 'joueur', words: ['Busquets', 'Casemiro', 'Thiago Motta', 'Xavi', 'Kroos', 'Iniesta', 'Rodri'] },
   // Jeunes stars techniques

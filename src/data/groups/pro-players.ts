@@ -25,9 +25,9 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Attaquants français des années 2010
   { cat: 'joueur', words: ['Gignac', 'Lacazette', 'Ben Yedder', 'Griezmann', 'Hoarau'] },
   // Ailiers français des années 2020
-  { cat: 'joueur', words: ['Dembélé', 'Coman', 'Barcola', 'Désiré Doué', 'Olise', 'Nkunku'] },
+  { cat: 'joueur', words: ['Dembélé', 'Coman', 'Barcola', 'Désiré Doué', 'Olise', 'Nkunku', 'Mbappé'] },
   // Milieux français des années 2010
-  { cat: 'joueur', words: ['Pogba', 'Kanté', 'Matuidi', 'Cabaye', 'Sissoko', 'Rabiot'] },
+  { cat: 'joueur', words: ['Pogba', 'Kanté', 'Matuidi', 'Rabiot'] },
   // Milieux français des années 2020
   { cat: 'joueur', words: ['Tchouaméni', 'Camavinga', 'Zaïre-Emery', 'Rabiot', 'Koné', 'Fofana'] },
   // Défenseurs français des années 2010
@@ -109,7 +109,7 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Arsenal de Wenger, l'attaque des années 2000
   { cat: 'joueur', words: ['Henry', 'Bergkamp', 'Pirès', 'Wiltord'] },
   // Arsenal de Wenger, le milieu
-  { cat: 'joueur', words: ['Vieira', 'Fàbregas', 'Nasri', 'Wilshere', 'Cazorla'] },
+  { cat: 'joueur', words: ['Fàbregas', 'Nasri', 'Wilshere', 'Cazorla'] },
   // Chelsea des années 2010
   { cat: 'joueur', words: ['Hazard', 'Willian', 'Cole Palmer'] },
 
@@ -143,9 +143,9 @@ export const PRO_PLAYERS: GroupDef[] = [
   /* Clubs français                                                       */
   /* ------------------------------------------------------------------ */
   // PSG des années 2010, l'attaque
-  { cat: 'joueur', words: ['Di María', 'Lavezzi', 'Lucas Moura', 'Pastore'] },
+  { cat: 'joueur', words: ['Di María', 'Lavezzi', 'Lucas Moura', 'Pastore', 'Doué'] },
   // OM des années 2010–2020
-  { cat: 'joueur', words: ['Payet', 'Thauvin', 'Valbuena', 'Greenwood'] },
+  { cat: 'joueur', words: ['Payet', 'Thauvin', 'Valbuena', 'Greenwood', 'Gignac'] },
 
   /* ------------------------------------------------------------------ */
   /* Par profil, toutes nationalités                                      */
@@ -156,8 +156,6 @@ export const PRO_PLAYERS: GroupDef[] = [
   { cat: 'joueur', words: ['Van Dijk', 'Rüdiger', 'Saliba', 'Rúben Dias'] },
   // Latéraux des années 2010
   { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Alaba', 'Jordi Alba', 'Walker'] },
-  // Latéraux des années 2020, la suite
-  { cat: 'joueur', words: ['Dimarco', 'Frimpong', 'Grimaldo', 'Dumfries', 'Davies', 'Reece James'] },
   // Gardiens des années 2010
   { cat: 'joueur', words: ['De Gea', 'Oblak', 'Ter Stegen', 'Lloris', 'Alisson', 'Navas'] },
   // Joueurs devenus entraîneurs, les Espagnols et Italiens
@@ -179,7 +177,7 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Milieux français des années 2010
   { cat: 'joueur', words: ['Kanté', 'Matuidi', 'Rabiot', 'Pogba'] },
   // Attaquants français de la nouvelle vague
-  { cat: 'joueur', words: ['Ekitiké', 'Barcola', 'Désiré Doué', 'Coman', 'Rayan Cherki'] },
+  { cat: 'joueur', words: ['Ekitiké', 'Barcola', 'Désiré Doué', 'Coman', 'Rayan Cherki', 'Mbappé'] },
   // Milieux français passés par Monaco
   { cat: 'joueur', words: ['Camavinga', 'Lemar', 'Kondogbia', 'Tchouaméni', 'Rabiot'] },
 ];
