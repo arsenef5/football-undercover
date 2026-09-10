@@ -1,6 +1,5 @@
 import type { Category, Pack, WordGroup, WordLang, WordPair } from '../game/types';
-import { BASE, BASE_EXTRA } from './groups/base';
-import { PRO_ERAS } from './groups/pro-eras';
+import { BASE } from './groups/base';
 import { PRO_MORE } from './groups/pro-more';
 import { PRO_PLAYERS } from './groups/pro-players';
 import type { GroupDef } from './groups/types';
@@ -11,7 +10,7 @@ import type { GroupDef } from './groups/types';
  * Coupe du monde / Ligue des champions la fois suivante…).
  *
  * - pack « base » (gratuit) : `src/data/groups/base.ts`
- * - pack « pro » (sans pub) : `pro-players.ts` + `pro-more.ts`
+ * - pack « pro » (sans pub) : `pro-players.ts` (joueurs par ressemblance) + `pro-more.ts`
  */
 
 export const CATEGORY_ORDER: Category[] = ['joueur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
@@ -28,7 +27,7 @@ function build(defs: GroupDef[], pack: Pack): WordGroup[] {
 }
 
 export const BASE_GROUPS: WordGroup[] = build(BASE, 'base');
-export const PRO_GROUPS: WordGroup[] = build([...BASE_EXTRA, ...PRO_PLAYERS, ...PRO_ERAS, ...PRO_MORE], 'pro');
+export const PRO_GROUPS: WordGroup[] = build([...PRO_PLAYERS, ...PRO_MORE], 'pro');
 export const ALL_GROUPS: WordGroup[] = [...BASE_GROUPS, ...PRO_GROUPS];
 
 /** Groupes disponibles selon la version (gratuite ou Pro). */

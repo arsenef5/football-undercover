@@ -5,6 +5,10 @@ export const PRO_MORE: GroupDef[] = [
   /* ------------------------------------------------------------------ */
   /* Clubs                                                                */
   /* ------------------------------------------------------------------ */
+  { cat: 'club', words: ['Manchester United', 'Liverpool', 'Arsenal', 'Chelsea', 'Manchester City', 'Tottenham', 'Newcastle', 'Aston Villa'] },
+  { cat: 'club', words: ['Real Madrid', ['FC Barcelone', 'FC Barcelona'], 'Atlético de Madrid', ['Séville FC', 'Sevilla FC'], ['Valence CF', 'Valencia CF'], 'Athletic Bilbao'] },
+  { cat: 'club', words: ['Juventus', 'Inter Milan', 'AC Milan', ['Naples', 'Napoli'], 'AS Roma', 'Lazio'] },
+  { cat: 'club', words: ['PSG', ['Olympique de Marseille', 'Marseille'], ['Olympique Lyonnais', 'Lyon'], 'AS Monaco', ['LOSC Lille', 'Lille'], 'RC Lens', 'OGC Nice', ['Stade Rennais', 'Rennes'], 'FC Nantes', ['AS Saint-Étienne', 'Saint-Étienne']] },
   { cat: 'club', words: ['Everton', 'Leeds United', 'West Ham', 'Leicester City', 'Nottingham Forest', 'Brighton', 'Crystal Palace', 'Wolverhampton', 'Fulham', 'Southampton'] },
   { cat: 'club', words: ['Real Sociedad', ['Betis Séville', 'Real Betis'], 'Villarreal', 'Celta Vigo', 'Espanyol', 'Getafe', 'Osasuna', ['Deportivo La Corogne', 'Deportivo La Coruña']] },
   { cat: 'club', words: ['Atalanta', 'Fiorentina', 'Torino', ['Bologne', 'Bologna'], ['Parme', 'Parma'], 'Sampdoria', 'Udinese', 'Genoa'] },
@@ -20,6 +24,20 @@ export const PRO_MORE: GroupDef[] = [
   /* ------------------------------------------------------------------ */
   /* Trophées                                                             */
   /* ------------------------------------------------------------------ */
+  {
+    cat: 'trophee',
+    words: [
+      "Ballon d'Or",
+      'The Best FIFA',
+      ["Soulier d'Or", 'Golden Boot'],
+      ["Gant d'Or", 'Golden Glove'],
+      ['Trophée Kopa', 'Kopa Trophy'],
+      'Golden Boy',
+      ['Trophée Yachine', 'Yashin Trophy'],
+      ['Trophée Puskás', 'Puskás Award'],
+    ],
+  },
+  { cat: 'trophee', words: ['Coupe de France', 'FA Cup', 'Copa del Rey', 'Coppa Italia', 'DFB-Pokal', 'Community Shield'] },
   {
     cat: 'trophee',
     words: [
@@ -48,6 +66,21 @@ export const PRO_MORE: GroupDef[] = [
   /* ------------------------------------------------------------------ */
   /* Stades                                                               */
   /* ------------------------------------------------------------------ */
+  { cat: 'stade', words: ['Old Trafford', 'Anfield', 'Wembley', 'Emirates Stadium', 'Etihad Stadium', 'Stamford Bridge'] },
+  { cat: 'stade', words: ['Camp Nou', 'Santiago Bernabéu', 'Metropolitano', 'San Siro', 'Allianz Stadium (Juventus)', 'San Mamés'] },
+  { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Groupama Stadium', 'Stade Bollaert', 'Stade Geoffroy-Guichard'] },
+  {
+    cat: 'stade',
+    words: [
+      'Maracanã',
+      'La Bombonera',
+      ['Stade 974 de Doha, 1er stade démontable', 'Stadium 974 in Doha, the first dismantlable stadium'],
+      ['Stade de Lusail (finale 2022)', 'Lusail Stadium (2022 final)'],
+      'Allianz Arena',
+      'Signal Iduna Park',
+      'Estádio da Luz',
+    ],
+  },
   { cat: 'stade', words: ["St James' Park", 'Villa Park', 'Goodison Park', 'Tottenham Hotspur Stadium', 'Elland Road', 'London Stadium'] },
   {
     cat: 'stade',
@@ -72,6 +105,20 @@ export const PRO_MORE: GroupDef[] = [
   /* ------------------------------------------------------------------ */
   /* Compétitions                                                         */
   /* ------------------------------------------------------------------ */
+  {
+    cat: 'competition',
+    words: [
+      ['Coupe du monde 1998', '1998 World Cup'],
+      ['Coupe du monde 2002', '2002 World Cup'],
+      ['Coupe du monde 2006', '2006 World Cup'],
+      ['Coupe du monde 2010', '2010 World Cup'],
+      ['Coupe du monde 2014', '2014 World Cup'],
+      ['Coupe du monde 2018', '2018 World Cup'],
+      ['Coupe du monde 2022', '2022 World Cup'],
+      ['Coupe du monde 1986', '1986 World Cup'],
+    ],
+  },
+  { cat: 'competition', words: ['Euro 2000', 'Euro 2016', 'Euro 2024', 'Euro 2004'] },
   { cat: 'competition', words: ['Championship', 'Ligue 2', 'Serie B', 'Segunda División', '2. Bundesliga', 'Jupiler Pro League', 'Scottish Premiership', ['Championnat National', 'Championnat National']] },
   {
     cat: 'competition',
@@ -104,85 +151,87 @@ export const PRO_MORE: GroupDef[] = [
   { cat: 'competition', words: ['Euro 1984', 'Euro 1992', 'Euro 1996', 'Euro 2008', 'Euro 2012', 'Euro 2020'] },
 
   /* ------------------------------------------------------------------ */
-  /* Moments légendaires                                                  */
+  /* Moments légendaires — regroupés par ressemblance                     */
   /* ------------------------------------------------------------------ */
+  // Buts de la dernière seconde
   {
     cat: 'but',
     words: [
-      ['Le miracle d\'Istanbul (Milan – Liverpool 2005)', 'The Miracle of Istanbul (Milan v Liverpool 2005)'],
-      ['La finale du Camp Nou (Man Utd – Bayern 1999)', 'The Camp Nou final (Man Utd v Bayern 1999)'],
-      ['La Décima du Real à Lisbonne (2014)', "Real's Décima in Lisbon (2014)"],
-      ['La finale de Madrid (Liverpool – Tottenham 2019)', 'The Madrid final (Liverpool v Tottenham 2019)'],
-      ['La finale Bayern – PSG à huis clos (2020)', 'The behind-closed-doors Bayern v PSG final (2020)'],
-      ['La finale de Paris (Real – Liverpool 2022)', 'The Paris final (Real v Liverpool 2022)'],
-      ['Le 5-0 du PSG en finale (Munich 2025)', "PSG's 5-0 in the final (Munich 2025)"],
-      ['La finale de Wembley (Chelsea 2012)', 'The Wembley final (Chelsea 2012)'],
+      ['Le but de Sergio Ramos à la 93e (Lisbonne 2014)', "Sergio Ramos's 93rd-minute goal (Lisbon 2014)"],
+      ['Le but de Sergi Roberto à la 95e (Remontada 2017)', "Sergi Roberto's 95th-minute goal (Remontada 2017)"],
+      ['Le but de Solskjær à la 93e (finale 1999)', "Solskjær's 93rd-minute goal (1999 final)"],
+      ["Le but d'Agüero à la 94e (titre 2012)", "Agüero's 94th-minute goal (2012 title)"],
+      ['La volée de Payet à la 89e (Euro 2016)', "Payet's 89th-minute volley (Euro 2016)"],
     ],
   },
+  // Coups francs de légende
   {
     cat: 'but',
     words: [
-      ['Le lob de Messi contre le Betis (2019)', "Messi's chip vs Betis (2019)"],
-      ['Le slalom de Messi contre Getafe (2007)', "Messi's solo run vs Getafe (2007)"],
-      ['La papinade', 'The "Papinade" volley'],
-      ['La talonnade de Madjer (1987)', "Madjer's backheel (1987)"],
-      ['La volée de Payet (Euro 2016)', "Payet's volley (Euro 2016)"],
-      ['La volée de Pavard (2018)', "Pavard's volley (2018)"],
-      ['La tête plongeante de Van Persie (2014)', "Van Persie's flying header (2014)"],
-      ['Le but de Sergi Roberto (Remontada 2017)', "Sergi Roberto's goal (Remontada 2017)"],
+      ['Le coup franc de Roberto Carlos (1997)', "Roberto Carlos's free kick (1997)"],
+      ['Le coup franc de Beckham contre la Grèce (2001)', "Beckham's free kick vs Greece (2001)"],
+      ['Le coup franc de Messi contre Liverpool (2019)', "Messi's free kick vs Liverpool (2019)"],
+      ["Le coup franc de Ronaldinho contre l'Angleterre (2002)", "Ronaldinho's free kick vs England (2002)"],
+      ['Le coup franc de Juninho contre Barcelone (2001)', "Juninho's free kick vs Barcelona (2001)"],
     ],
   },
+  // Cartons et humiliations
   {
     cat: 'but',
     words: [
-      ["Le triplé de Cristiano Ronaldo contre l'Espagne (2018)", "Cristiano Ronaldo's hat-trick vs Spain (2018)"],
-      ['Les 91 buts de Messi en 2012', "Messi's 91 goals in 2012"],
-      ['Le titre de Leicester (2016)', "Leicester's title (2016)"],
-      ["Les Invincibles d'Arsenal (2004)", "Arsenal's Invincibles (2004)"],
+      ['La Remontada (Barça 6-1 PSG, 2017)', 'The Remontada (Barça 6-1 PSG, 2017)'],
+      ['Le 4-0 de Liverpool contre le Barça (2019)', "Liverpool's 4-0 vs Barça (2019)"],
+      ['Le 7-1 (Brésil – Allemagne 2014)', 'The 7-1 (Brazil v Germany 2014)'],
+      ['Le 8-2 (Bayern – Barça 2020)', 'The 8-2 (Bayern v Barça 2020)'],
       ['Le 14-0 de la France contre Gibraltar (2023)', "France's 14-0 vs Gibraltar (2023)"],
+      ['Le 5-0 du PSG en finale (Munich 2025)', "PSG's 5-0 in the final (Munich 2025)"],
+    ],
+  },
+  // Dynasties et records collectifs
+  {
+    cat: 'but',
+    words: [
+      ["Les Invincibles d'Arsenal (2004)", "Arsenal's Invincibles (2004)"],
       ['Les trois Ligues des champions de suite du Real (2016–2018)', "Real's three Champions Leagues in a row (2016–2018)"],
       ['Le sextuplé du Barça (2009)', "Barça's sextuple (2009)"],
       ['Le sextuplé du Bayern (2020)', "Bayern's sextuple (2020)"],
     ],
   },
+  // Exploits individuels
   {
     cat: 'but',
     words: [
-      ['Le penalty raté de Baggio (finale 1994)', "Baggio's missed penalty (1994 final)"],
-      ['La grève de Knysna (2010)', 'The Knysna strike (2010)'],
-      ['Le tacle de De Jong sur Xabi Alonso (finale 2010)', "De Jong's kung-fu kick on Xabi Alonso (2010 final)"],
-      ['Le tacle de Ramos sur Salah (finale 2018)', "Ramos's tackle on Salah (2018 final)"],
-      ['Le penalty de Zidane sur la barre (finale 2006)', "Zidane's Panenka off the bar (2006 final)"],
-      ['Le carton rouge de Beckham (1998)', "Beckham's red card (1998)"],
+      ['Les 5 buts de Messi contre Leverkusen (2012)', "Messi's 5 goals vs Leverkusen (2012)"],
+      ["Le triplé de Cristiano Ronaldo contre l'Atlético (2019)", "Cristiano Ronaldo's hat-trick vs Atlético (2019)"],
+      ['Les 4 buts de Lewandowski contre le Real (2013)', "Lewandowski's 4 goals vs Real (2013)"],
+      ['La tête plongeante de Van Persie (2014)', "Van Persie's flying header (2014)"],
+      ['La volée de Pavard (2018)', "Pavard's volley (2018)"],
+    ],
+  },
+  // Grandes finales
+  {
+    cat: 'but',
+    words: [
+      ["La parade d'Emiliano Martínez (finale 2022)", "Emiliano Martínez's save (2022 final)"],
+      ['La finale de Paris (Real – Liverpool 2022)', 'The Paris final (Real v Liverpool 2022)'],
+      ['La finale de Wembley (Chelsea 2012)', 'The Wembley final (Chelsea 2012)'],
+      ['Le but en or de Trezeguet (Euro 2000)', "Trezeguet's golden goal (Euro 2000)"],
+    ],
+  },
+  // Mains et tricheries
+  {
+    cat: 'but',
+    words: [
+      ['La main de Maradona (1986)', "Maradona's handball (1986)"],
+      ['La main de Suárez (2010)', "Suárez's handball (2010)"],
+      ['La main de Thierry Henry (2009)', "Thierry Henry's handball (2009)"],
     ],
   },
 
   /* ------------------------------------------------------------------ */
   /* Memes                                                                */
   /* ------------------------------------------------------------------ */
-  {
-    cat: 'meme',
-    words: [
-      ['Le « Calma » de Vinícius', "Vinícius's \"Calma\""],
-      ["Le masque d'Aubameyang", "Aubameyang's mask"],
-      ['La danse du robot de Crouch', "Crouch's robot dance"],
-      ['Le cœur de Bale', "Bale's heart celebration"],
-      ['La célébration téléphone de Griezmann', "Griezmann's phone-call celebration"],
-      ['La statue de Ronaldo à Madère', "The Ronaldo statue in Madeira"],
-    ],
-  },
-  {
-    cat: 'meme',
-    words: [
-      ['« Football, bloody hell » (Ferguson)', '"Football, bloody hell" (Ferguson)'],
-      ["« Et à la fin, c'est l'Allemagne qui gagne » (Lineker)", '"And in the end the Germans win" (Lineker)'],
-      ['« Ils ont remplacé la Tour Eiffel par une statue de moi » (Zlatan)', '"They replaced the Eiffel Tower with a statue of me" (Zlatan)'],
-      ['« Respect, respect, respect » (Mourinho, 2018)', '"Respect, respect, respect" (Mourinho, 2018)'],
-      ['« Agüerooooo ! » (Martin Tyler)', '"Agüerooooo!" (Martin Tyler)'],
-      ['« Et 1, et 2, et 3-0 »', '"Et 1, et 2, et 3-0" (France 1998 chant)'],
-      ['« Ramenez la coupe à la maison »', '"Ramenez la coupe à la maison" (Vegedream)'],
-    ],
-  },
+  // Moments cultes
   {
     cat: 'meme',
     words: [
@@ -198,6 +247,8 @@ export const PRO_MORE: GroupDef[] = [
   /* ------------------------------------------------------------------ */
   /* Styles de jeu                                                        */
   /* ------------------------------------------------------------------ */
-  { cat: 'style', words: [['Libéro', 'Sweeper'], ['Stoppeur', 'Stopper'], ['Meneur de jeu', 'Playmaker'], ['Numéro 10', 'Number 10'], ['Régista', 'Regista'], ['Trequartista', 'Trequartista']] },
-  { cat: 'style', words: [['Passement de jambes', 'Step-over'], ['Crochet', 'Cut inside'], ['Aile de pigeon', 'Flick'], 'Rabona', ['Retourné acrobatique', 'Bicycle kick'], ['Coup du foulard', 'Trivela']] },
+  // Postes
+  { cat: 'style', words: [['Libéro', 'Sweeper'], ['Stoppeur', 'Stopper'], ['Meneur de jeu', 'Playmaker'], ['Faux 9', 'False 9']] },
+  // Gestes techniques (suite)
+  { cat: 'style', words: [['Crochet', 'Cut inside'], ['Coup du foulard', 'Trivela'], ['Petit pont', 'Nutmeg'], ['Grand pont', 'Knock-and-run']] },
 ];
