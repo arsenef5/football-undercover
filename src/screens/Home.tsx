@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BallIcon, ChevronIcon, FlagFR, FlagGB, InfoIcon, PlayIcon, SparkIcon } from '../components/Icons';
 import { LanguageSheet } from '../components/LanguageSheet';
 import { Button, Logo, Screen } from '../components/ui';
-import { countWords, groupsFor } from '../data/words';
+import { countCombos, groupsFor } from '../data/words';
 import { counts } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
@@ -52,7 +52,7 @@ export function Home() {
           <div className="l">{T.home.statsGames}</div>
         </div>
         <div className="stat">
-          <div className="v">{countWords(words)}</div>
+          <div className="v">{countCombos(words)}</div>
           <div className="l">{T.home.statsWords}</div>
         </div>
       </div>

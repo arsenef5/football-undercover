@@ -1,7 +1,7 @@
 import type { GroupDef } from './types';
 
 /**
- * Base gratuite : exactement 275 mots (74 % de joueurs), toutes catégories représentées.
+ * Base gratuite (au moins 200 mots, une majorité de joueurs), toutes catégories représentées.
  * Une entrée est soit un nom identique dans les deux langues, soit [français, anglais].
  * Le jeu tire deux mots différents par groupe : les duos changent à chaque partie.
  *
@@ -10,7 +10,7 @@ import type { GroupDef } from './types';
  * (décisions d'Arsène, 10/09/2026).
  */
 export const BASE: GroupDef[] = [
-  /* Joueurs (203) */
+  /* Joueurs */
   // Petits milieux techniques des années 2010
   { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Verratti', 'Thiago Alcântara', 'David Silva', 'Modrić'] },
   // Milieux techniques des années 2020
@@ -36,7 +36,7 @@ export const BASE: GroupDef[] = [
   // Sentinelles des années 2010–2020
   { cat: 'joueur', words: ['Kanté', 'Rodri', 'Casemiro', 'Busquets', 'Tchouaméni'] },
   // Box-to-box
-  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Bellingham'] },
+  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba'] },
   // Défenseurs centraux des années 2000
   { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry'] },
   // Défenseurs centraux des années 2010–2020
@@ -44,23 +44,17 @@ export const BASE: GroupDef[] = [
   // Latéraux des années 2000
   { cat: 'joueur', words: ['Roberto Carlos', 'Cafu', 'Lahm', 'Ashley Cole', 'Evra'] },
   // Latéraux des années 2010–2020
-  { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Alexander-Arnold', 'Robertson', 'Hakimi'] },
+  { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Hakimi', 'Nuno Mendes'] },
   // Gardiens de légende
   { cat: 'joueur', words: ['Buffon', 'Casillas', 'Kahn', 'Barthez', 'Čech'] },
   // Gardiens d'aujourd'hui
   { cat: 'joueur', words: ['Neuer', 'Courtois', 'Oblak', 'Ter Stegen', 'Donnarumma'] },
   // Ballons d'Or des années 2000
   { cat: 'joueur', words: ['Ronaldo (R9)', 'Rivaldo', 'Figo', 'Shevchenko', 'Nedvěd', 'Owen'] },
-  // Ballons d'Or des années 2010–2020
-  { cat: 'joueur', words: ['Messi', 'Cristiano Ronaldo', 'Benzema', 'Rodri', 'Dembélé'] },
   // Attaquants vifs des années 2010
-  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala', 'Fernando Torres'] },
-  // Attaquants des années 2020
-  { cat: 'joueur', words: ['Lautaro Martínez', 'Julián Álvarez', 'Mbappé', 'Kolo Muani', 'Marcus Thuram'] },
-  // Jeunes cracks des années 2020
-  { cat: 'joueur', words: ['Musiala', 'Wirtz', 'Zaïre-Emery', 'Endrick', 'Kenan Yıldız'] },
+  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala'] },
   // Icônes absolues
-  { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini', 'Beckenbauer'] },
+  { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini'] },
 
   /* Groupes d'Arsène (10/09/2026) : ses duos favoris, en accès libre (75 mots) */
   // Dribbleurs du PSG, du Barça et du Real d'aujourd'hui
@@ -86,27 +80,23 @@ export const BASE: GroupDef[] = [
   // Génération 87 française
   { cat: 'joueur', words: ['Ben Arfa', 'Nasri', 'Ménez', 'Benzema', 'Gourcuff'] },
   // Les grands buteurs des années 2010–2020
-  { cat: 'joueur', words: ['Suárez', 'Falcao', 'Cavani', 'Ibrahimović', 'Lewandowski', 'Messi', 'Mbappé'] },
+  { cat: 'joueur', words: ['Suárez', 'Falcao', 'Cavani', 'Ibrahimović', 'Lewandowski'] },
   // Le trio du Barça
   { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Busquets'] },
   // Les deux Argentins
   { cat: 'joueur', words: ['Messi', 'Maradona'] },
   // Attaquants français ultra-rapides
-  { cat: 'joueur', words: ['Mbappé', 'Henry', 'Martial'] },
-  // Les deux Brésiliens
-  { cat: 'joueur', words: ['Neymar', 'Ronaldinho'] },
-  // Attaquants français passés par l'Angleterre
-  { cat: 'joueur', words: ['Martial', 'Henry', 'Anelka', 'Saint-Maximin'] },
+  { cat: 'joueur', words: ['Mbappé', 'Henry', 'Martial', 'Anelka'] },
   // Gardiens
   { cat: 'joueur', words: ['Maignan', 'Areola', 'Lloris', 'Donnarumma', 'Buffon'] },
 
-  /* Clubs (14) */
+  /* Clubs */
   {
     cat: 'club',
     words: ['PSG', ['Olympique de Marseille', 'Marseille'], ['Olympique Lyonnais', 'Lyon'], 'Real Madrid', ['FC Barcelone', 'FC Barcelona'], 'Manchester United', 'Liverpool', 'Bayern Munich', 'Juventus', 'AC Milan', 'Inter Milan', 'Manchester City', 'Arsenal', 'Chelsea'],
   },
 
-  /* Trophées (12) */
+  /* Trophées */
   {
     cat: 'trophee',
     words: [
@@ -125,10 +115,10 @@ export const BASE: GroupDef[] = [
     ],
   },
 
-  /* Stades (10) */
+  /* Stades */
   { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Camp Nou', 'Santiago Bernabéu', 'Old Trafford', 'Anfield', 'Wembley', 'San Siro', 'Allianz Arena'] },
 
-  /* Compétitions (10) — tous pays mélangés */
+  /* Compétitions — tous pays mélangés */
   {
     cat: 'competition',
     words: [
@@ -137,7 +127,7 @@ export const BASE: GroupDef[] = [
       'Serie A',
       'Bundesliga',
       'Ligue 1',
-      ['Championnat néerlandais (Eredivisie)', 'Dutch league (Eredivisie)'],
+      'Eredivisie',
       ['Championnat brésilien', 'Brazilian league'],
       ['Championnat argentin', 'Argentine league'],
       ['Championnat américain (MLS)', 'American league (MLS)'],
@@ -156,25 +146,18 @@ export const BASE: GroupDef[] = [
       ['Le triplé de Mbappé en finale (2022)', "Mbappé's hat-trick in the final (2022)"],
       ["Le but d'Iniesta en finale de Coupe du monde (2010)", "Iniesta's World Cup final goal (2010)"],
       ['Le but de Götze en finale (2014)', "Götze's goal in the final (2014)"],
+      ["Le triplé de Lucas Moura contre l'Ajax (2019)", "Lucas Moura's hat-trick vs Ajax (2019)"],
+      ['Les 5 buts de Lewandowski en 9 minutes (2015)', "Lewandowski's 5 goals in 9 minutes (2015)"],
+      ['Le retourné de Cristiano Ronaldo (Turin 2018)', "Cristiano Ronaldo's bicycle kick (Turin 2018)"],
     ],
   },
   // Exploits individuels
-  {
-    cat: 'but',
-    words: [
-      ['Le retourné de Cristiano Ronaldo (Turin 2018)', "Cristiano Ronaldo's bicycle kick (Turin 2018)"],
-      ['Les 5 buts de Lewandowski en 9 minutes (2015)', "Lewandowski's 5 goals in 9 minutes (2015)"],
-      ["Le triplé de Lucas Moura contre l'Ajax (2019)", "Lucas Moura's hat-trick vs Ajax (2019)"],
-      ["Le 8e Ballon d'Or de Messi (2023)", "Messi's 8th Ballon d'Or (2023)"],
-    ],
-  },
 
-  /* Memes (8) */
+  /* Memes */
   // Célébrations cultes
   {
     cat: 'meme',
     words: [
-      'Siuuu',
       ['Le dab de Pogba', "Pogba's dab"],
       ['La danse Fortnite de Griezmann', "Griezmann's Fortnite dance"],
       ['La célébration de Marcelo et CR7', 'Marcelo and CR7 celebration'],

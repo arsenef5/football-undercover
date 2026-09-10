@@ -3,7 +3,7 @@ import pkg from '../../package.json';
 import { ChevronIcon, InfoIcon, SparkIcon, TrashIcon, UsersIcon, VideoIcon } from '../components/Icons';
 import { LangPickers } from '../components/LanguageSheet';
 import { Button, Confirm, Screen, SectionTitle, Segmented, Setting, Toggle } from '../components/ui';
-import { BASE_WORD_COUNT, PRO_WORD_COUNT } from '../data/words';
+import { BASE_COMBO_COUNT, PRO_EXTRA_COMBOS } from '../data/words';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { requestProPromo } from '../monetization/promo';
@@ -121,7 +121,7 @@ export function Settings() {
             <span className="grow">
               <span className="t">{T.settings.version(pkg.version)}</span>
               <span className="s" style={{ display: 'block' }}>
-                {T.settings.words(BASE_WORD_COUNT, PRO_WORD_COUNT)}
+                {T.settings.words(BASE_COMBO_COUNT, PRO_EXTRA_COMBOS)}
               </span>
             </span>
           </div>

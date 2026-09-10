@@ -50,6 +50,34 @@ export const BASE_WORD_COUNT = countWords(BASE_GROUPS);
 export const PRO_WORD_COUNT = countWords(PRO_GROUPS);
 export const TOTAL_WORD_COUNT = countWords(ALL_GROUPS);
 
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * Nombre de combinaisons DISTINCTES : un duo = deux mots différents d'un même groupe (ce que le
+ * jeu tire réellement). Un même duo présent dans plusieurs groupes ne compte qu'une fois.
+ * C'est le chiffre parlant pour le joueur, bien plus que le nombre de mots (décision d'Arsène, 10/09/2026).
+ */
+export function countCombos(groups: readonly WordGroup[]): number {
+  const seen = new Set<string>();
+  for (const g of groups) {
+    for (let i = 0; i < g.fr.length; i++) for (let j = i + 1; j < g.fr.length; j++) seen.add(pairKey(g.fr[i], g.fr[j]));
+  }
+  return seen.size;
+}
+
+export function countCombosByCategory(groups: readonly WordGroup[]): Record<Category, number> {
+  const out: Record<Category, number> = { joueur: 0, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0 };
+  for (const cat of CATEGORY_ORDER) out[cat] = countCombos(groups.filter((g) => g.cat === cat));
+  return out;
+}
+
+export const BASE_COMBO_COUNT = countCombos(BASE_GROUPS);
+export const TOTAL_COMBO_COUNT = countCombos(ALL_GROUPS);
+/** Ce que la version Pro ajoute réellement : les duos absents de la version gratuite. */
+export const PRO_EXTRA_COMBOS = TOTAL_COMBO_COUNT - BASE_COMBO_COUNT;
+
 /** Les deux mots d'une paire dans la langue de jeu choisie. */
 export function pairWords(pair: WordPair, lang: WordLang): [string, string] {
   return pair[lang];

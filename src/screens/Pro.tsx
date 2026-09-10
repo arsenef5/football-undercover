@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckIcon, SparkIcon } from '../components/Icons';
 import { Button, Screen, useToast } from '../components/ui';
 import { T } from '../i18n';
-import { PRO_PRICE_LABEL, PRO_WORDS_CLAIM } from '../monetization/config';
+import { PRO_COMBOS_CLAIM, PRO_PRICE_LABEL } from '../monetization/config';
 import { fetchProOffer, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
 import { isNative, notify } from '../native';
 import { useNav } from '../nav';
@@ -59,7 +59,7 @@ export function Pro() {
     else showToast(T.pro.notFound);
   };
 
-  const perks = T.pro.perks.map((p, i) => (i === 1 ? T.pro.perkWords(PRO_WORDS_CLAIM) : p));
+  const perks = T.pro.perks.map((p, i) => (i === 1 ? T.pro.perkWords(PRO_COMBOS_CLAIM) : p));
 
   let cta: JSX.Element;
   if (premium) {

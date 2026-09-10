@@ -5,7 +5,7 @@ import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
 import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
 import { DEFAULT_COLOR, randomAvatar } from '../data/avatars';
-import { CATEGORY_ORDER, countWordsByCategory, groupsFor } from '../data/words';
+import { CATEGORY_ORDER, countCombosByCategory, groupsFor } from '../data/words';
 import {
   ALL_CATEGORIES,
   clampConfig,
@@ -89,7 +89,7 @@ export function Setup() {
   const preset = detectPreset(weights);
   const pct = shares(weights);
   const words = groupsFor(state.settings.premium);
-  const wordCount = useMemo(() => countWordsByCategory(words), [words]);
+  const wordCount = useMemo(() => countCombosByCategory(words), [words]);
 
   const setWeights = (w: Record<Category, number>) => dispatch({ type: 'settings/set', patch: { weights: w } });
 

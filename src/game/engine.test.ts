@@ -21,7 +21,7 @@ import {
   validateConfig,
   WEIGHT_PRESETS,
 } from './engine';
-import { ALL_GROUPS, BASE_GROUPS, BASE_WORD_COUNT, countWords, countWordsByCategory, PRO_GROUPS, TOTAL_WORD_COUNT } from '../data/words';
+import { ALL_GROUPS, BASE_COMBO_COUNT, BASE_GROUPS, BASE_WORD_COUNT, countCombos, countWords, countWordsByCategory, PRO_EXTRA_COMBOS, PRO_GROUPS, TOTAL_COMBO_COUNT, TOTAL_WORD_COUNT } from '../data/words';
 import { pairFromGroup } from './engine';
 import type { Category, Game, Seat, WordPair } from './types';
 
@@ -58,12 +58,17 @@ function idsWithRole(g: Game, role: string, alive = true) {
 }
 
 describe('la base de mots', () => {
-  it('offre exactement 275 mots gratuits (plus de la moitié de joueurs) et plus de 1 000 mots en Pro', () => {
-    expect(BASE_WORD_COUNT).toBe(275);
+  it('offre au moins 500 combinaisons gratuites (plus de la moitié de joueurs) et au moins 700 de plus en Pro', () => {
+    expect(BASE_WORD_COUNT).toBeGreaterThanOrEqual(200);
     const byCat = countWordsByCategory(BASE_GROUPS);
     expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.55);
-    expect(countWords(PRO_GROUPS)).toBeGreaterThanOrEqual(1000);
     expect(countWords(PRO_GROUPS)).toBe(TOTAL_WORD_COUNT - BASE_WORD_COUNT);
+    // Les combinaisons sont ce que le jeu tire vraiment : c'est le chiffre affiché et promis.
+    expect(BASE_COMBO_COUNT).toBeGreaterThanOrEqual(500);
+    expect(PRO_EXTRA_COMBOS).toBeGreaterThanOrEqual(700);
+    expect(PRO_EXTRA_COMBOS).toBe(TOTAL_COMBO_COUNT - BASE_COMBO_COUNT);
+    // Un duo = deux mots différents ; un groupe de n mots vaut n(n-1)/2 duos au plus.
+    expect(countCombos([BASE_GROUPS[0]])).toBe((BASE_GROUPS[0].fr.length * (BASE_GROUPS[0].fr.length - 1)) / 2);
   });
 
   it('couvre les 8 catégories annoncées, dans la base gratuite', () => {

@@ -1,3 +1,5 @@
+import { PRO_EXTRA_COMBOS } from '../data/words';
+
 /**
  * Identifiants de monétisation.
  *
@@ -42,8 +44,11 @@ export const PRO_PRODUCT_ID = 'fu_pro';
 /** Prix de référence affiché tant que la boutique n'a pas répondu (le vrai prix vient du store). */
 export const PRO_PRICE_LABEL = '2,99 €';
 
-/** Promesse marketing « +1 000 mots » : arrondi volontaire, toujours inférieur au vrai nombre de mots Pro. */
-export const PRO_WORDS_CLAIM = 1000;
+/**
+ * Promesse marketing « +N combinaisons » : le vrai apport de la version Pro (duos absents de la version
+ * gratuite), arrondi à la cinquantaine inférieure pour rester toujours en dessous de la réalité.
+ */
+export const PRO_COMBOS_CLAIM = Math.floor(PRO_EXTRA_COMBOS / 50) * 50;
 
 /** Identifiant du droit (« entitlement ») configuré dans RevenueCat. */
 export const PRO_ENTITLEMENT_ID = 'pro';

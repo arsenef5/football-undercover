@@ -1,3 +1,4 @@
+import { PRO_COMBOS_CLAIM } from '../monetization/config';
 import { useEffect, useState } from 'react';
 import { T } from '../i18n';
 import { releaseBanner, suppressBanner } from '../monetization/ads';
@@ -34,13 +35,13 @@ export function ProPromo({ open, onClose }: { open: boolean; onClose: () => void
   if (!open) return null;
 
   // « +1 000 mots nouveaux » : le nombre (tout ce qui précède la première lettre) en rouge, insécable.
-  const title = T.promo.title;
+  const title = T.promo.title(PRO_COMBOS_CLAIM);
   const firstLetter = title.search(/[A-Za-zÀ-ÿ]/);
   const amount = firstLetter > 0 ? title.slice(0, firstLetter).trim() : '';
   const rest = firstLetter > 0 ? title.slice(firstLetter) : title;
 
   return (
-    <div className="promo" role="dialog" aria-modal="true" aria-label={T.promo.title}>
+    <div className="promo" role="dialog" aria-modal="true" aria-label={title}>
       {hasImage ? (
         <img className="promo-img" src={`${import.meta.env.BASE_URL}promo-pro.jpg`} alt="" onError={() => setHasImage(false)} />
       ) : null}
