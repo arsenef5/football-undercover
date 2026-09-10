@@ -1,6 +1,7 @@
 # Compilation dans le cloud (codemagic.io) : iOS vers TestFlight, Android en AAB.
-# Prérequis côté Codemagic : intégration App Store Connect nommée "app_store_connect"
-# (Teams > Integrations) et, pour Android, un keystore chargé dans "Code signing identities".
+# Prérequis côté Codemagic : intégration Developer Portal nommée "app_store_connect" (clé API App Store
+# Connect), certificat "app_store_distribution" et profil "app_store_profile" dans Code signing identities ;
+# pour Android, un keystore "football_undercover_keystore".
 
 workflows:
   ios-testflight:
@@ -11,8 +12,12 @@ workflows:
       app_store_connect: app_store_connect
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: fr.footballundercover.app
+        # Identités stockées dans Codemagic (Code signing identities) : certificat Apple Distribution
+        # généré via la clé API, profil App Store « Football Undercover App Store » récupéré du portail.
+        certificates:
+          - app_store_distribution
+        provisioning_profiles:
+          - app_store_profile
       node: 20
       xcode: latest
       cocoapods: default
