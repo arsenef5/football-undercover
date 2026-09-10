@@ -74,8 +74,18 @@ Xcode : Signing & Capabilities > Team ; Product > Archive ; Distribute App > App
 
 ## 6. App Store Connect
 
-Créer l'app (bundle `fr.footballundercover.app`), remplir la fiche depuis `metadata/fr.md` et `metadata/en.md`,
-captures 6,9" ou 6,7", URL de confidentialité, questionnaire « App Privacy », classification d'âge, prix
-(gratuit), puis choisir le build TestFlight et soumettre à la revue (1 à 3 jours en général).
+État au 10 septembre 2026 : identifiant `fr.footballundercover.app` enregistré (`com.footballundercover.app`
+était déjà pris chez Apple), conditions App Store Connect acceptées, fiche créée sous le nom provisoire
+**« Football Undercover FR »** (le nom « Football Undercover » est déjà utilisé sur l'App Store par une autre
+app ; le nom se change librement jusqu'à la première soumission). Aucun build envoyé pour l'instant.
+
+Pour la bêta TestFlight : un build via Codemagic (section 5) puis, dans App Store Connect > TestFlight,
+ajouter les testeurs internes (adresses e-mail) ; les testeurs externes demandent une courte revue d'Apple.
+
+Pour la publication : remplir la fiche depuis `metadata/fr.md` et `metadata/en.md`, captures 6,9" ou 6,7",
+URL de confidentialité, questionnaire « App Privacy », classification d'âge, prix (gratuit), statut de
+commerçant (obligation européenne), contrat « applications payantes » pour la version Pro, puis choisir le
+build TestFlight et soumettre à la revue (1 à 3 jours en général).
 
 Astuce : mettre l'app en « iPhone uniquement » (Xcode > General > Supported Destinations) évite les captures iPad.
+
