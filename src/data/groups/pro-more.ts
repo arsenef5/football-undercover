@@ -11,8 +11,7 @@ export const PRO_MORE: GroupDef[] = [
   { cat: 'club', words: ['PSG', ['Olympique de Marseille', 'Marseille'], ['Olympique Lyonnais', 'Lyon'], 'AS Monaco', ['LOSC Lille', 'Lille'], 'RC Lens', 'OGC Nice', ['Stade Rennais', 'Rennes'], 'FC Nantes', ['AS Saint-Étienne', 'Saint-Étienne']] },
   { cat: 'club', words: ['Bayern Munich', 'Borussia Dortmund', 'Bayer Leverkusen', 'RB Leipzig', 'Schalke 04', ['Eintracht Francfort', 'Eintracht Frankfurt'], 'VfB Stuttgart'] },
   { cat: 'club', words: [['Girondins de Bordeaux', 'Bordeaux'], 'Montpellier', 'Toulouse', 'Strasbourg', 'Stade de Reims', ['Stade Brestois', 'Brest'], 'Le Havre', 'FC Metz', 'AJ Auxerre', 'Lorient'] },
-  { cat: 'club', words: ['Al-Nassr', 'Al-Hilal', 'Al-Ittihad'] },
-  { cat: 'club', words: ['Galatasaray', 'Fenerbahçe', 'Beşiktaş'] },
+  { cat: 'club', words: ['Al-Nassr', 'Al-Hilal', 'Al-Ittihad', 'Al-Ahli'] },
 
   /* ------------------------------------------------------------------ */
   /* Trophées                                                             */
@@ -31,7 +30,7 @@ export const PRO_MORE: GroupDef[] = [
   /* Stades                                                               */
   /* ------------------------------------------------------------------ */
   { cat: 'stade', words: ['Old Trafford', 'Anfield', 'Wembley', 'Emirates Stadium', 'Etihad Stadium', 'Stamford Bridge'] },
-  { cat: 'stade', words: ['Camp Nou', 'Santiago Bernabéu', 'Metropolitano', 'San Siro', 'Allianz Stadium (Juventus)', 'San Mamés'] },
+  { cat: 'stade', words: ['Camp Nou', 'Santiago Bernabéu', 'Metropolitano', 'San Siro', 'Allianz Stadium (Juventus)'] },
   { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Groupama Stadium', 'Stade Bollaert', 'Stade Geoffroy-Guichard'] },
   {
     cat: 'stade',
@@ -62,7 +61,6 @@ export const PRO_MORE: GroupDef[] = [
     ],
   },
   { cat: 'competition', words: ['Euro 2000', 'Euro 2016', 'Euro 2024', 'Euro 2004'] },
-  { cat: 'competition', words: ['Championship', 'Ligue 2', 'Serie B', 'Segunda División', '2. Bundesliga', 'Jupiler Pro League', 'Scottish Premiership', ['Championnat National', 'Championnat National']] },
 
   /* ------------------------------------------------------------------ */
   /* Moments légendaires — regroupés par ressemblance                     */
@@ -116,20 +114,9 @@ export const PRO_MORE: GroupDef[] = [
   /* Styles de jeu                                                        */
   /* ------------------------------------------------------------------ */
   // Postes
-  { cat: 'style', words: [['Libéro', 'Sweeper'], ['Stoppeur', 'Stopper'], ['Meneur de jeu', 'Playmaker'], ['Faux 9', 'False 9']] },
-  // Gestes techniques (suite)
-  { cat: 'style', words: [['Crochet', 'Cut inside'], ['Coup du foulard', 'Trivela'], ['Petit pont', 'Nutmeg'], ['Grand pont', 'Knock-and-run']] },
+  { cat: 'style', words: [['Libéro', 'Sweeper'], ['Stoppeur', 'Stopper'], ['Meneur de jeu', 'Playmaker'], ['Faux 9', 'False 9'], ['Piston', 'Wing-back'], ['Ailier', 'Winger']] },
 
   /* Anciens groupes gratuits (passés en Pro le 11/09/2026) */
-  // Sagas à la française
-  {
-    cat: 'meme',
-    words: [
-      ["La Coupe du monde d'Adil Rami (2018)", "Adil Rami's World Cup (2018)"],
-      ["Les blessures d'Abou Diaby", "Abou Diaby's injuries"],
-      ["L'aventure de Ben Arfa au PSG", "Ben Arfa's PSG adventure"],
-    ],
-  },
   // Tactiques
   { cat: 'style', words: ['Tiki-taka', 'Catenaccio', ['Contre-attaque', 'Counter-attack']] },
 ];

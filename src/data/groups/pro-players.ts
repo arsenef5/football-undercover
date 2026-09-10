@@ -191,11 +191,11 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Ailiers de Premier League, années 2020
   { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané', 'Hazard'] },
   // Dribbleurs des années 2010
-  { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé'] },
+  { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé', 'Mbappé'] },
   // Dribbleurs des années 2020
-  { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão'] },
+  { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão', 'Mbappé'] },
   // Dribbleurs de légende
-  { cat: 'joueur', words: ['Ronaldinho', 'Garrincha', 'Okocha', 'Robinho', 'Quaresma'] },
+  { cat: 'joueur', words: ['Ronaldinho', 'Okocha', 'Robinho', 'Quaresma', 'Nani', 'Cristiano Ronaldo'] },
   // Créateurs des années 2010–2020
   { cat: 'joueur', words: ['De Bruyne', 'Özil', 'Griezmann', 'Ødegaard', 'Bruno Fernandes'] },
   // Récupérateurs des années 2000

@@ -112,10 +112,14 @@ export const BASE: GroupDef[] = [
       ['La danse Fortnite de Griezmann', "Griezmann's Fortnite dance"],
       ['La célébration de Marcelo et CR7', 'Marcelo and CR7 celebration'],
       ['Le « ice in the veins » de Cole Palmer', 'Cole Palmer\'s "ice in the veins"'],
+      ["La Coupe du monde d'Adil Rami (2018)", "Adil Rami's World Cup (2018)"],
+      ["Les blessures d'Abou Diaby", "Abou Diaby's injuries"],
+      ["L'aventure de Ben Arfa au PSG", "Ben Arfa's PSG adventure"],
+      ["L'aventure de Messi au PSG", "Messi's PSG adventure"],
     ],
   },
 
   /* Styles de jeu (8) */
   // Gestes techniques
-  { cat: 'style', words: [['Petit pont', 'Nutmeg'], 'Roulette', ['Virgule', 'Elastico'], ['Talonnade', 'Backheel'], ['Passement de jambes', 'Step-over']] },
+  { cat: 'style', words: [['Petit pont', 'Nutmeg'], 'Roulette', ['Virgule', 'Elastico'], ['Talonnade', 'Backheel'], ['Passement de jambes', 'Step-over'], ['Crochet', 'Chop'], ['Sombrero', 'Sombrero flick']] },
 ];
