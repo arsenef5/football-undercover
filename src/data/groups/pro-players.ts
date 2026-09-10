@@ -180,4 +180,54 @@ export const PRO_PLAYERS: GroupDef[] = [
   { cat: 'joueur', words: ['Ekitiké', 'Barcola', 'Désiré Doué', 'Coman', 'Rayan Cherki', 'Mbappé'] },
   // Milieux français passés par Monaco
   { cat: 'joueur', words: ['Camavinga', 'Lemar', 'Kondogbia', 'Tchouaméni', 'Rabiot'] },
+
+  /* Anciens groupes gratuits (passés en Pro le 11/09/2026) */
+  // Petits milieux techniques des années 2010
+  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Verratti', 'Thiago Alcântara', 'David Silva', 'Modrić'] },
+  // Milieux techniques des années 2020
+  { cat: 'joueur', words: ['Pedri', 'Gavi', 'Bernardo Silva', 'Vitinha', 'João Neves'] },
+  // Ailiers rapides de Premier League, années 2010
+  { cat: 'joueur', words: ['Henry', 'Walcott', 'Aubameyang', 'Sterling', 'Sané'] },
+  // Ailiers de Premier League, années 2020
+  { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané', 'Hazard'] },
+  // Dribbleurs des années 2010
+  { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé'] },
+  // Dribbleurs des années 2020
+  { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão'] },
+  // Dribbleurs de légende
+  { cat: 'joueur', words: ['Ronaldinho', 'Garrincha', 'Okocha', 'Robinho', 'Quaresma'] },
+  // Créateurs des années 2010–2020
+  { cat: 'joueur', words: ['De Bruyne', 'Özil', 'Griezmann', 'Ødegaard', 'Bruno Fernandes'] },
+  // Récupérateurs des années 2000
+  { cat: 'joueur', words: ['Makélélé', 'Vieira', 'Gattuso', 'Essien'] },
+  // Sentinelles des années 2010–2020
+  { cat: 'joueur', words: ['Kanté', 'Rodri', 'Casemiro', 'Busquets', 'Tchouaméni'] },
+  // Box-to-box
+  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Rodri'] },
+  // Défenseurs centraux des années 2000
+  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry', 'Piqué'] },
+  // Défenseurs centraux des années 2010–2020
+  { cat: 'joueur', words: ['Sergio Ramos', 'Piqué', 'Van Dijk', 'Varane', 'Chiellini'] },
+  // Latéraux des années 2000
+  { cat: 'joueur', words: ['Roberto Carlos', 'Cafu', 'Lahm', 'Ashley Cole', 'Evra'] },
+  // Latéraux des années 2010–2020
+  { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Hakimi', 'Nuno Mendes'] },
+  // Gardiens de légende
+  { cat: 'joueur', words: ['Buffon', 'Casillas', 'Kahn', 'Barthez', 'Čech'] },
+  // Gardiens d'aujourd'hui
+  { cat: 'joueur', words: ['Neuer', 'Courtois', 'Oblak', 'Ter Stegen', 'Donnarumma'] },
+  // Ballons d'Or des années 2000
+  { cat: 'joueur', words: ['Ronaldo (R9)', 'Rivaldo', 'Figo', 'Shevchenko', 'Nedvěd', 'Owen'] },
+  // Attaquants vifs des années 2010
+  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala'] },
+  // Icônes absolues
+  { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini'] },
+  // Les magiciens
+  { cat: 'joueur', words: ['Ronaldinho', 'Neymar', 'Lamine Yamal', 'Messi'] },
+  // Jeunes stars techniques
+  { cat: 'joueur', words: ['Pedri', 'Vitinha', 'Lamine Yamal', 'Désiré Doué'] },
+  // Le trio du Barça
+  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Busquets'] },
+  // Les deux Argentins
+  { cat: 'joueur', words: ['Messi', 'Maradona'] },
 ];

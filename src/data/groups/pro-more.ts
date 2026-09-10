@@ -119,4 +119,17 @@ export const PRO_MORE: GroupDef[] = [
   { cat: 'style', words: [['Libéro', 'Sweeper'], ['Stoppeur', 'Stopper'], ['Meneur de jeu', 'Playmaker'], ['Faux 9', 'False 9']] },
   // Gestes techniques (suite)
   { cat: 'style', words: [['Crochet', 'Cut inside'], ['Coup du foulard', 'Trivela'], ['Petit pont', 'Nutmeg'], ['Grand pont', 'Knock-and-run']] },
+
+  /* Anciens groupes gratuits (passés en Pro le 11/09/2026) */
+  // Sagas à la française
+  {
+    cat: 'meme',
+    words: [
+      ["La Coupe du monde d'Adil Rami (2018)", "Adil Rami's World Cup (2018)"],
+      ["Les blessures d'Abou Diaby", "Abou Diaby's injuries"],
+      ["L'aventure de Ben Arfa au PSG", "Ben Arfa's PSG adventure"],
+    ],
+  },
+  // Tactiques
+  { cat: 'style', words: ['Tiki-taka', 'Catenaccio', ['Contre-attaque', 'Counter-attack']] },
 ];

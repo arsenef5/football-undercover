@@ -1,7 +1,8 @@
 import type { GroupDef } from './types';
 
 /**
- * Base gratuite (au moins 200 mots, une majorité de joueurs), toutes catégories représentées.
+ * Base gratuite : une vingtaine de groupes seulement, les plus iconiques, toutes catégories représentées
+ * (décision d'Arsène, 11/09/2026 : « genre 20 groupes gratuits et le reste tout payant »).
  * Une entrée est soit un nom identique dans les deux langues, soit [français, anglais].
  * Le jeu tire deux mots différents par groupe : les duos changent à chaque partie.
  *
@@ -11,58 +12,15 @@ import type { GroupDef } from './types';
  */
 export const BASE: GroupDef[] = [
   /* Joueurs */
-  // Petits milieux techniques des années 2010
-  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Verratti', 'Thiago Alcântara', 'David Silva', 'Modrić'] },
-  // Milieux techniques des années 2020
-  { cat: 'joueur', words: ['Pedri', 'Gavi', 'Bernardo Silva', 'Vitinha', 'João Neves'] },
   // Grands finisseurs des années 2020
   { cat: 'joueur', words: ['Kane', 'Lukaku', 'Lewandowski', 'Haaland', 'Osimhen'] },
-  // Ailiers rapides de Premier League, années 2010
-  { cat: 'joueur', words: ['Henry', 'Walcott', 'Aubameyang', 'Sterling', 'Sané'] },
-  // Ailiers de Premier League, années 2020
-  { cat: 'joueur', words: ['Salah', 'Saka', 'Son Heung-min', 'Rashford', 'Mané', 'Hazard'] },
-  // Dribbleurs des années 2010
-  { cat: 'joueur', words: ['Neymar', 'Hazard', 'Robben', 'Ribéry', 'Dembélé'] },
-  // Dribbleurs des années 2020
-  { cat: 'joueur', words: ['Vinícius Jr', 'Kvaratskhelia', 'Lamine Yamal', 'Désiré Doué', 'Rafael Leão'] },
-  // Dribbleurs de légende
-  { cat: 'joueur', words: ['Ronaldinho', 'Garrincha', 'Okocha', 'Robinho', 'Quaresma'] },
-  // Créateurs des années 2010–2020
-  { cat: 'joueur', words: ['De Bruyne', 'Özil', 'Griezmann', 'Ødegaard', 'Bruno Fernandes'] },
-  // Récupérateurs des années 2000
-  { cat: 'joueur', words: ['Makélélé', 'Vieira', 'Gattuso', 'Essien'] },
-  // Sentinelles des années 2010–2020
-  { cat: 'joueur', words: ['Kanté', 'Rodri', 'Casemiro', 'Busquets', 'Tchouaméni'] },
-  // Box-to-box
-  { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Yaya Touré', 'Pogba', 'Rodri'] },
-  // Défenseurs centraux des années 2000
-  { cat: 'joueur', words: ['Maldini', 'Cannavaro', 'Puyol', 'Desailly', 'Terry', 'Piqué'] },
-  // Défenseurs centraux des années 2010–2020
-  { cat: 'joueur', words: ['Sergio Ramos', 'Piqué', 'Van Dijk', 'Varane', 'Chiellini'] },
-  // Latéraux des années 2000
-  { cat: 'joueur', words: ['Roberto Carlos', 'Cafu', 'Lahm', 'Ashley Cole', 'Evra'] },
-  // Latéraux des années 2010–2020
-  { cat: 'joueur', words: ['Dani Alves', 'Marcelo', 'Hakimi', 'Nuno Mendes'] },
-  // Gardiens de légende
-  { cat: 'joueur', words: ['Buffon', 'Casillas', 'Kahn', 'Barthez', 'Čech'] },
-  // Gardiens d'aujourd'hui
-  { cat: 'joueur', words: ['Neuer', 'Courtois', 'Oblak', 'Ter Stegen', 'Donnarumma'] },
-  // Ballons d'Or des années 2000
-  { cat: 'joueur', words: ['Ronaldo (R9)', 'Rivaldo', 'Figo', 'Shevchenko', 'Nedvěd', 'Owen'] },
-  // Attaquants vifs des années 2010
-  { cat: 'joueur', words: ['Agüero', 'Tévez', 'Suárez', 'Dybala'] },
-  // Icônes absolues
-  { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini'] },
 
-  /* Groupes d'Arsène (10/09/2026) : ses duos favoris, en accès libre (75 mots) */
   // Dribbleurs du PSG, du Barça et du Real d'aujourd'hui
   { cat: 'joueur', words: ['Neymar', 'Lamine Yamal', 'Désiré Doué', 'Vinícius Jr'] },
   // Milieux techniques, toutes époques
   { cat: 'joueur', words: ['Vitinha', 'Modrić', 'Iniesta', 'Bruno Fernandes', 'Verratti'] },
   // Champions du monde 2018
   { cat: 'joueur', words: ['Pogba', 'Griezmann', 'Kanté', 'Matuidi'] },
-  // Les magiciens
-  { cat: 'joueur', words: ['Ronaldinho', 'Neymar', 'Lamine Yamal', 'Messi'] },
   // Ailiers de Ligue des champions
   { cat: 'joueur', words: ['Bale', 'Robben', 'Di María', 'Hazard', 'Vinícius Jr', 'Mbappé'] },
   // Patrons de défense
@@ -73,16 +31,10 @@ export const BASE: GroupDef[] = [
   { cat: 'joueur', words: ['Ronaldo (R9)', 'Pelé', 'Maradona', 'Messi', 'Cristiano Ronaldo', 'Zidane', 'Mbappé'] },
   // Milieux de très haut niveau : sentinelles et relayeurs
   { cat: 'joueur', words: ['Busquets', 'Casemiro', 'Thiago Motta', 'Xavi', 'Kroos', 'Iniesta', 'Rodri'] },
-  // Jeunes stars techniques
-  { cat: 'joueur', words: ['Pedri', 'Vitinha', 'Lamine Yamal', 'Désiré Doué'] },
   // Génération 87 française
   { cat: 'joueur', words: ['Ben Arfa', 'Nasri', 'Ménez', 'Benzema', 'Gourcuff'] },
   // Les grands buteurs des années 2010–2020
   { cat: 'joueur', words: ['Suárez', 'Falcao', 'Cavani', 'Ibrahimović', 'Lewandowski'] },
-  // Le trio du Barça
-  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Busquets'] },
-  // Les deux Argentins
-  { cat: 'joueur', words: ['Messi', 'Maradona'] },
   // Attaquants français ultra-rapides
   { cat: 'joueur', words: ['Mbappé', 'Henry', 'Martial', 'Anelka'] },
   // Gardiens
@@ -162,19 +114,8 @@ export const BASE: GroupDef[] = [
       ['Le « ice in the veins » de Cole Palmer', 'Cole Palmer\'s "ice in the veins"'],
     ],
   },
-  // Sagas à la française
-  {
-    cat: 'meme',
-    words: [
-      ["La Coupe du monde d'Adil Rami (2018)", "Adil Rami's World Cup (2018)"],
-      ["Les blessures d'Abou Diaby", "Abou Diaby's injuries"],
-      ["L'aventure de Ben Arfa au PSG", "Ben Arfa's PSG adventure"],
-    ],
-  },
 
   /* Styles de jeu (8) */
-  // Tactiques
-  { cat: 'style', words: ['Tiki-taka', 'Catenaccio', ['Contre-attaque', 'Counter-attack']] },
   // Gestes techniques
   { cat: 'style', words: [['Petit pont', 'Nutmeg'], 'Roulette', ['Virgule', 'Elastico'], ['Talonnade', 'Backheel'], ['Passement de jambes', 'Step-over']] },
 ];

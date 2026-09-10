@@ -40,7 +40,7 @@ Plus qu'un jeu. Discrétion, bluff, légende.
 undercover,foot,football,soirée,bluff,jeu de société,imposteur,entre amis,mot secret,party game
 
 ## Nouveautés (version 1.0)
-Première version : plus de 600 combinaisons de mots foot en FR et EN, équipes, classement, version Pro sans pub.
+Première version : plus de 400 combinaisons de mots foot gratuites en FR et EN, le reste en Pro, équipes, classement, version Pro sans pub.
 
 ## Catégories
 App Store : Jeux > Soirée (secondaire : Jeux > Mots)

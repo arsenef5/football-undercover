@@ -58,13 +58,15 @@ function idsWithRole(g: Game, role: string, alive = true) {
 }
 
 describe('la base de mots', () => {
-  it('offre au moins 500 combinaisons gratuites (plus de la moitié de joueurs) et au moins 700 de plus en Pro', () => {
-    expect(BASE_WORD_COUNT).toBeGreaterThanOrEqual(200);
+  it('offre une vingtaine de groupes gratuits (au moins 200 combinaisons) et au moins 700 combinaisons de plus en Pro', () => {
+    expect(BASE_GROUPS.length).toBeGreaterThanOrEqual(15);
+    expect(BASE_GROUPS.length).toBeLessThanOrEqual(30);
+    expect(BASE_WORD_COUNT).toBeGreaterThanOrEqual(100);
     const byCat = countWordsByCategory(BASE_GROUPS);
-    expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.55);
+    expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.45);
     expect(countWords(PRO_GROUPS)).toBe(TOTAL_WORD_COUNT - BASE_WORD_COUNT);
     // Les combinaisons sont ce que le jeu tire vraiment : c'est le chiffre affiché et promis.
-    expect(BASE_COMBO_COUNT).toBeGreaterThanOrEqual(500);
+    expect(BASE_COMBO_COUNT).toBeGreaterThanOrEqual(200);
     expect(PRO_EXTRA_COMBOS).toBeGreaterThanOrEqual(700);
     expect(PRO_EXTRA_COMBOS).toBe(TOTAL_COMBO_COUNT - BASE_COMBO_COUNT);
     // Un duo = deux mots différents ; un groupe de n mots vaut n(n-1)/2 duos au plus.
