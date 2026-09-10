@@ -11,12 +11,27 @@ import { thump } from '../native';
 import { useNav } from '../nav';
 import { useStore } from '../store/store';
 
-/** Libellé court d'une caméra à partir du nom donné par le système. */
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function isFront(d: DeviceInfo): boolean {
+  return /front|avant|user|face|truedepth|selfie/.test(norm(d.label));
+}
+
+/** iOS liste aussi des caméras « virtuelles » (double, triple…) qui doublonnent les vrais objectifs. */
+function isVirtualCamera(d: DeviceInfo): boolean {
+  return /dual|double|triple|multi/.test(norm(d.label));
+}
+
+/**
+ * Libellé court d'une caméra à partir du nom donné par le système. Sur iPhone : « Caméra arrière »
+ * = 1×, « ultra grand-angle » = 0,5×, « Téléobjectif » = télé. (« grand-angle » seul est le 1×.)
+ */
 function cameraLabel(d: DeviceInfo, index: number): string {
-  const l = d.label.toLowerCase();
-  const wide = /ultra|wide|grand/.test(l) ? ' · 0,5×' : /tele|télé/.test(l) ? ' · 2×' : '';
-  if (/front|avant|user|face/.test(l)) return `${T.creator.front}${wide}`;
-  if (/back|arri|rear|environment/.test(l)) return `${T.creator.back}${wide}`;
+  const l = norm(d.label);
+  if (isFront(d)) return T.creator.front;
+  if (/ultra/.test(l)) return `${T.creator.back} · ${T.creator.ultraWide}`;
+  if (/tele|zoom/.test(l)) return `${T.creator.back} · ${T.creator.tele}`;
+  if (/back|arri|rear|environment|wide|grand/.test(l)) return `${T.creator.back} · ${T.creator.mainLens}`;
   return d.label || `${T.creator.camera} ${index + 1}`;
 }
 
@@ -68,7 +83,9 @@ export function CreatorSetup() {
 
   if (!game) return null;
 
-  const cams = devices.filter((d) => d.kind === 'videoinput');
+  const allCams = devices.filter((d) => d.kind === 'videoinput');
+  const realCams = allCams.filter((d) => !isVirtualCamera(d));
+  const cams = realCams.length >= 2 ? realCams : allCams;
   const mics = devices.filter((d) => d.kind === 'audioinput');
   const info = creator.info();
   const mirrored = info?.facing !== 'environment';
@@ -157,7 +174,7 @@ export function CreatorSetup() {
                 <button
                   key={d.id}
                   type="button"
-                  className={`chip ${videoId === d.id || (!videoId && i === 0 && info?.facing === 'user') ? 'is-on' : ''}`}
+                  className={`chip ${(videoId ? videoId === d.id : isFront(d) === (info?.facing !== 'environment')) ? 'is-on' : ''}`}
                   onClick={() => void pickCamera(d.id)}
                 >
                   <CameraIcon size={14} />

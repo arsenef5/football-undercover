@@ -1,7 +1,7 @@
 import type { GroupDef } from './types';
 
 /**
- * Base gratuite : exactement 200 mots (64 % de joueurs), toutes catégories représentées.
+ * Base gratuite : exactement 275 mots (74 % de joueurs), toutes catégories représentées.
  * Une entrée est soit un nom identique dans les deux langues, soit [français, anglais].
  * Le jeu tire deux mots différents par groupe : les duos changent à chaque partie.
  *
@@ -10,7 +10,7 @@ import type { GroupDef } from './types';
  * (décisions d'Arsène, 10/09/2026).
  */
 export const BASE: GroupDef[] = [
-  /* Joueurs (128) */
+  /* Joueurs (203) */
   // Petits milieux techniques des années 2010
   { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Verratti', 'Thiago Alcântara', 'David Silva', 'Modrić'] },
   // Milieux techniques des années 2020
@@ -61,6 +61,44 @@ export const BASE: GroupDef[] = [
   { cat: 'joueur', words: ['Musiala', 'Wirtz', 'Zaïre-Emery', 'Endrick', 'Kenan Yıldız'] },
   // Icônes absolues
   { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Platini', 'Beckenbauer'] },
+
+  /* Groupes d'Arsène (10/09/2026) : ses duos favoris, en accès libre (75 mots) */
+  // Dribbleurs du PSG, du Barça et du Real d'aujourd'hui
+  { cat: 'joueur', words: ['Neymar', 'Lamine Yamal', 'Désiré Doué', 'Vinícius Jr'] },
+  // Milieux techniques, toutes époques
+  { cat: 'joueur', words: ['Vitinha', 'Modrić', 'Iniesta', 'Bruno Fernandes', 'Verratti'] },
+  // Champions du monde 2018
+  { cat: 'joueur', words: ['Pogba', 'Griezmann', 'Kanté'] },
+  // Les magiciens
+  { cat: 'joueur', words: ['Ronaldinho', 'Neymar', 'Lamine Yamal'] },
+  // Ailiers de Ligue des champions
+  { cat: 'joueur', words: ['Bale', 'Robben', 'Di María', 'Hazard', 'Vinícius Jr'] },
+  // Patrons de défense
+  { cat: 'joueur', words: ['Marquinhos', 'Van Dijk', 'Sergio Ramos', 'Thiago Silva'] },
+  // Les trois Ronaldo
+  { cat: 'joueur', words: ['Cristiano Ronaldo', 'Ronaldo (R9)', 'Ronaldinho'] },
+  // Les plus grands de l'histoire
+  { cat: 'joueur', words: ['Ronaldo (R9)', 'Pelé', 'Maradona', 'Messi', 'Cristiano Ronaldo', 'Zidane'] },
+  // Milieux de très haut niveau : sentinelles et relayeurs
+  { cat: 'joueur', words: ['Busquets', 'Casemiro', 'Thiago Motta', 'Xavi', 'Kroos', 'Iniesta', 'Rodri'] },
+  // Jeunes stars techniques
+  { cat: 'joueur', words: ['Pedri', 'Vitinha', 'Lamine Yamal', 'Désiré Doué'] },
+  // Génération 87 française
+  { cat: 'joueur', words: ['Ben Arfa', 'Nasri', 'Ménez', 'Benzema', 'Gourcuff'] },
+  // Les grands buteurs des années 2010–2020
+  { cat: 'joueur', words: ['Suárez', 'Falcao', 'Cavani', 'Ibrahimović', 'Lewandowski', 'Messi', 'Mbappé'] },
+  // Le trio du Barça
+  { cat: 'joueur', words: ['Iniesta', 'Xavi', 'Busquets'] },
+  // Les deux Argentins
+  { cat: 'joueur', words: ['Messi', 'Maradona'] },
+  // Attaquants français ultra-rapides
+  { cat: 'joueur', words: ['Mbappé', 'Henry', 'Martial'] },
+  // Les deux Brésiliens
+  { cat: 'joueur', words: ['Neymar', 'Ronaldinho'] },
+  // Attaquants français passés par l'Angleterre
+  { cat: 'joueur', words: ['Martial', 'Henry', 'Anelka', 'Saint-Maximin'] },
+  // Gardiens
+  { cat: 'joueur', words: ['Maignan', 'Areola', 'Lloris', 'Donnarumma', 'Buffon'] },
 
   /* Clubs (14) */
   {

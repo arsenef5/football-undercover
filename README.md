@@ -93,7 +93,7 @@ npm run ios              # build web, synchronise, ouvre Xcode
 
 ```
 src/
-  data/words.ts        200 mots de base (60 % joueurs) + pack Pro, par catégorie
+  data/words.ts        275 mots de base (74 % joueurs) + pack Pro, par catégorie
   data/avatars.ts      avatars et couleurs proposés
   game/engine.ts       moteur pur : rôles, ordre de parole, éliminations, victoires, points, tirage pondéré
   game/engine.test.ts  tests du moteur (vitest)

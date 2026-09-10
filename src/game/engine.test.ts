@@ -58,8 +58,8 @@ function idsWithRole(g: Game, role: string, alive = true) {
 }
 
 describe('la base de mots', () => {
-  it('offre exactement 200 mots gratuits (60 % de joueurs) et plus de 1 000 mots en Pro', () => {
-    expect(BASE_WORD_COUNT).toBe(200);
+  it('offre exactement 275 mots gratuits (plus de la moitié de joueurs) et plus de 1 000 mots en Pro', () => {
+    expect(BASE_WORD_COUNT).toBe(275);
     const byCat = countWordsByCategory(BASE_GROUPS);
     expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.55);
     expect(countWords(PRO_GROUPS)).toBeGreaterThanOrEqual(1000);

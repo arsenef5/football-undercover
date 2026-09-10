@@ -486,4 +486,22 @@ export const PRO_PLAYERS: GroupDef[] = [
   { cat: 'joueur', words: ['Lewandowski', 'Aubameyang', 'Haaland', 'Thomas Müller', 'Kane', 'Reus'] },
   // Icônes du football
   { cat: 'joueur', words: ['Pelé', 'Maradona', 'Cruyff', 'Beckenbauer', 'Platini', 'Eusébio'] },
+
+  /* ------------------------------------------------------------------ */
+  /* Groupes d'Arsène (10/09/2026), suite                                */
+  /* ------------------------------------------------------------------ */
+  // Latéraux de légende
+  { cat: 'joueur', words: ['Dani Alves', 'Carvajal', 'Marcelo', 'Roberto Carlos', 'Abidal'] },
+  // Ailiers qui repiquent dans l'axe
+  { cat: 'joueur', words: ['Ribéry', 'Robben', 'Coutinho', 'Luis Díaz', 'Olise'] },
+  // Défenseurs centraux français
+  { cat: 'joueur', words: ['Varane', 'Saliba', 'Konaté', 'Zouma'] },
+  // Milieux français des années 2010
+  { cat: 'joueur', words: ['Kanté', 'Matuidi', 'Rabiot', 'Pogba'] },
+  // Attaquants français de la nouvelle vague
+  { cat: 'joueur', words: ['Ekitiké', 'Barcola', 'Désiré Doué', 'Coman', 'Rayan Cherki'] },
+  // Milieux français passés par Monaco
+  { cat: 'joueur', words: ['Camavinga', 'Lemar', 'Kondogbia', 'Tchouaméni', 'Rabiot'] },
+  // Latéraux fusées
+  { cat: 'joueur', words: ['Hakimi', 'Alphonso Davies', 'Frimpong', 'Alexander-Arnold'] },
 ];

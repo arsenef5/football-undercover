@@ -61,7 +61,14 @@ export function Reveal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, player?.id, creator.recording]);
 
-  if (!game) return null;
+  // Dernière carte cachée : on enchaîne directement sur l'ordre de parole, sans écran « Commencer ».
+  const finished = !!game && game.phase === 'discuss' && game.revealIndex >= total;
+  useEffect(() => {
+    if (finished) nav.replace({ name: 'discuss' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
+
+  if (!game || finished) return null;
 
   const hide = () => {
     if (busy) return;
