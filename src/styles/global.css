@@ -2292,7 +2292,8 @@ p,
 
 .tile.is-on {
   border-color: rgba(255, 43, 43, 0.55);
-  background: linear-gradient(180deg, rgba(255, 43, 43, 0.16), #151515 85%);
+  /* Fond opaque sous le dégradé : la poubelle du glissement ne doit pas transparaître. */
+  background: linear-gradient(180deg, rgba(255, 43, 43, 0.16), #151515 85%), #151515;
 }
 
 .tile .check {
@@ -2303,6 +2304,39 @@ p,
 .tile .avatar.sm {
   --s: 28px;
   font-size: 12px;
+}
+
+/* Rond du joueur : un appui ouvre la fiche (photo, prénom, couleur). */
+.tile .tile-photo {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tile .tile-photo .cam {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  border: 2px solid #161616;
+}
+
+.tile .tile-photo.has-photo .cam {
+  background: var(--surface-2, #262626);
+  color: var(--muted);
 }
 
 .row.compact {

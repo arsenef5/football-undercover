@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PlusIcon } from '../components/Icons';
+import { CameraIcon, PlusIcon } from '../components/Icons';
+import { PlayerSheet } from '../components/PlayerSheet';
 import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
 import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
@@ -20,7 +21,7 @@ import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { thump } from '../native';
 import { useNav } from '../nav';
-import { findTeamByRoster, nextTeamName, useStore } from '../store/store';
+import { findTeamByRoster, nextTeamName, useStore, type Player } from '../store/store';
 
 type Preset = 'players' | 'mix' | 'balanced' | 'custom';
 
@@ -131,6 +132,11 @@ export function Setup() {
     dispatch({ type: 'player/remove', id });
   };
 
+  // Fiche joueur (photo, prénom, couleur) : création depuis l'ajout rapide ou modification depuis une tuile.
+  const [sheet, setSheet] = useState<{ open: boolean; player: Player | null }>({ open: false, player: null });
+  const openSheet = (player: Player | null) => setSheet({ open: true, player });
+  const closeSheet = () => setSheet((s) => ({ ...s, open: false }));
+
   const error =
     n < MIN_PLAYERS
       ? T.setup.minPlayers(MIN_PLAYERS)
@@ -230,6 +236,9 @@ export function Setup() {
           <Button type="submit" variant="secondary" disabled={!quickName.trim()} haptic>
             <PlusIcon />
           </Button>
+          <Button type="button" variant="secondary" aria-label={T.setup.addWithPhoto} onClick={() => openSheet(null)}>
+            <CameraIcon />
+          </Button>
         </form>
 
         {players.length === 0 ? (
@@ -242,7 +251,17 @@ export function Setup() {
               const on = selected.includes(p.id);
               return (
                 <SwipeRow key={p.id} className={`tile ${on ? 'is-on' : ''}`} onTap={() => toggle(p.id)} onDelete={() => removePlayer(p.id)}>
-                  <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
+                  <button
+                    type="button"
+                    className={`tile-photo ${p.photo ? 'has-photo' : ''}`}
+                    aria-label={p.photo ? T.players.photoChange : T.players.photoAdd}
+                    onClick={() => openSheet(p)}
+                  >
+                    <Avatar name={p.name} color={p.color} photo={p.photo} size="sm" />
+                    <span className="cam" aria-hidden>
+                      <CameraIcon size={9} />
+                    </span>
+                  </button>
                   <span className="name">{p.name}</span>
                   <CheckMark on={on} />
                 </SwipeRow>
@@ -252,7 +271,7 @@ export function Setup() {
         )}
         {players.length > 0 ? (
           <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-            {T.teams.swipeHint}
+            {T.setup.tileHint}
           </p>
         ) : null}
 
@@ -329,6 +348,24 @@ export function Setup() {
         </div>
         <div style={{ height: 8 }} />
       </Screen>
+      <PlayerSheet
+        open={sheet.open}
+        initial={sheet.player}
+        initialName={quickName.trim()}
+        existingNames={state.players.map((p) => p.name)}
+        onClose={closeSheet}
+        onSave={(draft) => {
+          if (sheet.player) {
+            dispatch({ type: 'player/update', id: sheet.player.id, patch: { name: draft.name, color: draft.color, photo: draft.photo } });
+          } else {
+            const p = addPlayer(draft.name, draft.avatar, draft.color, draft.photo);
+            setSelected((cur) => [...cur, p.id]);
+            setTeamId(null);
+            setQuickName('');
+          }
+          closeSheet();
+        }}
+      />
       {toast}
     </>
   );

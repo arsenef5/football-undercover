@@ -19,12 +19,15 @@ export interface PlayerDraft {
 export function PlayerSheet({
   open,
   initial,
+  initialName = '',
   existingNames,
   onSave,
   onClose,
 }: {
   open: boolean;
   initial: Player | null;
+  /** Création : prénom déjà tapé ailleurs (ajout rapide). */
+  initialName?: string;
   existingNames: string[];
   onSave: (draft: PlayerDraft) => void;
   onClose: () => void;
@@ -46,7 +49,7 @@ export function PlayerSheet({
       setColor(initial.color);
       setPhoto(initial.photo ?? null);
     } else {
-      setName('');
+      setName(initialName);
       setColor(DEFAULT_COLOR);
       setPhoto(null);
     }

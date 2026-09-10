@@ -23,6 +23,8 @@ interface ButtonProps {
   className?: string;
   type?: 'button' | 'submit';
   haptic?: boolean;
+  /** Boutons à icône seule : libellé pour les lecteurs d'écran. */
+  'aria-label'?: string;
 }
 
 export function Button({
@@ -36,11 +38,13 @@ export function Button({
   className = '',
   type = 'button',
   haptic = true,
+  'aria-label': ariaLabel,
 }: ButtonProps) {
   return (
     <button
       type={type}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`btn btn-${variant} ${small ? 'btn-sm' : ''} ${inline ? 'btn-inline' : ''} ${className}`}
       onClick={() => {
         if (haptic) void tap();
