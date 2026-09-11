@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
-import type { Category, Game, WordLang } from '../game/types';
-import { DEFAULT_WEIGHTS } from '../game/engine';
+import type { Category, Game, WordLang, WordPair } from '../game/types';
+import { ALL_CATEGORIES, duoKey } from '../game/engine';
 import type { Lang } from '../i18n';
 
 /* ------------------------------------------------------------------ */
@@ -71,8 +71,10 @@ export interface Settings {
   whiteCanStart: boolean;
   /** Durée du chrono de discussion, 0 = pas de chrono. */
   timerSeconds: number;
-  /** Curseurs par catégorie (poids relatifs, 0 = jamais). */
-  weights: Record<Category, number>;
+  /** Part des parties « joueurs », en % (le reste est tiré parmi les autres catégories). */
+  playerShare: number;
+  /** Catégories décochées (jamais tirées). */
+  categoriesOff: Category[];
   /** Langue des menus. */
   uiLang: Lang;
   /** Langue des mots secrets (indépendante des menus). */
@@ -96,6 +98,9 @@ export interface AppState {
   /** Points de la soirée en cours (remis à zéro à la demande). */
   session: Record<string, number>;
   recentPairIds: string[];
+  /** Duos joués récemment (clés duoKey) et mots vus récemment : la mémoire du tirage. */
+  recentDuos: string[];
+  recentWords: string[];
   lastSetup: LastSetup | null;
   gamesPlayed: number;
   /** Garde-fou : une partie n'est comptée qu'une fois, même si l'écran de résultat est rouvert. */
@@ -110,7 +115,8 @@ export const DEFAULT_SETTINGS: Settings = {
   whiteSeesCategory: true,
   whiteCanStart: false,
   timerSeconds: 0,
-  weights: { ...DEFAULT_WEIGHTS },
+  playerShare: 60,
+  categoriesOff: [],
   uiLang: 'fr',
   wordLang: 'fr',
   creatorMode: false,
@@ -123,6 +129,8 @@ export const INITIAL_STATE: AppState = {
   settings: DEFAULT_SETTINGS,
   session: {},
   recentPairIds: [],
+  recentDuos: [],
+  recentWords: [],
   lastSetup: null,
   gamesPlayed: 0,
   lastRecordedGameId: null,
@@ -131,6 +139,8 @@ export const INITIAL_STATE: AppState = {
 const STORAGE_KEY = 'fu.state.v1';
 const GAME_KEY = 'fu.game.v1';
 const RECENT_LIMIT = 60;
+/** 15 parties × 2 mots : un mot vu ne revient pas avant 15 parties. */
+const RECENT_WORDS_LIMIT = 30;
 
 export function uid(prefix = 'id'): string {
   const c = globalThis.crypto;
@@ -156,7 +166,16 @@ export function loadState(): AppState {
     const parsed = safeParse<Partial<AppState>>(localStorage.getItem(STORAGE_KEY));
     if (!parsed || parsed.version !== 1) return INITIAL_STATE;
     const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) };
-    settings.weights = { ...DEFAULT_WEIGHTS, ...(parsed.settings?.weights ?? {}) };
+    // Migration des anciens curseurs par catégorie → part de joueurs + catégories décochées.
+    const legacy = (parsed.settings as { weights?: Record<string, number>; playerShare?: number } | undefined) ?? {};
+    if (legacy.weights && typeof legacy.playerShare !== 'number') {
+      const w = legacy.weights;
+      const total = Object.values(w).reduce((acc, v) => acc + Math.max(0, v), 0);
+      settings.playerShare = total > 0 ? Math.round((100 * Math.max(0, w.joueur ?? 0)) / total) : 60;
+      settings.categoriesOff = ALL_CATEGORIES.filter((c) => c !== 'joueur' && c in w && (w[c] ?? 0) <= 0);
+    }
+    if (typeof settings.playerShare !== 'number') settings.playerShare = 60;
+    if (!Array.isArray(settings.categoriesOff)) settings.categoriesOff = [];
     const players = Array.isArray(parsed.players) ? parsed.players : [];
     const teams: Team[] = Array.isArray(parsed.teams)
       ? parsed.teams.map((t) => ({ ...t, undercovers: t.undercovers ?? null, white: t.white ?? null, auto: t.auto ?? false }))
@@ -181,6 +200,8 @@ export function loadState(): AppState {
       teams,
       session: parsed.session ?? {},
       recentPairIds: Array.isArray(parsed.recentPairIds) ? parsed.recentPairIds : [],
+      recentDuos: Array.isArray(parsed.recentDuos) ? parsed.recentDuos : [],
+      recentWords: Array.isArray(parsed.recentWords) ? parsed.recentWords : [],
     };
   } catch {
     return INITIAL_STATE;
@@ -290,11 +311,16 @@ export function reducer(state: AppState, action: Action): AppState {
         0,
         RECENT_LIMIT,
       );
+      const key = duoKey(game.pair.cat, game.pair.fr[0], game.pair.fr[1]);
+      const recentDuos = [key, ...state.recentDuos.filter((k) => k !== key)].slice(0, RECENT_LIMIT);
+      const recentWords = [...game.pair.fr, ...state.recentWords].slice(0, RECENT_WORDS_LIMIT);
       return {
         ...state,
         players,
         session,
         recentPairIds,
+        recentDuos,
+        recentWords,
         gamesPlayed: state.gamesPlayed + 1,
         lastRecordedGameId: game.id,
       };
@@ -376,4 +402,18 @@ export function useStore(): StoreValue {
 /** Version Pro effective : achat en boutique OU code Pro accepté. Toujours passer par ici. */
 export function isPro(settings: Settings): boolean {
   return settings.premium || !!settings.proCode;
+}
+
+/** Options de tirage communes à Nouvelle partie, Encore et Relancer : part de joueurs, catégories, mémoire. */
+export function drawOptions(state: AppState, current?: WordPair | null) {
+  const s = state.settings;
+  return {
+    exclude: [...(current ? [current.id] : []), ...state.recentPairIds],
+    playerShare: s.playerShare / 100,
+    enabled: ALL_CATEGORIES.filter((c) => !s.categoriesOff.includes(c)),
+    recentDuos: [...(current ? [duoKey(current.cat, current.fr[0], current.fr[1])] : []), ...state.recentDuos],
+    recentWords: [...(current ? current.fr : []), ...state.recentWords],
+    lang: s.wordLang,
+    whiteCanStart: s.whiteCanStart,
+  };
 }

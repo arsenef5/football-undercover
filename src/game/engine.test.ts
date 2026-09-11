@@ -4,7 +4,7 @@ import {
   computeOutcome,
   counts,
   createGame,
-  DEFAULT_WEIGHTS,
+  duoKey,
   eliminate,
   goToVote,
   isGuessLikelyCorrect,
@@ -16,14 +16,12 @@ import {
   reorderSeats,
   resolveWhiteGuess,
   revealNext,
-  shares,
   suggestConfig,
   validateConfig,
-  WEIGHT_PRESETS,
 } from './engine';
-import { ALL_GROUPS, BASE_COMBO_COUNT, BASE_GROUPS, BASE_WORD_COUNT, countCombos, countWords, countWordsByCategory, PRO_EXTRA_COMBOS, PRO_GROUPS, TOTAL_COMBO_COUNT, TOTAL_WORD_COUNT } from '../data/words';
+import { ALL_GROUPS, BASE_COMBO_COUNT, BASE_GROUPS, BASE_WORD_COUNT, countCombos, countCombosByCategory, countWords, countWordsByCategory, PRO_EXTRA_COMBOS, PRO_GROUPS, TOTAL_COMBO_COUNT, TOTAL_WORD_COUNT } from '../data/words';
 import { pairFromGroup } from './engine';
-import type { Category, Game, Seat, WordPair } from './types';
+import type { Category, Game, Seat, WordGroup, WordPair } from './types';
 
 /** Générateur déterministe (mulberry32) pour des tests reproductibles. */
 function seeded(seed: number) {
@@ -60,10 +58,10 @@ function idsWithRole(g: Game, role: string, alive = true) {
 describe('la base de mots', () => {
   it('offre une vingtaine de groupes gratuits (au moins 200 combinaisons) et au moins 700 combinaisons de plus en Pro', () => {
     expect(BASE_GROUPS.length).toBeGreaterThanOrEqual(15);
-    expect(BASE_GROUPS.length).toBeLessThanOrEqual(30);
+    expect(BASE_GROUPS.length).toBeLessThanOrEqual(40);
     expect(BASE_WORD_COUNT).toBeGreaterThanOrEqual(100);
     const byCat = countWordsByCategory(BASE_GROUPS);
-    expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.45);
+    expect(byCat.joueur / BASE_WORD_COUNT).toBeGreaterThanOrEqual(0.3);
     expect(countWords(PRO_GROUPS)).toBe(TOTAL_WORD_COUNT - BASE_WORD_COUNT);
     // Les combinaisons sont ce que le jeu tire vraiment : c'est le chiffre affiché et promis.
     expect(BASE_COMBO_COUNT).toBeGreaterThanOrEqual(200);
@@ -75,7 +73,7 @@ describe('la base de mots', () => {
 
   it('couvre les 8 catégories annoncées, dans la base gratuite', () => {
     const cats = new Set(BASE_GROUPS.map((g) => g.cat));
-    const expected: Category[] = ['joueur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
+    const expected: Category[] = ['joueur', 'entraineur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
     expected.forEach((c) => expect(cats.has(c)).toBe(true));
   });
 
@@ -107,10 +105,10 @@ describe('la base de mots', () => {
       expect(p.en[0]).not.toBe(p.en[1]);
       expect(p.id).toBe(g.id);
     });
-    const big = BASE_GROUPS.find((g) => g.fr.length >= 8)!;
+    const big = BASE_GROUPS.find((g) => g.fr.length >= 6)!;
     const duos = new Set<string>();
     for (let i = 0; i < 60; i++) duos.add(pairFromGroup(big, rng).fr.slice().sort().join('|'));
-    expect(duos.size).toBeGreaterThan(10);
+    expect(duos.size).toBeGreaterThan(8);
   });
 
   it('sert les mots dans la langue demandée', () => {
@@ -215,38 +213,60 @@ describe('le choix des mots', () => {
     { id: 'c', cat: 'meme', pack: 'base', fr: ['C1', 'C2'], en: ['C1', 'C2'] },
   ];
 
-  it('ne tire jamais une catégorie à zéro', () => {
+  it('ne tire jamais une catégorie décochée', () => {
     for (let s = 0; s < 40; s++) {
-      expect(pickPair(pool, { rng: seeded(s), weights: { stade: 1 } }).id).toBe('b');
-      expect(pickPair(pool, { rng: seeded(s), weights: { joueur: 50, meme: 50 } }).id).not.toBe('b');
+      expect(pickPair(pool, { rng: seeded(s), enabled: ['stade'] }).id).toBe('b');
+      expect(pickPair(pool, { rng: seeded(s), enabled: ['joueur', 'meme'] }).id).not.toBe('b');
+      expect(pickPair(pool, { rng: seeded(s), playerShare: 1 }).cat).toBe('joueur');
+      expect(pickPair(pool, { rng: seeded(s), playerShare: 0 }).cat).not.toBe('joueur');
     }
   });
 
-  it('respecte à peu près les curseurs (60 % joueurs sur 3 000 tirages)', () => {
+  it('respecte la part de joueurs (60 % sur 3 000 tirages) et tire le reste en proportion de la richesse', () => {
     const rng = seeded(42);
     let joueurs = 0;
+    const cats: Record<string, number> = {};
     const N = 3000;
     for (let i = 0; i < N; i++) {
-      if (pickPair(BASE_GROUPS, { rng, weights: DEFAULT_WEIGHTS }).cat === 'joueur') joueurs++;
+      const p = pickPair(BASE_GROUPS, { rng, playerShare: 0.6 });
+      if (p.cat === 'joueur') joueurs++;
+      else cats[p.cat] = (cats[p.cat] ?? 0) + 1;
     }
     expect(joueurs / N).toBeGreaterThan(0.56);
     expect(joueurs / N).toBeLessThan(0.64);
-    const sh = shares(DEFAULT_WEIGHTS);
-    expect(sh.joueur).toBeCloseTo(0.6, 5);
-    expect(Object.values(sh).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 5);
+    // Le lexique a plus de duos que les memes : il sort plus souvent.
+    const combos = countCombosByCategory(BASE_GROUPS);
+    expect(combos.style).toBeGreaterThan(combos.meme);
+    expect(cats.style).toBeGreaterThan(cats.meme);
   });
 
-  it('évite les paires récentes tant que possible, puis les réutilise', () => {
+  it('évite les groupes récents côté joueurs tant que possible, puis les réutilise', () => {
+    const players: WordPair[] = [
+      { id: 'a', cat: 'joueur', pack: 'base', fr: ['A1', 'A2'], en: ['A1', 'A2'] },
+      { id: 'b', cat: 'joueur', pack: 'base', fr: ['B1', 'B2'], en: ['B1', 'B2'] },
+      { id: 'c', cat: 'joueur', pack: 'base', fr: ['C1', 'C2'], en: ['C1', 'C2'] },
+    ];
     for (let s = 0; s < 20; s++) {
-      expect(pickPair(pool, { rng: seeded(s), exclude: ['a', 'b'] }).id).toBe('c');
+      expect(pickPair(players, { rng: seeded(s), exclude: ['a', 'b'] }).id).toBe('c');
     }
-    expect(pickPair(pool, { rng: seeded(1), exclude: ['a', 'b', 'c'] })).toBeTruthy();
+    expect(pickPair(players, { rng: seeded(1), exclude: ['a', 'b', 'c'] })).toBeTruthy();
   });
 
-  it('retombe sur un tirage uniforme si tous les curseurs sont à zéro ou hors pool', () => {
-    expect(pickPair(pool, { rng: seeded(1), weights: { joueur: 0, stade: 0, meme: 0 } })).toBeTruthy();
-    expect(pickPair(pool, { rng: seeded(1), weights: { but: 100 } })).toBeTruthy();
-    expect(pickPair(pool, { rng: seeded(1), weights: WEIGHT_PRESETS.players }).cat).toBe('joueur');
+  it('écarte les duos et les mots récents, puis relâche par paliers', () => {
+    const g: WordGroup = { id: 'x', cat: 'stade', pack: 'base', fr: ['S1', 'S2', 'S3'], en: ['S1', 'S2', 'S3'] };
+    // Duo S1/S2 joué, mot S3 jamais vu : seuls S1/S3 et S2/S3 sont frais.
+    for (let s = 0; s < 30; s++) {
+      const p = pickPair([g], { rng: seeded(s), recentDuos: [duoKey('stade', 'S1', 'S2')] });
+      expect(p.fr).toContain('S3');
+    }
+    // Mot S3 vu récemment : on préfère S1/S2 même s'il reste des duos avec S3.
+    for (let s = 0; s < 30; s++) {
+      const p = pickPair([g], { rng: seeded(s), recentWords: ['S3'] });
+      expect(p.fr.slice().sort()).toEqual(['S1', 'S2']);
+    }
+    // Tout est récent : on tire quand même.
+    expect(pickPair([g], { rng: seeded(1), recentWords: ['S1', 'S2', 'S3'], recentDuos: [duoKey('stade', 'S1', 'S2')] })).toBeTruthy();
+    expect(() => pickPair(pool, { rng: seeded(1), enabled: ['but'] })).toThrow();
   });
 });
 

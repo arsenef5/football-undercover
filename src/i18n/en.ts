@@ -122,6 +122,8 @@ export const en: Strings = {
     suggested: 'suggested',
     categories: 'Categories',
     categoriesHint: 'At least one category.',
+    playerShare: 'Share of players',
+    playerShareHint: (rest: number) => `The rest (${rest}%) is drawn from every ticked category in proportion to its size: a small category comes up rarely, never twice in a row.`,
     presetPlayers: 'Players',
     presetMix: 'A bit of everything',
     presetBalanced: 'Balanced',
@@ -343,7 +345,8 @@ export const en: Strings = {
     competition: 'Competition',
     but: 'Legendary moment',
     meme: 'Meme',
-    style: 'Playing style',
+    style: 'Lingo',
+    entraineur: 'Coach',
   },
   promo: {
     title: (n: number) => `+${n.toLocaleString('en-GB')} combos`,

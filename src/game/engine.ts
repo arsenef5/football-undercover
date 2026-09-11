@@ -69,45 +69,21 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   return out;
 }
 
-/** Poids relatifs par catégorie (curseurs). Une catégorie à 0 n'est jamais tirée. */
-export type Weights = Partial<Record<Category, number>>;
+export const ALL_CATEGORIES: Category[] = ['joueur', 'entraineur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
 
-export const ALL_CATEGORIES: Category[] = ['joueur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
-
-/** Réglage de base demandé : 60 % de joueurs, le reste réparti sur les autres catégories. */
-export const DEFAULT_WEIGHTS: Record<Category, number> = {
-  joueur: 60,
-  club: 8,
-  trophee: 5,
-  stade: 5,
-  competition: 5,
-  but: 7,
-  meme: 5,
-  style: 5,
-};
-
-export const WEIGHT_PRESETS: Record<'players' | 'mix' | 'balanced', Record<Category, number>> = {
-  players: { joueur: 100, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0 },
-  mix: DEFAULT_WEIGHTS,
-  balanced: { joueur: 12, club: 12, trophee: 12, stade: 12, competition: 12, but: 12, meme: 12, style: 12 },
-};
-
-/** Part effective (0..1) de chaque catégorie pour des poids donnés. */
-export function shares(weights: Weights): Record<Category, number> {
-  const total = ALL_CATEGORIES.reduce((s, c) => s + Math.max(0, weights[c] ?? 0), 0);
-  const out = {} as Record<Category, number>;
-  ALL_CATEGORIES.forEach((c) => {
-    out[c] = total > 0 ? Math.max(0, weights[c] ?? 0) / total : 0;
-  });
-  return out;
-}
 
 export interface CreateGameOptions {
   rng?: Rng;
   /** Paires déjà jouées récemment : on les évite tant qu'il en reste d'autres. */
   exclude?: readonly string[];
-  /** Curseurs par catégorie. Absent = tirage uniforme sur toutes les paires. */
-  weights?: Weights;
+  /** Part des parties « joueurs » (0..1), 0,6 par défaut. */
+  playerShare?: number;
+  /** Catégories autorisées (toutes par défaut). */
+  enabled?: readonly Category[];
+  /** Duos joués récemment (clés `duoKey`) : écartés tant qu'il reste d'autres choix. */
+  recentDuos?: readonly string[];
+  /** Mots vus récemment : écartés tant qu'il reste d'autres choix. */
+  recentWords?: readonly string[];
   /** Langue des mots affichés (fr par défaut). */
   lang?: WordLang;
   /** Par défaut le carton blanc ne parle jamais en premier ; option pour l'autoriser. */
@@ -126,46 +102,77 @@ export function pairFromGroup(group: WordGroup, rng: Rng): WordPair {
   return { id: group.id, cat: group.cat, pack: group.pack, fr: [group.fr[i], group.fr[j]], en: [group.en[i], group.en[j]] };
 }
 
+export const DEFAULT_PLAYER_SHARE = 0.6;
+
+/** Clé d'un duo indépendante du groupe : deux fois les mêmes mots = le même duo. */
+export function duoKey(cat: Category, a: string, b: string): string {
+  return a < b ? `${cat}|${a}|${b}` : `${cat}|${b}|${a}`;
+}
+
+interface Duo {
+  group: WordGroup;
+  i: number;
+  j: number;
+}
+
+function duosOf(group: WordGroup): Duo[] {
+  const n = Math.min(group.fr.length, group.en.length);
+  const out: Duo[] = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) out.push({ group, i, j });
+  return out;
+}
+
+function toPair(d: Duo, rng: Rng): WordPair {
+  const [i, j] = rng() < 0.5 ? [d.i, d.j] : [d.j, d.i];
+  const g = d.group;
+  return { id: g.id, cat: g.cat, pack: g.pack, fr: [g.fr[i], g.fr[j]], en: [g.en[i], g.en[j]] };
+}
+
 /**
- * Choisit une paire : d'abord la catégorie (au poids), puis un groupe dedans en évitant
- * ceux joués récemment, puis deux mots du groupe. Si tous les curseurs sont à zéro ou si
- * une catégorie pondérée n'a aucun groupe, on retombe sur un tirage uniforme.
+ * Tirage d'une paire (décisions d'Arsène, 11/09/2026) :
+ * 1. Joueurs ou « le reste du foot », selon la part de joueurs (60 % par défaut).
+ * 2. Joueurs : un GROUPE au hasard (chaque thème a la même chance, même petit), en évitant les
+ *    groupes récents, puis un duo frais dedans. Le reste : un DUO au hasard parmi tous ceux des
+ *    catégories cochées, donc une catégorie sort en proportion de sa richesse et une catégorie
+ *    pauvre ne peut pas devenir répétitive.
+ * 3. Mémoire : un duo déjà joué ou un mot déjà vu récemment est écarté tant qu'il reste d'autres
+ *    choix ; on relâche par paliers (mots récents tolérés, puis duos récents) au lieu d'échouer.
  */
 export function pickPair(groups: readonly WordGroup[], opts: CreateGameOptions = {}): WordPair {
   const rng = opts.rng ?? Math.random;
-  const usable = groups.filter((g) => Math.min(g.fr.length, g.en.length) >= 2);
+  const enabled = opts.enabled ? new Set<Category>(opts.enabled) : null;
+  const usable = groups.filter((g) => Math.min(g.fr.length, g.en.length) >= 2 && (!enabled || enabled.has(g.cat)));
   if (usable.length === 0) throw new Error('Aucun mot disponible.');
-  const exclude = new Set(opts.exclude ?? []);
-  const fromPool = (pool0: readonly WordGroup[]) => {
-    const pool1 = pool0.filter((g) => !exclude.has(g.id));
-    const pool = pool1.length > 0 ? pool1 : pool0;
-    return pairFromGroup(pool[Math.floor(rng() * pool.length)], rng);
+  const players = usable.filter((g) => g.cat === 'joueur');
+  const others = usable.filter((g) => g.cat !== 'joueur');
+  const share = Math.min(1, Math.max(0, opts.playerShare ?? DEFAULT_PLAYER_SHARE));
+  const usePlayers = players.length > 0 && (others.length === 0 || rng() < share);
+
+  const recentDuos = new Set(opts.recentDuos ?? []);
+  const recentWords = new Set(opts.recentWords ?? []);
+  // 0 = tout frais, 1 = un mot déjà vu, 2 = duo déjà joué
+  const level = (d: Duo): number => {
+    const g = d.group;
+    if (recentDuos.has(duoKey(g.cat, g.fr[d.i], g.fr[d.j]))) return 2;
+    if (recentWords.has(g.fr[d.i]) || recentWords.has(g.fr[d.j])) return 1;
+    return 0;
+  };
+  const pickDuo = (duos: Duo[]): Duo => {
+    const best = Math.min(...duos.map(level));
+    const pool = duos.filter((d) => level(d) === best);
+    return pool[Math.floor(rng() * pool.length)];
   };
 
-  const weights = opts.weights;
-  if (!weights) return fromPool(usable);
-
-  const byCat = new Map<Category, WordGroup[]>();
-  usable.forEach((g) => {
-    const list = byCat.get(g.cat);
-    if (list) list.push(g);
-    else byCat.set(g.cat, [g]);
-  });
-  const cats = [...byCat.keys()].filter((c) => (weights[c] ?? 0) > 0);
-  if (cats.length === 0) return fromPool(usable);
-
-  const total = cats.reduce((s, c) => s + (weights[c] ?? 0), 0);
-  let r = rng() * total;
-  let chosen = cats[cats.length - 1];
-  for (const c of cats) {
-    const w = weights[c] ?? 0;
-    if (r < w) {
-      chosen = c;
-      break;
-    }
-    r -= w;
+  if (usePlayers) {
+    const exclude = new Set(opts.exclude ?? []);
+    const withDuos = players.map((g) => ({ g, duos: duosOf(g), best: 0 }));
+    withDuos.forEach((w) => (w.best = Math.min(...w.duos.map(level))));
+    const best = Math.min(...withDuos.map((w) => w.best));
+    let pool = withDuos.filter((w) => w.best === best && !exclude.has(w.g.id));
+    if (pool.length === 0) pool = withDuos.filter((w) => w.best === best);
+    return toPair(pickDuo(pool[Math.floor(rng() * pool.length)].duos), rng);
   }
-  return fromPool(byCat.get(chosen) ?? usable);
+  return toPair(pickDuo(others.flatMap(duosOf)), rng);
 }
 
 export function createGame(

@@ -13,7 +13,7 @@ import type { GroupDef } from './groups/types';
  * - pack « pro » (sans pub) : `pro-players.ts` (joueurs par ressemblance) + `pro-more.ts`
  */
 
-export const CATEGORY_ORDER: Category[] = ['joueur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
+export const CATEGORY_ORDER: Category[] = ['joueur', 'entraineur', 'club', 'trophee', 'stade', 'competition', 'but', 'meme', 'style'];
 
 function build(defs: GroupDef[], pack: Pack): WordGroup[] {
   const counters: Partial<Record<Category, number>> = {};
@@ -41,7 +41,7 @@ export function countWords(groups: readonly WordGroup[]): number {
 }
 
 export function countWordsByCategory(groups: readonly WordGroup[]): Record<Category, number> {
-  const out: Record<Category, number> = { joueur: 0, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0 };
+  const out: Record<Category, number> = { joueur: 0, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0, entraineur: 0 };
   groups.forEach((g) => (out[g.cat] += g.fr.length));
   return out;
 }
@@ -68,7 +68,7 @@ export function countCombos(groups: readonly WordGroup[]): number {
 }
 
 export function countCombosByCategory(groups: readonly WordGroup[]): Record<Category, number> {
-  const out: Record<Category, number> = { joueur: 0, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0 };
+  const out: Record<Category, number> = { joueur: 0, club: 0, trophee: 0, stade: 0, competition: 0, but: 0, meme: 0, style: 0, entraineur: 0 };
   for (const cat of CATEGORY_ORDER) out[cat] = countCombos(groups.filter((g) => g.cat === cat));
   return out;
 }

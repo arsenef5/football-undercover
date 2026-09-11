@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { groupsFor } from '../data/words';
-import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { thump } from '../native';
-import { isPro, useStore } from '../store/store';
+import { drawOptions, isPro, useStore } from '../store/store';
 import { RefreshIcon } from './Icons';
 import { Button, Confirm, IconButton } from './ui';
 
@@ -33,13 +32,7 @@ export function RerollButton({
 
   const reroll = () => {
     const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo: photo ?? null }));
-    const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
-    start(seats, game.config, groupsFor(isPro(state.settings)), {
-      exclude: [game.pair.id, ...state.recentPairIds],
-      weights: anyWeight ? state.settings.weights : undefined,
-      lang: state.settings.wordLang,
-      whiteCanStart: state.settings.whiteCanStart,
-    });
+    start(seats, game.config, groupsFor(isPro(state.settings)), drawOptions(state, game.pair));
     void thump();
     setOpen(false);
     afterReroll?.();

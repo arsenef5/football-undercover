@@ -1,7 +1,7 @@
 import type { GroupDef } from './types';
 
 /**
- * Base gratuite : une vingtaine de groupes seulement, les plus iconiques, toutes catégories représentées
+ * Base gratuite : les groupes les plus iconiques, toutes catégories représentées (2 à 3 par catégorie hors joueurs)
  * (décision d'Arsène, 11/09/2026 : « genre 20 groupes gratuits et le reste tout payant »).
  * Une entrée est soit un nom identique dans les deux langues, soit [français, anglais].
  * Le jeu tire deux mots différents par groupe : les duos changent à chaque partie.
@@ -40,53 +40,35 @@ export const BASE: GroupDef[] = [
   // Gardiens
   { cat: 'joueur', words: ['Maignan', 'Areola', 'Lloris', 'Donnarumma', 'Buffon'] },
 
-  /* Clubs */
-  {
-    cat: 'club',
-    words: ['PSG', ['Olympique de Marseille', 'Marseille'], ['Olympique Lyonnais', 'Lyon'], 'Real Madrid', ['FC Barcelone', 'FC Barcelona'], 'Manchester United', 'Liverpool', 'Bayern Munich', 'Juventus', 'AC Milan', 'Inter Milan', 'Manchester City', 'Arsenal', 'Chelsea'],
-  },
+  /* Clubs : petits groupes d'un même championnat */
+  // Les gros de Premier League
+  { cat: 'club', words: ['Manchester City', 'Arsenal', 'Liverpool', 'Chelsea', 'Manchester United', 'Tottenham'] },
+  // Les gros de Ligue 1
+  { cat: 'club', words: ['PSG', ['Olympique de Marseille', 'Marseille'], ['Olympique Lyonnais', 'Lyon'], 'AS Monaco', ['LOSC Lille', 'Lille'], 'RC Lens'] },
 
   /* Trophées */
+  // Trophées de sélection
+  { cat: 'trophee', words: [['Coupe du monde', 'World Cup'], ['Euro', 'Euros'], 'Copa América', ["Coupe d'Afrique des nations", 'AFCON'], ['Ligue des nations', 'Nations League']] },
+  // Trophées individuels
   {
     cat: 'trophee',
-    words: [
-      ['Coupe du monde', 'World Cup'],
-      ['Euro', 'Euros'],
-      'Copa América',
-      ["Coupe d'Afrique des nations", 'AFCON'],
-      ['Ligue des champions', 'Champions League'],
-      ['Ligue Europa', 'Europa League'],
-      ['Ligue Europa Conférence', 'Conference League'],
-      ['Coupe du monde des clubs', 'Club World Cup'],
-      ['Ligue des nations', 'Nations League'],
-      ["Supercoupe d'Europe", 'UEFA Super Cup'],
-      ['Coupe Intercontinentale', 'Intercontinental Cup'],
-      ['Jeux olympiques', 'Olympic Games'],
-    ],
+    words: ["Ballon d'Or", 'The Best FIFA', ["Soulier d'or", 'Golden Shoe'], ['Trophée Kopa', 'Kopa Trophy'], ['Trophée Yachine', 'Yashin Trophy'], 'Golden Boy', ['Trophée Puskás', 'Puskás Award']],
   },
 
   /* Stades */
-  { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Camp Nou', 'Santiago Bernabéu', 'Old Trafford', 'Anfield', 'Wembley', 'San Siro', 'Allianz Arena'] },
+  // Stades anglais
+  { cat: 'stade', words: ['Old Trafford', 'Anfield', 'Etihad Stadium', 'Emirates Stadium', 'Stamford Bridge', 'Tottenham Hotspur Stadium'] },
+  // Stades français
+  { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Groupama Stadium', 'Stade Bollaert-Delelis', 'Stade Louis-II', 'Stade Geoffroy-Guichard'] },
 
-  /* Compétitions — tous pays mélangés */
-  {
-    cat: 'competition',
-    words: [
-      'Premier League',
-      ['Liga', 'La Liga'],
-      'Serie A',
-      'Bundesliga',
-      'Ligue 1',
-      'Eredivisie',
-      ['Championnat brésilien', 'Brazilian league'],
-      ['Championnat argentin', 'Argentine league'],
-      ['Championnat américain (MLS)', 'American league (MLS)'],
-      ['Championnat saoudien', 'Saudi league'],
-    ],
-  },
+  /* Compétitions */
+  // Les cinq grands championnats
+  { cat: 'competition', words: ['Premier League', ['Liga', 'La Liga'], 'Serie A', 'Bundesliga', 'Ligue 1'] },
+  // Les nouveaux formats
+  { cat: 'competition', words: [['Coupe du monde des clubs', 'Club World Cup'], 'Kings League', 'Baller League', ['Ligue des nations', 'Nations League'], ['Ligue Europa Conférence', 'Conference League']] },
 
-  /* Moments légendaires (10) */
-  // Moments de finales
+  /* Moments légendaires */
+  // Finales de Coupe du monde
   {
     cat: 'but',
     words: [
@@ -96,30 +78,74 @@ export const BASE: GroupDef[] = [
       ['Le triplé de Mbappé en finale (2022)', "Mbappé's hat-trick in the final (2022)"],
       ["Le but d'Iniesta en finale de Coupe du monde (2010)", "Iniesta's World Cup final goal (2010)"],
       ['Le but de Götze en finale (2014)', "Götze's goal in the final (2014)"],
-      ["Le triplé de Lucas Moura contre l'Ajax (2019)", "Lucas Moura's hat-trick vs Ajax (2019)"],
-      ['Les 5 buts de Lewandowski en 9 minutes (2015)', "Lewandowski's 5 goals in 9 minutes (2015)"],
-      ['Le retourné de Cristiano Ronaldo (Turin 2018)', "Cristiano Ronaldo's bicycle kick (Turin 2018)"],
     ],
   },
-  // Exploits individuels
+  // Les remontadas
+  {
+    cat: 'but',
+    words: [
+      ['La Remontada (Barça 6-1 PSG, 2017)', 'The Remontada (Barça 6-1 PSG, 2017)'],
+      ['Le 4-0 de Liverpool contre le Barça (2019)', "Liverpool's 4-0 vs Barça (2019)"],
+      ['Le retour du Real contre City (2022)', "Real's comeback against City (2022)"],
+      ['Le 3-0 de la Roma contre le Barça (2018)', "Roma's 3-0 against Barça (2018)"],
+      ["Le retour de l'Ajax à Madrid (2019)", "Ajax's comeback in Madrid (2019)"],
+    ],
+  },
+  // Buts de la dernière seconde
+  {
+    cat: 'but',
+    words: [
+      ['Le but de Sergio Ramos à la 93e (Lisbonne 2014)', "Sergio Ramos's 93rd-minute goal (Lisbon 2014)"],
+      ["Le but d'Agüero à la 94e (titre 2012)", "Agüero's 94th-minute goal (2012 title)"],
+      ['Le doublé de Rodrygo dans le temps additionnel (2022)', "Rodrygo's stoppage-time brace (2022)"],
+      ["Le triplé de Lucas Moura contre l'Ajax (2019)", "Lucas Moura's hat-trick vs Ajax (2019)"],
+      ['Le but de Sergi Roberto à la 95e (Remontada 2017)', "Sergi Roberto's 95th-minute goal (Remontada 2017)"],
+      ['La volée de Payet à la 89e (Euro 2016)', "Payet's 89th-minute volley (Euro 2016)"],
+    ],
+  },
 
   /* Memes */
   // Célébrations cultes
   {
     cat: 'meme',
     words: [
+      ['Le « Siuuu » de Cristiano Ronaldo', 'Cristiano Ronaldo\'s "Siuuu"'],
       ['Le dab de Pogba', "Pogba's dab"],
-      ['La danse Fortnite de Griezmann', "Griezmann's Fortnite dance"],
-      ['La célébration de Marcelo et CR7', 'Marcelo and CR7 celebration'],
+      ['Le « Take the L » de Griezmann', 'Griezmann\'s "Take the L"'],
       ['Le « ice in the veins » de Cole Palmer', 'Cole Palmer\'s "ice in the veins"'],
-      ["La Coupe du monde d'Adil Rami (2018)", "Adil Rami's World Cup (2018)"],
-      ["Les blessures d'Abou Diaby", "Abou Diaby's injuries"],
-      ["L'aventure de Ben Arfa au PSG", "Ben Arfa's PSG adventure"],
-      ["L'aventure de Messi au PSG", "Messi's PSG adventure"],
+      ['Les bras croisés de Mbappé', "Mbappé's crossed arms"],
+      ['La danse de Vinícius', "Vinícius's dance"],
+    ],
+  },
+  // Les flops à 100 millions
+  {
+    cat: 'meme',
+    words: [
+      ['Coutinho à Barcelone', 'Coutinho at Barcelona'],
+      ['Antony à Manchester United', 'Antony at Manchester United'],
+      ["João Félix à l'Atlético", 'João Félix at Atlético'],
+      ['Lukaku à Chelsea', 'Lukaku at Chelsea'],
+      ['Mudryk à Chelsea', 'Mudryk at Chelsea'],
+      ['Neymar à Al-Hilal', 'Neymar at Al-Hilal'],
     ],
   },
 
-  /* Styles de jeu (8) */
-  // Gestes techniques
-  { cat: 'style', words: [['Petit pont', 'Nutmeg'], 'Roulette', ['Virgule', 'Elastico'], ['Talonnade', 'Backheel'], ['Passement de jambes', 'Step-over'], ['Crochet', 'Chop'], ['Sombrero', 'Sombrero flick']] },
+  /* Lexique */
+  // Dribbles
+  { cat: 'style', words: [['Petit pont', 'Nutmeg'], ['Grand pont', 'Knock-and-run'], 'Roulette', ['Virgule', 'Elastico'], ['Sombrero', 'Sombrero flick'], ['Crochet', 'Chop'], ['Passement de jambes', 'Step-over']] },
+  // Frappes
+  { cat: 'style', words: [['Lucarne', 'Top corner'], ['Coup du foulard', 'Trivela'], ['Retourné', 'Bicycle kick'], ['Reprise de volée', 'Volley'], 'Panenka', ['Frappe enroulée', 'Curler']] },
+  // Les mots du mercato
+  {
+    cat: 'style',
+    words: ['Mercato', ['Clause libératoire', 'Release clause'], ["Prêt avec option d'achat", 'Loan with option to buy'], ['Bon de sortie', 'Permission to leave'], ['Indemnité de transfert', 'Transfer fee'], 'Agent'],
+  },
+
+  /* Entraîneurs */
+  // Les tacticiens du moment
+  { cat: 'entraineur', words: ['Guardiola', 'Klopp', 'Ancelotti', 'Luis Enrique', 'Xabi Alonso', 'Hansi Flick'] },
+  // Les entraîneurs du PSG
+  { cat: 'entraineur', words: ['Laurent Blanc', 'Unai Emery', 'Tuchel', 'Pochettino', 'Galtier', 'Luis Enrique'] },
+  // Les légendes du banc
+  { cat: 'entraineur', words: ['Sir Alex Ferguson', 'Arsène Wenger', 'Mourinho', 'Guy Roux', 'Simeone', 'Zidane'] },
 ];

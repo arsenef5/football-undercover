@@ -6,32 +6,13 @@ import { SwipeRow } from '../components/SwipeRow';
 import { Avatar, Button, CheckMark, Chip, Screen, SectionTitle, Segmented, Setting, Slider, Toggle, useToast } from '../components/ui';
 import { DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { CATEGORY_ORDER, countCombosByCategory, groupsFor } from '../data/words';
-import {
-  ALL_CATEGORIES,
-  clampConfig,
-  MAX_PLAYERS,
-  MIN_PLAYERS,
-  shares,
-  suggestConfig,
-  validateConfig,
-  WEIGHT_PRESETS,
-} from '../game/engine';
+import { clampConfig, MAX_PLAYERS, MIN_PLAYERS, suggestConfig, validateConfig } from '../game/engine';
 import type { Category, GameConfig } from '../game/types';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { thump } from '../native';
 import { useNav } from '../nav';
-import { findTeamByRoster, isPro, nextTeamName, type Player, useStore } from '../store/store';
-
-type Preset = 'players' | 'mix' | 'balanced' | 'custom';
-
-function detectPreset(weights: Record<Category, number>): Preset {
-  const same = (a: Record<Category, number>, b: Record<Category, number>) => ALL_CATEGORIES.every((c) => a[c] === b[c]);
-  if (same(weights, WEIGHT_PRESETS.players)) return 'players';
-  if (same(weights, WEIGHT_PRESETS.mix)) return 'mix';
-  if (same(weights, WEIGHT_PRESETS.balanced)) return 'balanced';
-  return 'custom';
-}
+import { drawOptions, findTeamByRoster, isPro, nextTeamName, type Player, useStore } from '../store/store';
 
 export function Setup() {
   const { state, dispatch, addPlayer, addTeam } = useStore();
@@ -85,14 +66,17 @@ export function Setup() {
     if (!touched && n >= MIN_PLAYERS) setConfig(suggestConfig(n));
   }, [n, touched]);
 
-  const weights = state.settings.weights;
-  const preset = detectPreset(weights);
-  const pct = shares(weights);
+  const playerShare = state.settings.playerShare;
+  const off = state.settings.categoriesOff;
   const pro = isPro(state.settings);
   const words = groupsFor(pro);
   const wordCount = useMemo(() => countCombosByCategory(words), [words]);
 
-  const setWeights = (w: Record<Category, number>) => dispatch({ type: 'settings/set', patch: { weights: w } });
+  const setShare = (v: number) => dispatch({ type: 'settings/set', patch: { playerShare: Math.round(v) } });
+  const toggleCategory = (c: Category) =>
+    dispatch({ type: 'settings/set', patch: { categoriesOff: off.includes(c) ? off.filter((x) => x !== c) : [...off, c] } });
+  const others = CATEGORY_ORDER.filter((c) => c !== 'joueur');
+  const anyOther = others.some((c) => !off.includes(c));
 
   const toggle = (id: string) => {
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -146,7 +130,7 @@ export function Setup() {
         : effective
           ? validateConfig(n, effective)
           : null;
-  const anyWeight = ALL_CATEGORIES.some((c) => (weights[c] ?? 0) > 0);
+  const anyCategory = playerShare > 0 || anyOther;
 
   const start = () => {
     if (error || !effective) return;
@@ -166,12 +150,7 @@ export function Setup() {
       setup: { playerIds: selected, teamId: tid, undercovers: touched ? effective.undercovers : null, mrWhite: touched ? effective.mrWhite : null },
     });
     try {
-      game.start(seats, effective, words, {
-        exclude: state.recentPairIds,
-        weights: anyWeight ? weights : undefined,
-        lang: state.settings.wordLang,
-        whiteCanStart: state.settings.whiteCanStart,
-      });
+      game.start(seats, effective, words, drawOptions(state));
       void thump();
       // Mode créateur : écran Réalisation (aperçu, caméra, micro, REC) avant la distribution.
       nav.go({ name: pro && state.settings.creatorMode ? 'creator' : 'reveal' });
@@ -293,32 +272,27 @@ export function Setup() {
         )}
 
         <SectionTitle>{T.setup.categories}</SectionTitle>
-        <Segmented<Preset>
-          full
-          value={preset}
-          options={[
-            { value: 'players', label: T.setup.presetPlayers },
-            { value: 'mix', label: T.setup.presetMix },
-            { value: 'balanced', label: T.setup.presetBalanced },
-          ]}
-          onChange={(v) => {
-            if (v !== 'custom') setWeights({ ...WEIGHT_PRESETS[v] });
-          }}
-        />
-        <div className="weights" style={{ marginTop: 8 }}>
-          {CATEGORY_ORDER.map((c) => (
-            <div key={c} className={`wrow ${(weights[c] ?? 0) === 0 ? 'is-zero' : ''}`}>
-              <div className="lbl">
-                <span>
-                  {T.categories[c]} <span className="muted" style={{ fontSize: 11 }}>({wordCount[c]})</span>
-                </span>
-                <span className="pct">{Math.round(pct[c] * 100)} %</span>
-              </div>
-              <Slider value={weights[c] ?? 0} label={T.categories[c]} onChange={(v) => setWeights({ ...weights, [c]: v })} />
-            </div>
+        <div className="wrow">
+          <div className="lbl">
+            <span>
+              {T.setup.playerShare} <span className="muted" style={{ fontSize: 11 }}>({wordCount.joueur})</span>
+            </span>
+            <span className="pct">{playerShare} %</span>
+          </div>
+          <Slider value={playerShare} min={0} max={100} step={5} label={T.setup.playerShare} onChange={setShare} />
+        </div>
+        <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+          {T.setup.playerShareHint(100 - playerShare)}
+        </p>
+        <div className="chips" style={{ marginTop: 8 }}>
+          {others.map((c) => (
+            <Chip key={c} on={!off.includes(c)} onClick={() => toggleCategory(c)}>
+              {T.categories[c]}
+              <span className="n">{wordCount[c]}</span>
+            </Chip>
           ))}
         </div>
-        {!anyWeight ? (
+        {!anyCategory ? (
           <p className="error" style={{ marginTop: 6 }}>
             {T.setup.categoriesHint}
           </p>

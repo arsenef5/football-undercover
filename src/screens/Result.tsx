@@ -5,14 +5,13 @@ import { Avatar, Button, RoleBadge, Screen, SectionTitle, useToast } from '../co
 import { useCreator } from '../creator/CreatorContext';
 import { formatBytes, formatDuration, shareVideo } from '../creator/library';
 import { groupsFor } from '../data/words';
-import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { showInterstitialIfDue } from '../monetization/ads';
 import { promoDue, requestProPromo } from '../monetization/promo';
 import { notify } from '../native';
 import { useNav } from '../nav';
-import { isPro, useStore } from '../store/store';
+import { drawOptions, isPro, useStore } from '../store/store';
 
 /** Mode créateur : la carte d'élimination finit (≈ 3 s), le résultat s'affiche, puis 5 s de réactions. */
 const RESULT_TAIL_MS = 9000;
@@ -126,18 +125,11 @@ export function Result() {
         : whiteGuessed
           ? T.result.subWhite
           : T.result.subWhiteSurvived;
-  const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
-
   const again = async () => {
     // Vidéo encore en cours de finalisation : on la range d'abord, sinon elle serait perdue.
     if (creator.recording) await creator.stop();
     const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo }));
-    start(seats, game.config, groupsFor(isPro(state.settings)), {
-      exclude: [game.pair.id, ...state.recentPairIds],
-      weights: anyWeight ? state.settings.weights : undefined,
-      lang: state.settings.wordLang,
-      whiteCanStart: state.settings.whiteCanStart,
-    });
+    start(seats, game.config, groupsFor(isPro(state.settings)), drawOptions(state, game.pair));
     nav.replace({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
   };
 

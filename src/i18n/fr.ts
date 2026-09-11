@@ -124,6 +124,8 @@ export const fr = {
     suggested: 'conseillé',
     categories: 'Catégories',
     categoriesHint: 'Au moins une catégorie.',
+    playerShare: 'Part de joueurs',
+    playerShareHint: (rest: number) => `Le reste (${rest} %) est tiré parmi toutes les catégories cochées, en proportion de leur richesse : une catégorie pauvre sort rarement, jamais deux fois de suite.`,
     presetPlayers: 'Joueurs',
     presetMix: 'Un peu de tout',
     presetBalanced: 'Équilibré',
@@ -350,7 +352,8 @@ export const fr = {
     competition: 'Compétition',
     but: 'Moment légendaire',
     meme: 'Meme',
-    style: 'Style de jeu',
+    style: 'Lexique',
+    entraineur: 'Entraîneur',
   },
   promo: {
     title: (n: number) => `+${n.toLocaleString('fr-FR')} combinaisons`,

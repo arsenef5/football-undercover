@@ -10,7 +10,8 @@ export type Category =
   | 'competition'
   | 'but'
   | 'meme'
-  | 'style';
+  | 'style'
+  | 'entraineur';
 
 export type Pack = 'base' | 'pro';
 
