@@ -2544,6 +2544,10 @@ p,
 }
 
 .promo-title {
+  /* Pleine largeur du panneau : sinon (flex + align-items: center) le titre prend la largeur du mot
+     et FitText croit qu'il tient, alors qu'il déborde de l'écran (iPhone Pro Max). */
+  width: 100%;
+  max-width: 100%;
   font-size: clamp(34px, 11vw, 46px);
   line-height: 0.95;
   text-wrap: balance;
