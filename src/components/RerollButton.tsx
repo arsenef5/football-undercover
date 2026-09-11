@@ -4,7 +4,7 @@ import { ALL_CATEGORIES } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { thump } from '../native';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 import { RefreshIcon } from './Icons';
 import { Button, Confirm, IconButton } from './ui';
 
@@ -34,7 +34,7 @@ export function RerollButton({
   const reroll = () => {
     const seats = game.players.map(({ id, name, avatar, color }) => ({ id, name, avatar, color }));
     const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
-    start(seats, game.config, groupsFor(state.settings.premium), {
+    start(seats, game.config, groupsFor(isPro(state.settings)), {
       exclude: [game.pair.id, ...state.recentPairIds],
       weights: anyWeight ? state.settings.weights : undefined,
       lang: state.settings.wordLang,

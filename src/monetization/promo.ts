@@ -47,6 +47,9 @@ export function requestProPromo(): void {
   listeners.forEach((l) => l());
 }
 
+// Aperçu en développement (console ou Playwright) : window.__fuPromo() affiche la promo.
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __fuPromo?: () => void }).__fuPromo = requestProPromo;
+
 export function onProPromo(listener: Listener): () => void {
   listeners.add(listener);
   return () => {

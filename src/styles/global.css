@@ -2550,6 +2550,17 @@ p,
   text-shadow: 0 0 34px rgba(255, 43, 43, 0.35);
 }
 
+/* Le nombre en rouge sur sa ligne, le mot en dessous à la taille qui tient. */
+.promo-amount {
+  display: block;
+  white-space: nowrap;
+}
+
+.promo-word {
+  white-space: nowrap;
+  line-height: 1;
+}
+
 .promo-sub {
   margin: 0 0 6px;
   font-size: 15px;

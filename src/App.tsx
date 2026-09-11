@@ -25,7 +25,7 @@ import { Videos } from './screens/Videos';
 import { CreatorSetup } from './screens/CreatorSetup';
 import { Vote } from './screens/Vote';
 import { WhiteGuess } from './screens/WhiteGuess';
-import { StoreProvider, useStore } from './store/store';
+import { isPro, StoreProvider, useStore } from './store/store';
 
 const GAME_ROUTES: Route['name'][] = ['creator', 'reveal', 'discuss', 'vote', 'eliminated', 'whiteGuess', 'result'];
 
@@ -111,7 +111,7 @@ function Shell() {
   const route = nav.route;
   const isTab = (TABS as string[]).includes(route.name);
   const isGameRoute = GAME_ROUTES.includes(route.name);
-  const premium = state.settings.premium;
+  const premium = isPro(state.settings);
   const [promoOpen, setPromoOpen] = useState(false);
 
   // Langue des menus : appliquée avant le rendu des écrans.

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, SparkIcon } from '../components/Icons';
-import { Button, Screen, useToast } from '../components/ui';
+import { Button, Screen, Sheet, useToast } from '../components/ui';
 import { T } from '../i18n';
+import { checkProCode, normalizeCode } from '../monetization/codes';
 import { PRO_COMBOS_CLAIM, PRO_PRICE_LABEL } from '../monetization/config';
 import { fetchProOffer, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
 import { isNative, notify } from '../native';
 import { useNav } from '../nav';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 
 /**
  * Vitrine + achat de la Version Pro (RevenueCat). Sur le web ou sans clés : boutons inactifs
@@ -19,7 +20,10 @@ export function Pro() {
   const [offer, setOffer] = useState<ProOffer | null>(null);
   const [loading, setLoading] = useState(purchasesAvailable);
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
-  const premium = state.settings.premium;
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [codeBusy, setCodeBusy] = useState(false);
+  const premium = isPro(state.settings);
 
   useEffect(() => {
     if (!purchasesAvailable) return;
@@ -49,6 +53,24 @@ export function Pro() {
     else showToast(res.cancelled ? T.pro.cancelled : T.pro.error);
   };
 
+  // Code Pro (Arsène et ses amis) : accepté → Version Pro sur cet appareil, sans boutique.
+  const submitCode = async () => {
+    if (codeBusy || !code.trim()) return;
+    setCodeBusy(true);
+    const ok = await checkProCode(code);
+    setCodeBusy(false);
+    if (!ok) {
+      void notify('error');
+      showToast(T.pro.codeBad);
+      return;
+    }
+    dispatch({ type: 'settings/set', patch: { proCode: normalizeCode(code) } });
+    setCodeOpen(false);
+    setCode('');
+    void notify('success');
+    showToast(T.pro.codeOk);
+  };
+
   const restore = async () => {
     if (busy) return;
     setBusy('restore');
@@ -60,12 +82,17 @@ export function Pro() {
   };
 
   const perks = T.pro.perks.map((p, i) => (i === 1 ? T.pro.perkWords(PRO_COMBOS_CLAIM) : p));
+  const codeButton = premium ? null : (
+    <Button variant="ghost" small onClick={() => setCodeOpen(true)}>
+      {T.pro.haveCode}
+    </Button>
+  );
 
   let cta: JSX.Element;
   if (premium) {
     cta = (
       <Button variant="gold" disabled>
-        {T.pro.active}
+        {state.settings.proCode ? T.pro.activeCode : T.pro.active}
       </Button>
     );
   } else if (!purchasesAvailable) {
@@ -77,6 +104,7 @@ export function Pro() {
         <div className="center muted" style={{ fontSize: 12 }}>
           {isNative ? T.pro.note : T.pro.unavailableWeb}
         </div>
+        {codeButton}
       </>
     );
   } else {
@@ -85,9 +113,12 @@ export function Pro() {
         <Button variant="gold" disabled={loading || !offer || busy !== null} onClick={buy}>
           {busy === 'buy' ? T.pro.buying : offer ? T.pro.buy(offer.priceString) : loading ? '…' : T.pro.unavailableStore}
         </Button>
-        <Button variant="ghost" small disabled={busy !== null} onClick={restore}>
-          {busy === 'restore' ? T.pro.restoring : T.pro.restore}
-        </Button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <Button variant="ghost" small disabled={busy !== null} onClick={restore}>
+            {busy === 'restore' ? T.pro.restoring : T.pro.restore}
+          </Button>
+          {codeButton}
+        </div>
         <div className="center muted" style={{ fontSize: 12 }}>
           {T.pro.oneTime}
         </div>
@@ -118,6 +149,52 @@ export function Pro() {
           ))}
         </div>
       </Screen>
+      <Sheet
+        open={codeOpen}
+        onClose={() => setCodeOpen(false)}
+        title={T.pro.codeTitle}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setCodeOpen(false)}>
+              {T.common.cancel}
+            </Button>
+            <Button disabled={codeBusy || !code.trim()} onClick={() => void submitCode()}>
+              {T.pro.codeApply}
+            </Button>
+          </>
+        }
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitCode();
+          }}
+        >
+          <div className="field">
+            <label className="lbl" htmlFor="pro-code">
+              {T.pro.codeLabel}
+            </label>
+            <input
+              id="pro-code"
+              className="input"
+              value={code}
+              placeholder={T.pro.codePlaceholder}
+              autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="done"
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </div>
+          <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+            {T.pro.codeHint}
+          </p>
+          <button type="submit" className="sr-only">
+            {T.pro.codeApply}
+          </button>
+        </form>
+      </Sheet>
       {toast}
     </>
   );

@@ -7,7 +7,7 @@ import { counts } from '../game/engine';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { routeForPhase, useNav } from '../nav';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 
 /** Le vrai logo (assets → public/logo.png) s'il est présent, sinon le lockup texte. */
 function HeroArt() {
@@ -26,7 +26,7 @@ export function Home() {
   const { state } = useStore();
   const { game } = useGame();
   const nav = useNav();
-  const words = groupsFor(state.settings.premium);
+  const words = groupsFor(isPro(state.settings));
   const resumable = game && game.phase !== 'over' ? game : null;
   const alive = resumable ? counts(resumable.players).alive : 0;
   const [langOpen, setLangOpen] = useState(false);
@@ -74,7 +74,7 @@ export function Home() {
           </span>
           <ChevronIcon size={18} />
         </button>
-        {!state.settings.premium ? (
+        {!isPro(state.settings) ? (
           <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
             <SparkIcon className="gold" />
             <span className="grow">

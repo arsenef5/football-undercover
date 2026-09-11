@@ -58,8 +58,10 @@ export function nextTeamName(teams: readonly Team[]): string {
 }
 
 export interface Settings {
-  /** Version Pro (sans pub, plus de mots). Bascule de test tant que la boutique n'existe pas. */
+  /** Version Pro achetée en boutique (RevenueCat). Sur le web : bascule de test. */
   premium: boolean;
+  /** Code Pro accepté (Arsène et ses amis) : vaut Version Pro sur cet appareil, sans boutique. */
+  proCode: string | null;
   haptics: boolean;
   /** Affiche la catégorie sur la carte des titulaires / undercovers. */
   showCategory: boolean;
@@ -102,6 +104,7 @@ export interface AppState {
 
 export const DEFAULT_SETTINGS: Settings = {
   premium: false,
+  proCode: null,
   haptics: true,
   showCategory: true,
   whiteSeesCategory: true,
@@ -368,4 +371,9 @@ export function useStore(): StoreValue {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error('useStore doit être utilisé sous StoreProvider');
   return ctx;
+}
+
+/** Version Pro effective : achat en boutique OU code Pro accepté. Toujours passer par ici. */
+export function isPro(settings: Settings): boolean {
+  return settings.premium || !!settings.proCode;
 }

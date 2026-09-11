@@ -12,7 +12,7 @@ import { showInterstitialIfDue } from '../monetization/ads';
 import { promoDue, requestProPromo } from '../monetization/promo';
 import { notify } from '../native';
 import { useNav } from '../nav';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 
 /** Mode créateur : la carte d'élimination finit (≈ 3 s), le résultat s'affiche, puis 5 s de réactions. */
 const RESULT_TAIL_MS = 9000;
@@ -88,7 +88,7 @@ export function Result() {
     void notify('success');
     // Version gratuite : un interstitiel toutes les N parties, après les confettis,
     // puis de temps en temps la fenêtre Version Pro.
-    if (!state.settings.premium) {
+    if (!isPro(state.settings)) {
       const played = state.gamesPlayed + 1;
       window.setTimeout(() => {
         void showInterstitialIfDue(played).then((shown) => {
@@ -130,7 +130,7 @@ export function Result() {
 
   const again = () => {
     const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo }));
-    start(seats, game.config, groupsFor(state.settings.premium), {
+    start(seats, game.config, groupsFor(isPro(state.settings)), {
       exclude: [game.pair.id, ...state.recentPairIds],
       weights: anyWeight ? state.settings.weights : undefined,
       lang: state.settings.wordLang,

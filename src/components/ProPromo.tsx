@@ -7,7 +7,7 @@ import { markPromoShown } from '../monetization/promo';
 import { thump } from '../native';
 import { useNav } from '../nav';
 import { CloseIcon } from './Icons';
-import { Button } from './ui';
+import { Button, FitText } from './ui';
 
 /**
  * Fenêtre promotionnelle plein écran, dans la DA du logo : le visuel (public/promo-pro.jpg)
@@ -52,12 +52,9 @@ export function ProPromo({ open, onClose }: { open: boolean; onClose: () => void
       <div className="promo-content">
         <span className="eyebrow gold">{T.pro.title}</span>
         <div className="display promo-title">
-          {amount ? (
-            <span className="red" style={{ whiteSpace: 'nowrap' }}>
-              {amount}
-            </span>
-          ) : null}{' '}
-          {rest}
+          {amount ? <span className="red promo-amount">{amount}</span> : null}
+          {/* « combinaisons » est un seul mot très large : il rétrécit jusqu'à tenir, jamais coupé (iPhone Pro Max compris). */}
+          <FitText className="promo-word" text={rest} max={46} min={22} />
         </div>
         <p className="promo-sub">{T.promo.sub}</p>
         <Button

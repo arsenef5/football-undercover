@@ -9,7 +9,7 @@ import { T } from '../i18n';
 import { requestProPromo } from '../monetization/promo';
 import { isNative } from '../native';
 import { useNav } from '../nav';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 
 export function Settings() {
   const { state, dispatch } = useStore();
@@ -82,7 +82,7 @@ export function Settings() {
           <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
             <SparkIcon className="gold" />
             <span className="grow">
-              <span className="t">{s.premium ? T.pro.active : T.home.pro}</span>
+              <span className="t">{isPro(s) ? T.pro.active : T.home.pro}</span>
               <span className="s" style={{ display: 'block' }}>
                 {T.home.proHint}
               </span>
@@ -94,7 +94,7 @@ export function Settings() {
               <Toggle on={s.premium} label={T.settings.proToggle} onChange={(v) => set({ premium: v })} />
             </Setting>
           ) : null}
-          {!s.premium ? (
+          {!isPro(s) ? (
             <button type="button" className="link-row" onClick={() => requestProPromo()}>
               <SparkIcon />
               <span className="grow">

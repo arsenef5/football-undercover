@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CameraIcon, PlusIcon } from '../components/Icons';
+import { CameraIcon, ChevronIcon, PlusIcon, SparkIcon } from '../components/Icons';
 import { PlayerSheet } from '../components/PlayerSheet';
 import { RolesConfig } from '../components/RolesConfig';
 import { SwipeRow } from '../components/SwipeRow';
@@ -21,7 +21,7 @@ import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { thump } from '../native';
 import { useNav } from '../nav';
-import { findTeamByRoster, nextTeamName, useStore, type Player } from '../store/store';
+import { findTeamByRoster, isPro, nextTeamName, type Player, useStore } from '../store/store';
 
 type Preset = 'players' | 'mix' | 'balanced' | 'custom';
 
@@ -88,7 +88,8 @@ export function Setup() {
   const weights = state.settings.weights;
   const preset = detectPreset(weights);
   const pct = shares(weights);
-  const words = groupsFor(state.settings.premium);
+  const pro = isPro(state.settings);
+  const words = groupsFor(pro);
   const wordCount = useMemo(() => countCombosByCategory(words), [words]);
 
   const setWeights = (w: Record<Category, number>) => dispatch({ type: 'settings/set', patch: { weights: w } });
@@ -173,7 +174,7 @@ export function Setup() {
       });
       void thump();
       // Mode créateur : écran Réalisation (aperçu, caméra, micro, REC) avant la distribution.
-      nav.go({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
+      nav.go({ name: pro && state.settings.creatorMode ? 'creator' : 'reveal' });
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     }
@@ -337,15 +338,28 @@ export function Setup() {
         />
 
         <SectionTitle>{T.creator.title}</SectionTitle>
-        <div className={`list creator-setting ${state.settings.creatorMode ? 'is-on' : ''}`}>
-          <Setting label={T.creator.title} hint={T.creator.hint}>
-            <Toggle
-              on={state.settings.creatorMode}
-              label={T.creator.title}
-              onChange={(v) => dispatch({ type: 'settings/set', patch: { creatorMode: v } })}
-            />
-          </Setting>
-        </div>
+        {pro ? (
+          <div className={`list creator-setting ${state.settings.creatorMode ? 'is-on' : ''}`}>
+            <Setting label={T.creator.title} hint={T.creator.hint}>
+              <Toggle
+                on={state.settings.creatorMode}
+                label={T.creator.title}
+                onChange={(v) => dispatch({ type: 'settings/set', patch: { creatorMode: v } })}
+              />
+            </Setting>
+          </div>
+        ) : (
+          <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
+            <SparkIcon className="gold" />
+            <span className="grow">
+              <span className="t">{T.creator.proOnly}</span>
+              <span className="s" style={{ display: 'block' }}>
+                {T.creator.proOnlyHint}
+              </span>
+            </span>
+            <ChevronIcon size={18} />
+          </button>
+        )}
         <div style={{ height: 8 }} />
       </Screen>
       <PlayerSheet

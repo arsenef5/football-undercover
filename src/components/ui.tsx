@@ -335,13 +335,27 @@ export function FitText({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    let size = max;
-    el.style.fontSize = `${size}px`;
-    // Un mot plus large que la carte déborde horizontalement : on descend d'un cran jusqu'à ce que ça tienne.
-    while (size > min && el.scrollWidth > el.clientWidth + 1) {
-      size -= 1;
+    const fit = () => {
+      let size = max;
       el.style.fontSize = `${size}px`;
-    }
+      // Un mot plus large que la carte déborde horizontalement : on descend d'un cran jusqu'à ce que ça tienne.
+      while (size > min && el.scrollWidth > el.clientWidth + 1) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    // La mesure faite avec la police de secours (plus étroite) est fausse : on remesure une fois
+    // la police large chargée, et quand la largeur disponible change (rotation, clavier).
+    let alive = true;
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    if (fonts?.ready) void fonts.ready.then(() => alive && fit());
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fit()) : null;
+    ro?.observe(el);
+    return () => {
+      alive = false;
+      ro?.disconnect();
+    };
   }, [text, max, min]);
   return (
     <div ref={ref} className={className} style={{ fontSize: max, overflowWrap: 'normal', wordBreak: 'keep-all', hyphens: 'none', width: '100%' }}>

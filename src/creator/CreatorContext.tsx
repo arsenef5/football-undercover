@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
-import { useStore } from '../store/store';
+import { isPro, useStore } from '../store/store';
 import { saveVideo, type VideoEntry } from './library';
 import { Recorder, type CameraInfo, type CameraOptions, type DeviceInfo, type Fit, type Popup, type RecorderStatus, type Scene } from './recorder';
 
@@ -69,7 +69,8 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
   const [fit, setFitState] = useState<Fit>('cover');
   const [lastSaved, setLastSaved] = useState<VideoEntry | null>(null);
   const [skippedGameId, setSkipped] = useState<string | null>(null);
-  const enabled = state.settings.creatorMode;
+  // Le mode créateur est réservé à la Version Pro (achat ou code).
+  const enabled = state.settings.creatorMode && isPro(state.settings);
 
   useEffect(() => {
     const r = rec.current;
