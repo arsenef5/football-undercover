@@ -256,6 +256,8 @@ export class Recorder {
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
   private raf = 0;
+  /** Numéro de la dernière ouverture caméra demandée : une ouverture dépassée jette son flux. */
+  private openGen = 0;
   private scene: Scene = { type: 'idle' };
   private sceneAt = 0;
   private popups: LivePopup[] = [];
@@ -387,6 +389,7 @@ export class Recorder {
     const audio: MediaTrackConstraints | boolean = this.cameraOptions.audioDeviceId
       ? { deviceId: { exact: this.cameraOptions.audioDeviceId } }
       : true;
+    const gen = ++this.openGen;
     let stream: MediaStream | null = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video, audio });
@@ -397,6 +400,11 @@ export class Recorder {
       } catch {
         stream = null;
       }
+    }
+    if (gen !== this.openGen) {
+      // Une ouverture plus récente a pris le relais (deux appuis rapides) : ce flux est de trop.
+      stream?.getTracks().forEach((t) => t.stop());
+      return this.hasCamera;
     }
     // Pendant un enregistrement on garde l'ancien son (le MediaRecorder y est branché).
     if (!wasRecording) previous?.getTracks().forEach((t) => t.stop());
@@ -451,7 +459,7 @@ export class Recorder {
       this.camera?.getAudioTracks().forEach((t) => out.addTrack(t));
       const candidates = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
       this.mimeType = candidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? '';
-      this.recorder = new MediaRecorder(out, this.mimeType ? { mimeType: this.mimeType, videoBitsPerSecond: 5_000_000 } : undefined);
+      this.recorder = new MediaRecorder(out, this.mimeType ? { mimeType: this.mimeType, videoBitsPerSecond: 3_000_000 } : undefined);
       this.chunks = [];
       this.lastBlob = null;
       this.recorder.ondataavailable = (e) => {
@@ -464,6 +472,16 @@ export class Recorder {
         this.emit();
         this.stopResolve?.(blob);
         this.stopResolve = null;
+      };
+      // Capture coupée par le système (verrouillage, appel) : on finalise avec ce qu'on a.
+      this.recorder.onerror = () => {
+        this.error = 'MediaRecorder';
+        try {
+          if (this.recorder?.state !== 'inactive') this.recorder?.stop();
+          else this.recorder.onstop?.(new Event('stop'));
+        } catch {
+          this.recorder?.onstop?.(new Event('stop'));
+        }
       };
       this.recorder.start(1000);
       this.startedAt = Date.now();
@@ -494,9 +512,16 @@ export class Recorder {
       cancelAnimationFrame(this.raf);
       window.clearInterval(this.watchdog);
       try {
+        if (this.recorder?.state === 'inactive') throw new Error('inactive');
         this.recorder?.stop();
       } catch {
-        resolve(null);
+        // Enregistreur déjà mort : on rend ce qui a été capturé, jamais un statut « recording » figé.
+        const blob = this.chunks.length ? new Blob(this.chunks, { type: this.recorder?.mimeType || this.mimeType || 'video/webm' }) : null;
+        this.lastBlob = blob;
+        this.status = 'stopped';
+        this.stopResolve = null;
+        this.emit();
+        resolve(blob);
       }
       this.releaseCamera();
     });

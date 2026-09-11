@@ -32,7 +32,7 @@ export function RerollButton({
   if (!game) return null;
 
   const reroll = () => {
-    const seats = game.players.map(({ id, name, avatar, color }) => ({ id, name, avatar, color }));
+    const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo: photo ?? null }));
     const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
     start(seats, game.config, groupsFor(isPro(state.settings)), {
       exclude: [game.pair.id, ...state.recentPairIds],

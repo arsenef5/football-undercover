@@ -128,7 +128,9 @@ export function Result() {
           : T.result.subWhiteSurvived;
   const anyWeight = ALL_CATEGORIES.some((c) => (state.settings.weights[c] ?? 0) > 0);
 
-  const again = () => {
+  const again = async () => {
+    // Vidéo encore en cours de finalisation : on la range d'abord, sinon elle serait perdue.
+    if (creator.recording) await creator.stop();
     const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo }));
     start(seats, game.config, groupsFor(isPro(state.settings)), {
       exclude: [game.pair.id, ...state.recentPairIds],
@@ -139,7 +141,8 @@ export function Result() {
     nav.replace({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
   };
 
-  const finish = () => {
+  const finish = async () => {
+    if (creator.recording) await creator.stop();
     clear();
     nav.reset({ name: 'home' });
   };
@@ -153,11 +156,11 @@ export function Result() {
       title={T.result.title}
       footer={
         <>
-          <Button onClick={again} sub={T.result.againHint}>
+          <Button onClick={() => void again()} sub={T.result.againHint}>
             <RefreshIcon size={18} />
             {T.result.again}
           </Button>
-          <Button variant="secondary" onClick={finish}>
+          <Button variant="secondary" onClick={() => void finish()}>
             {T.result.finish}
           </Button>
         </>

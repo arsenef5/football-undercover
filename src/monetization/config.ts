@@ -3,31 +3,33 @@ import { PRO_EXTRA_COMBOS } from '../data/words';
 /**
  * Identifiants de monétisation.
  *
- * Tant que `USE_TEST_ADS` est vrai, l'app sert les annonces de TEST fournies par Google
- * (jamais de vraies pubs, jamais de revenus, aucun risque de bannissement AdMob).
- * Quand les comptes existent : coller les vrais identifiants ci-dessous, passer
- * `USE_TEST_ADS` à false, et reporter les App ID dans AndroidManifest.xml / Info.plist.
+ * AdMob : compte d'Arsène (éditeur pub-8681861872152811), apps et blocs créés le 11/09/2026.
+ * `USE_TEST_ADS` à true sert les annonces de TEST Google (à utiliser en développement : cliquer
+ * ses propres vraies pubs fait bannir le compte). En production les vrais blocs ci-dessous
+ * servent dès que Google a approuvé le compte et les apps (jusqu'à quelques jours, sinon
+ * « no fill » silencieux). Les App ID sont aussi dans AndroidManifest.xml et Info.plist.
  */
 
-export const USE_TEST_ADS = true;
+export const USE_TEST_ADS = import.meta.env.DEV;
 
 /** Identifiants d'app AdMob (aussi à reporter dans les projets natifs). */
 export const ADMOB_APP_ID = {
-  android: 'ca-app-pub-3940256099942544~3347511713', // TEST Google — remplacer
-  ios: 'ca-app-pub-3940256099942544~1458002511', // TEST Google — remplacer
+  android: 'ca-app-pub-8681861872152811~7468383282',
+  ios: 'ca-app-pub-8681861872152811~8888064711',
 };
 
-/** Blocs d'annonces. Les valeurs de test sont celles publiées par Google. */
-export const AD_UNITS = {
-  banner: {
-    android: 'ca-app-pub-3940256099942544/6300978111',
-    ios: 'ca-app-pub-3940256099942544/2934735716',
-  },
-  interstitial: {
-    android: 'ca-app-pub-3940256099942544/1033173712',
-    ios: 'ca-app-pub-3940256099942544/4411468910',
-  },
+const TEST_UNITS = {
+  banner: { android: 'ca-app-pub-3940256099942544/6300978111', ios: 'ca-app-pub-3940256099942544/2934735716' },
+  interstitial: { android: 'ca-app-pub-3940256099942544/1033173712', ios: 'ca-app-pub-3940256099942544/4411468910' },
 };
+
+const REAL_UNITS = {
+  banner: { android: 'ca-app-pub-8681861872152811/8720543750', ios: 'ca-app-pub-8681861872152811/5850486182' },
+  interstitial: { android: 'ca-app-pub-8681861872152811/2817128735', ios: 'ca-app-pub-8681861872152811/1552500178' },
+};
+
+/** Blocs d'annonces : ceux de Google en test, les vrais en production. */
+export const AD_UNITS = USE_TEST_ADS ? TEST_UNITS : REAL_UNITS;
 
 /** Un interstitiel toutes les N parties terminées (version gratuite seulement). */
 export const INTERSTITIAL_EVERY_GAMES = 3;

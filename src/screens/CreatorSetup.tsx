@@ -66,6 +66,8 @@ export function CreatorSetup() {
     return () => {
       alive = false;
       window.clearInterval(id);
+      // Retour arrière sans REC : la caméra ne doit pas rester allumée (sans effet si on enregistre).
+      creator.closeCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

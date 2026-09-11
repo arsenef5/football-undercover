@@ -39,7 +39,7 @@
 	</array>
 	<!-- AdMob : identifiant d'application (valeur de TEST Google, à remplacer par le vrai App ID) -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-8681861872152811~8888064711</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Le mode créateur filme la partie pour en faire une vidéo avec les mots incrustés. / Creator mode films the game to make a video with the words overlaid.</string>
 	<key>NSMicrophoneUsageDescription</key>
