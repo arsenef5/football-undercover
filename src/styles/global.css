@@ -1482,28 +1482,59 @@ p {
   transition: transform 680ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.flip.is-open .flip-inner {
-  transform: rotateY(180deg);
-}
-
-.face,
-.face * {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
+/*
+ * Révélation SANS retournement : sur iPhone, voir son nom pivoter (et se refléter) avant le mot
+ * était moche (retour d'Arsène, 11/09/2026). Le recto s'efface en se rétractant, le verso arrive
+ * en fondu avec un éclat blanc. L'inclinaison 3D sous le doigt (.tilt) reste.
+ */
 .face.front {
+  opacity: 1;
+  transform: scale(1);
   visibility: visible;
-  transition: visibility 0s linear 340ms;
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
 }
 .face.back {
+  opacity: 0;
+  transform: scale(1.06);
   visibility: hidden;
-  transition: visibility 0s linear 340ms;
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
 }
 .flip.is-open .face.front {
+  opacity: 0;
+  transform: scale(0.94);
   visibility: hidden;
 }
 .flip.is-open .face.back {
+  opacity: 1;
+  transform: scale(1);
   visibility: visible;
+  transition: none;
+  animation: card-reveal 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 90ms both;
+}
+@keyframes card-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: brightness(1.7);
+  }
+  55% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip.is-open .face.back {
+    animation: none;
+  }
+  .face.front,
+  .face.back {
+    transition: none;
+  }
 }
 
 .face {
@@ -1597,9 +1628,6 @@ p {
 }
 
 /* Le verso est STRICTEMENT identique pour tous les rôles : même fond, même lueur blanche. */
-.face.back {
-  transform: rotateY(180deg);
-}
 
 .face.back .word {
   text-shadow: 0 0 30px rgba(255, 255, 255, 0.28);
