@@ -271,9 +271,22 @@ input {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 8px 18px 24px;
-  overscroll-behavior: contain;
+  /* Aucun rebond ni glissement latéral : le contenu ne « bouge » que pour défiler verticalement. */
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+/* Corps en colonne : un enfant .to-bottom est poussé au bas de l'écran, là où le pouce arrive. */
+.screen-body.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-body.column > .to-bottom {
+  margin-top: auto;
 }
 
 .screen-body.with-tabbar {

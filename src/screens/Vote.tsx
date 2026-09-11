@@ -39,6 +39,7 @@ export function Vote() {
       <Screen
         title={`${T.vote.title} · ${T.discuss.round(game.round)}`}
         right={<QuitGame />}
+        bodyClass="column"
         footer={
           <Button
             variant="ghost"
@@ -54,7 +55,7 @@ export function Vote() {
         <p className="muted" style={{ fontSize: 13 }}>
           {T.vote.hint}
         </p>
-        <div className="grid-2" style={{ marginTop: 8 }}>
+        <div className="grid-2 to-bottom" style={{ paddingBottom: 8 }}>
           {game.players.map((p) =>
             p.alive ? (
               <button key={p.id} type="button" className="vote-card" onClick={() => setTarget(p)}>

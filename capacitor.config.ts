@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Football Undercover',
   webDir: 'dist',
   backgroundColor: '#0A0A0A',
-  ios: { contentInset: 'never', backgroundColor: '#0A0A0A' },
+  // scrollEnabled: false → la WebView ne « rebondit » plus quand on tire l'écran ; nos écrans défilent seuls.
+  ios: { contentInset: 'never', backgroundColor: '#0A0A0A', scrollEnabled: false },
   android: { backgroundColor: '#0A0A0A', allowMixedContent: false },
   plugins: {
     SplashScreen: {

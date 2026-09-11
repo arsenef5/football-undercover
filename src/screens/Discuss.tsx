@@ -98,14 +98,20 @@ export function Discuss() {
           </div>
         }
         footer={
-          <Button
-            onClick={() => {
-              goToVote();
-              nav.replace({ name: 'vote' });
-            }}
-          >
-            {T.discuss.vote}
-          </Button>
+          <>
+            <Button variant="ghost" small onClick={() => setReorder(true)}>
+              <UsersIcon size={16} />
+              {T.reveal.reorder}
+            </Button>
+            <Button
+              onClick={() => {
+                goToVote();
+                nav.replace({ name: 'vote' });
+              }}
+            >
+              {T.discuss.vote}
+            </Button>
+          </>
         }
       >
         <p className="muted" style={{ fontSize: 13 }}>
@@ -140,12 +146,6 @@ export function Discuss() {
               {i === 0 ? <span className="badge red">{T.discuss.starts}</span> : null}
             </div>
           ))}
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <Button variant="ghost" small onClick={() => setReorder(true)}>
-            <UsersIcon size={16} />
-            {T.reveal.reorder}
-          </Button>
         </div>
 
         {dead.length > 0 ? (

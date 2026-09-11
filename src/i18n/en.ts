@@ -384,6 +384,7 @@ export const en: Strings = {
     mainLens: '1×',
     ultraWide: '0.5×',
     tele: 'tele',
+    cutNow: 'Cut the video now',
     framing: 'Framing',
     fitCover: 'Full frame',
     fitContain: 'Whole image',

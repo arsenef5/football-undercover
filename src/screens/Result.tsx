@@ -202,6 +202,13 @@ export function Result() {
               </p>
             </div>
           </div>
+          {!saved && creator.recording && tail > 0 ? (
+            <div style={{ marginTop: 12 }}>
+              <Button variant="secondary" small onClick={() => void creator.stop()}>
+                {T.creator.cutNow}
+              </Button>
+            </div>
+          ) : null}
           {saved ? (
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <Button onClick={() => void shareLast()} disabled={saving}>

@@ -391,6 +391,7 @@ export const fr = {
     mainLens: '1×',
     ultraWide: '0,5×',
     tele: 'télé',
+    cutNow: 'Couper la vidéo maintenant',
     framing: 'Cadrage',
     fitCover: 'Plein cadre',
     fitContain: 'Image entière',
