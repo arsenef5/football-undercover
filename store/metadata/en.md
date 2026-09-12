@@ -22,8 +22,8 @@ HOW IT WORKS
 • Debate, vote, eliminate. The role is revealed.
 • An eliminated White Card gets one last chance: guess the word.
 
-200 BASE WORDS, IN ENGLISH AND FRENCH
-Legends and today's stars, trophies, stadiums, competitions, legendary moments (Zidane's headbutt, Lucas Moura's hat-trick against Ajax, Lewandowski's 5 goals in 9 minutes…), memes and playing styles. Set the sliders to play players only, or a bit of everything.
+9 CATEGORIES, HUNDREDS OF COMBOS
+Today's stars and legends, coaches, clubs, trophies, stadiums, competitions, legendary moments (the Remontada, Mbappé's final hat-trick, Ronaldo's bicycle kick in Turin…), memes and football lingo (nutmeg, top corner, transfer window, VAR…). The two words of a game always look alike: that's what makes the impostor hard to catch. One simple setting: the share of players, and the categories you want.
 
 EVERYTHING IS ADJUSTABLE
 • Number of undercovers, White Card on or off, discussion timer.
@@ -32,7 +32,7 @@ EVERYTHING IS ADJUSTABLE
 • Menu language and word language, each in English or French.
 
 PRO VERSION
-A single purchase: zero ads and extra words.
+A single purchase: zero ads, 1,000+ extra combos and creator mode to film your games (words, votes and eliminations overlaid, TikTok format).
 
 More than a game. Stealth, bluff, legend.
 
@@ -40,7 +40,7 @@ More than a game. Stealth, bluff, legend.
 undercover,football,soccer,party game,bluff,board game,impostor,friends,secret word,word game
 
 ## What's new (version 1.0)
-First release: 200 football words in EN and FR, teams, rankings, ad-free Pro version.
+First release: 9 categories, 230+ free combos in EN and FR and 1,500+ in total, teams, rankings, creator mode in Pro.
 
 ## Categories
 App Store: Games > Party (secondary: Games > Word)

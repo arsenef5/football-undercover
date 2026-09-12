@@ -22,8 +22,8 @@ COMMENT ÇA MARCHE
 • On débat, on vote, on élimine. Le rôle est révélé.
 • Le Carton blanc éliminé a une dernière chance : deviner le mot.
 
-200 MOTS DE BASE, EN FRANÇAIS ET EN ANGLAIS
-Joueurs de légende et stars d'aujourd'hui, trophées, stades, compétitions, moments légendaires (le coup de boule de Zidane, le triplé de Lucas Moura contre l'Ajax, les 5 buts de Lewandowski en 9 minutes…), memes et styles de jeu. Règle les curseurs pour jouer que des joueurs, ou un peu de tout.
+9 CATÉGORIES, DES CENTAINES DE COMBINAISONS
+Joueurs d'aujourd'hui et légendes, entraîneurs, clubs, trophées, stades, compétitions, moments légendaires (la Remontada, le triplé de Mbappé en finale, le retourné de Cristiano Ronaldo à Turin…), memes et lexique du foot (petit pont, lucarne, mercato, VAR…). Les deux mots d'une partie se ressemblent toujours : c'est ce qui rend l'imposteur dur à démasquer. Un réglage simple : la part de joueurs, et les catégories que tu veux.
 
 TOUT SE RÈGLE
 • Nombre d'undercovers, carton blanc ou non, chrono de discussion.
@@ -32,7 +32,7 @@ TOUT SE RÈGLE
 • Langue des menus et langue des mots, chacune en français ou en anglais.
 
 VERSION PRO
-Un achat unique : zéro publicité et des mots en plus.
+Un achat unique : zéro publicité, plus de 1 000 combinaisons supplémentaires et le mode créateur pour filmer tes parties (mots, votes et éliminations incrustés, format TikTok).
 
 Plus qu'un jeu. Discrétion, bluff, légende.
 
@@ -40,7 +40,7 @@ Plus qu'un jeu. Discrétion, bluff, légende.
 undercover,foot,football,soirée,bluff,jeu de société,imposteur,entre amis,mot secret,party game
 
 ## Nouveautés (version 1.0)
-Première version : plus de 400 combinaisons de mots foot gratuites en FR et EN, le reste en Pro, équipes, classement, version Pro sans pub.
+Première version : 9 catégories, plus de 230 combinaisons gratuites en FR et EN et plus de 1 500 au total, équipes, classement, mode créateur en Pro.
 
 ## Catégories
 App Store : Jeux > Soirée (secondaire : Jeux > Mots)
