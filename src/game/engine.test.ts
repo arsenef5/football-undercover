@@ -234,10 +234,13 @@ describe('le choix des mots', () => {
     }
     expect(joueurs / N).toBeGreaterThan(0.56);
     expect(joueurs / N).toBeLessThan(0.64);
-    // Le lexique a plus de duos que les memes : il sort plus souvent.
+    // La catégorie hors joueurs la plus riche sort au moins autant que la plus pauvre.
     const combos = countCombosByCategory(BASE_GROUPS);
-    expect(combos.style).toBeGreaterThan(combos.meme);
-    expect(cats.style).toBeGreaterThan(cats.meme);
+    const nonPlayer = Object.entries(combos).filter(([c]) => c !== 'joueur').sort((a, b) => b[1] - a[1]);
+    const rich = nonPlayer[0][0] as Category;
+    const poor = nonPlayer[nonPlayer.length - 1][0] as Category;
+    expect(combos[rich]).toBeGreaterThan(combos[poor]);
+    expect(cats[rich] ?? 0).toBeGreaterThanOrEqual(cats[poor] ?? 0);
   });
 
   it('évite les groupes récents côté joueurs tant que possible, puis les réutilise', () => {

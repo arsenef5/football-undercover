@@ -31,8 +31,8 @@ const REAL_UNITS = {
 /** Blocs d'annonces : ceux de Google en test, les vrais en production. */
 export const AD_UNITS = USE_TEST_ADS ? TEST_UNITS : REAL_UNITS;
 
-/** Un interstitiel toutes les N parties terminées (version gratuite seulement). */
-export const INTERSTITIAL_EVERY_GAMES = 3;
+/** Un interstitiel après CHAQUE partie terminée (version gratuite seulement) — demande d'Arsène, 12/09/2026. */
+export const INTERSTITIAL_EVERY_GAMES = 1;
 
 /** RevenueCat : clés publiques (une par plateforme) et identifiants produit / droit. */
 export const REVENUECAT_API_KEY = {

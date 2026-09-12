@@ -56,11 +56,11 @@ export const PRO_MORE: GroupDef[] = [
   /* Stades                                                               */
   /* ------------------------------------------------------------------ */
   // Stades espagnols
-  { cat: 'stade', words: ['Santiago Bernabéu', 'Camp Nou', 'Metropolitano', 'San Mamés', 'Sánchez-Pizjuán'] },
+  { cat: 'stade', words: ['Santiago Bernabéu', 'Camp Nou', 'Metropolitano'] },
   // Stades d'Europe
   { cat: 'stade', words: ['Allianz Arena', 'San Siro', 'Signal Iduna Park', 'Johan Cruyff Arena', 'Estádio da Luz'] },
   // Stades de finales de Coupe du monde
-  { cat: 'stade', words: ['Maracanã', 'Wembley', ['Stade Azteca', 'Estadio Azteca'], ['Stade de Lusail', 'Lusail Stadium'], 'MetLife Stadium'] },
+  { cat: 'stade', words: ['Maracanã', 'Wembley', ['Stade de Lusail', 'Lusail Stadium']] },
 
   /* ------------------------------------------------------------------ */
   /* Compétitions                                                         */
@@ -243,7 +243,7 @@ export const PRO_MORE: GroupDef[] = [
   // Philosophies
   {
     cat: 'style',
-    words: ['Tiki-taka', 'Gegenpressing', ['Contre-attaque', 'Counter-attack'], ['Jeu de possession', 'Possession play'], ['Le bus devant le but', 'Parking the bus'], 'Catenaccio'],
+    words: ['Tiki-taka', 'Gegenpressing', ['Contre-attaque', 'Counter-attack'], ['Jeu de possession', 'Possession play'], 'Catenaccio'],
   },
   // Le staff
   {
@@ -270,4 +270,66 @@ export const PRO_MORE: GroupDef[] = [
   { cat: 'entraineur', words: ['Bruno Genesio', 'Antoine Kombouaré', 'Christian Gourcuff', 'Claude Puel', 'Frédéric Antonetti', 'Guy Roux'] },
   // Le banc brésilien
   { cat: 'entraineur', words: ['Filipe Luís', 'Davide Ancelotti', 'Abel Ferreira', 'Tite', 'Dorival Júnior'] },
+
+  /* ------------------------------------------------------------------ */
+  /* Anciens groupes gratuits (gratuit ramené à ~230 combinaisons le 12/09/2026) */
+  /* ------------------------------------------------------------------ */
+  // Les gros de Premier League
+  { cat: 'club', words: ['Manchester City', 'Arsenal', 'Liverpool', 'Chelsea', 'Manchester United', 'Tottenham'] },
+  // Trophées individuels
+  {
+    cat: 'trophee',
+    words: ["Ballon d'Or", 'The Best FIFA', ["Soulier d'or", 'Golden Shoe'], ['Trophée Kopa', 'Kopa Trophy'], ['Trophée Yachine', 'Yashin Trophy'], 'Golden Boy', ['Trophée Puskás', 'Puskás Award']],
+  },
+  // Stades français
+  { cat: 'stade', words: ['Parc des Princes', 'Stade de France', 'Stade Vélodrome', 'Groupama Stadium', 'Stade Bollaert-Delelis', 'Stade Louis-II', 'Stade Geoffroy-Guichard'] },
+  // Les nouveaux formats
+  { cat: 'competition', words: [['Coupe du monde des clubs', 'Club World Cup'], 'Kings League', 'Baller League', ['Ligue des nations', 'Nations League'], ['Ligue Europa Conférence', 'Conference League']] },
+  // Finales de Coupe du monde
+  {
+    cat: 'but',
+    words: [
+      ['Le coup de boule de Zidane (finale 2006)', "Zidane's headbutt (2006 final)"],
+      ['La panenka de Zidane (finale 2006)', "Zidane's Panenka (2006 final)"],
+      ['Le doublé de Zidane en finale (1998)', "Zidane's brace in the final (1998)"],
+      ['Le triplé de Mbappé en finale (2022)', "Mbappé's hat-trick in the final (2022)"],
+      ["Le but d'Iniesta en finale de Coupe du monde (2010)", "Iniesta's World Cup final goal (2010)"],
+      ['Le but de Götze en finale (2014)', "Götze's goal in the final (2014)"],
+    ],
+  },
+  // Buts de la dernière seconde
+  {
+    cat: 'but',
+    words: [
+      ['Le but de Sergio Ramos à la 93e (Lisbonne 2014)', "Sergio Ramos's 93rd-minute goal (Lisbon 2014)"],
+      ["Le but d'Agüero à la 94e (titre 2012)", "Agüero's 94th-minute goal (2012 title)"],
+      ['Le doublé de Rodrygo dans le temps additionnel (2022)', "Rodrygo's stoppage-time brace (2022)"],
+      ["Le triplé de Lucas Moura contre l'Ajax (2019)", "Lucas Moura's hat-trick vs Ajax (2019)"],
+      ['Le but de Sergi Roberto à la 95e (Remontada 2017)', "Sergi Roberto's 95th-minute goal (Remontada 2017)"],
+      ['La volée de Payet à la 89e (Euro 2016)', "Payet's 89th-minute volley (Euro 2016)"],
+    ],
+  },
+  // Les flops à 100 millions
+  {
+    cat: 'meme',
+    words: [
+      ['Coutinho à Barcelone', 'Coutinho at Barcelona'],
+      ['Antony à Manchester United', 'Antony at Manchester United'],
+      ["João Félix à l'Atlético", 'João Félix at Atlético'],
+      ['Lukaku à Chelsea', 'Lukaku at Chelsea'],
+      ['Mudryk à Chelsea', 'Mudryk at Chelsea'],
+      ['Neymar à Al-Hilal', 'Neymar at Al-Hilal'],
+    ],
+  },
+  // Dribbles
+  { cat: 'style', words: [['Petit pont', 'Nutmeg'], ['Grand pont', 'Knock-and-run'], 'Roulette', ['Virgule', 'Elastico'], ['Sombrero', 'Sombrero flick'], ['Crochet', 'Chop'], ['Passement de jambes', 'Step-over']] },
+  // Les mots du mercato
+  {
+    cat: 'style',
+    words: ['Mercato', ['Clause libératoire', 'Release clause'], ["Prêt avec option d'achat", 'Loan with option to buy'], ['Bon de sortie', 'Permission to leave'], ['Indemnité de transfert', 'Transfer fee'], 'Agent'],
+  },
+  // Les entraîneurs du PSG
+  { cat: 'entraineur', words: ['Laurent Blanc', 'Unai Emery', 'Tuchel', 'Pochettino', 'Galtier', 'Luis Enrique'] },
+  // Les légendes du banc
+  { cat: 'entraineur', words: ['Sir Alex Ferguson', 'Arsène Wenger', 'Mourinho', 'Guy Roux', 'Simeone', 'Zidane'] },
 ];
