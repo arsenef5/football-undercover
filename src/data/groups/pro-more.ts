@@ -243,7 +243,7 @@ export const PRO_MORE: GroupDef[] = [
   // Philosophies
   {
     cat: 'style',
-    words: ['Tiki-taka', 'Gegenpressing', ['Contre-attaque', 'Counter-attack'], ['Jeu de possession', 'Possession play'], 'Catenaccio'],
+    words: ['Tiki-taka', 'Gegenpressing', ['Contre-attaque', 'Counter-attack'], ['Jeu de possession', 'Possession play'], 'Catenaccio', 'Joga Bonito', ['Football total', 'Total Football']],
   },
   // Le staff
   {

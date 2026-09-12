@@ -11,7 +11,7 @@ export const PRO_PLAYERS: GroupDef[] = [
   /* Angleterre                                                           */
   /* ------------------------------------------------------------------ */
   // Attaquants anglais des années 2010
-  { cat: 'joueur', words: ['Sturridge', 'Welbeck', 'Sterling', 'Rashford', 'Vardy'] },
+  { cat: 'joueur', words: ['Sturridge', 'Welbeck', 'Sterling', 'Rashford', 'Vardy', 'Grealish', 'Saka'] },
   // Milieux anglais des années 2000
   { cat: 'joueur', words: ['Gerrard', 'Lampard', 'Scholes', 'Beckham'] },
 
@@ -107,11 +107,11 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Man United de Ferguson, l'attaque
   { cat: 'joueur', words: ['Rooney', 'Cristiano Ronaldo', 'Giggs', 'Tévez', 'Van Nistelrooy'] },
   // Arsenal de Wenger, l'attaque des années 2000
-  { cat: 'joueur', words: ['Henry', 'Bergkamp', 'Pirès', 'Wiltord'] },
-  // Arsenal de Wenger, le milieu
-  { cat: 'joueur', words: ['Fàbregas', 'Nasri', 'Wilshere', 'Cazorla'] },
+  { cat: 'joueur', words: ['Henry', 'Bergkamp', 'Pirès', 'Wiltord', 'Nasri', 'Giroud'] },
+  // Arsenal, le milieu : de Wenger à Arteta
+  { cat: 'joueur', words: ['Fàbregas', 'Nasri', 'Wilshere', 'Cazorla', 'Ødegaard', 'Merino'] },
   // Chelsea des années 2010
-  { cat: 'joueur', words: ['Hazard', 'Willian', 'Cole Palmer'] },
+  { cat: 'joueur', words: ['Hazard', 'Willian', 'Cole Palmer', 'Diego Costa', 'David Luiz'] },
 
   /* ------------------------------------------------------------------ */
   /* Clubs espagnols                                                      */
@@ -119,11 +119,9 @@ export const PRO_PLAYERS: GroupDef[] = [
   // Real Madrid des années 2010, l'attaque
   { cat: 'joueur', words: ['Bale', 'Benzema', 'Higuaín', 'Di María', 'James Rodríguez'] },
   // Real Madrid des années 2010, le milieu et la défense
-  { cat: 'joueur', words: ['Modrić', 'Kroos', 'Casemiro', 'Isco'] },
-  // Real Madrid des années 2020, l'attaque
-  { cat: 'joueur', words: ['Vinícius Jr', 'Rodrygo', 'Endrick'] },
-  // Barça de Rijkaard
-  { cat: 'joueur', words: ['Ronaldinho', "Eto'o", 'Deco', 'Giuly'] },
+  { cat: 'joueur', words: ['Modrić', 'Kroos', 'Casemiro', 'Isco', 'Xabi Alonso', 'Khedira'] },
+  // Les stars brésiliennes du Real et du Barça
+  { cat: 'joueur', words: ['Vinícius Jr', 'Rodrygo', 'Endrick', 'Ronaldinho', 'Neymar'] },
   // Barça de Guardiola, la défense
   { cat: 'joueur', words: ['Puyol', 'Piqué', 'Dani Alves', 'Abidal', 'Jordi Alba'] },
 
