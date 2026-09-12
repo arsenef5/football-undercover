@@ -7,6 +7,14 @@ workflows:
   ios-testflight:
     name: iOS → TestFlight
     max_build_duration: 60
+    # Un tag v* pousse sur GitHub lance ce workflow tout seul (plus besoin de « Start new build »).
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+      cancel_previous_builds: false
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: app_store_connect
