@@ -66,6 +66,7 @@ const LINE = 'rgba(255,255,255,0.10)';
 const GREEN = '#37d67a';
 
 const DISPLAY = '"FU Display", "Archivo Variable", Archivo, system-ui, sans-serif';
+const LABEL = '"FU Label", "Archivo Variable", Archivo, system-ui, sans-serif';
 
 let fontsReady: Promise<void> | null = null;
 
@@ -73,6 +74,11 @@ let fontsReady: Promise<void> | null = null;
  * Le canvas n'utilise pas les @font-face CSS tant qu'elles ne sont pas chargées pour lui, et
  * retombe alors sur Arial sans jamais se corriger. On enregistre donc la police d'affichage de l'app
  * sous un nom dédié, chargée explicitement AVANT le premier dessin.
+ *
+ * La largeur (axe wdth) est FIGÉE dans le descripteur, une police par largeur utilisée : le canvas
+ * obtient alors la bonne graisse par simple choix de police. Sans ça il faut passer par
+ * `ctx.fontStretch` / le mot-clé `expanded` du raccourci, que Safari a ignorés jusqu'à la 17.4 —
+ * les incrustations sortaient alors en Archivo étroit là où l'app est en Archivo large.
  */
 export function ensureCanvasFonts(): Promise<void> {
   if (!fontsReady) {
@@ -80,7 +86,9 @@ export function ensureCanvasFonts(): Promise<void> {
       if (typeof FontFace === 'undefined' || typeof document === 'undefined') return;
       try {
         const faces = [
-          new FontFace('FU Display', `url(${archivoUrl})`, { weight: '100 900', stretch: '62% 125%' }),
+          // wdth 125 = la classe .display de l'app ; wdth 112 = .eyebrow / .card-mark.
+          new FontFace('FU Display', `url(${archivoUrl})`, { weight: '100 900', stretch: '125% 125%' }),
+          new FontFace('FU Label', `url(${archivoUrl})`, { weight: '100 900', stretch: '112% 112%' }),
         ];
         await Promise.all(
           faces.map(async (f) => {
@@ -180,8 +188,9 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 /** Police d'affichage (large et grasse), comme la classe `.display` de l'app : wdth 125, wght 900. */
 function displayFont(ctx: CanvasRenderingContext2D, size: number, weight = 900) {
-  // Largeur 125 % (axe wdth) : mot-clé dans le raccourci ET propriété, selon ce que le moteur accepte.
+  // « FU Display » est déjà figée à wdth 125 : cette ligne seule suffit, partout.
   ctx.font = `${weight} ${size}px ${DISPLAY}`;
+  // Ceinture et bretelles si on retombe sur la police du site (mot-clé puis propriété).
   ctx.font = `${weight} expanded ${size}px ${DISPLAY}`;
   (ctx as unknown as { fontStretch?: string }).fontStretch = 'expanded';
   // L'interlettrage reste collé au contexte : on le remet à zéro, seules les étiquettes en ont.
@@ -194,8 +203,8 @@ function displayFont(ctx: CanvasRenderingContext2D, size: number, weight = 900) 
  * largeur maximale réservée aux mots.
  */
 function labelFont(ctx: CanvasRenderingContext2D, size: number, weight = 700) {
-  ctx.font = `${weight} ${size}px ${DISPLAY}`;
-  ctx.font = `${weight} semi-expanded ${size}px ${DISPLAY}`;
+  ctx.font = `${weight} ${size}px ${LABEL}`;
+  ctx.font = `${weight} semi-expanded ${size}px ${LABEL}`;
   (ctx as unknown as { fontStretch?: string }).fontStretch = 'semi-expanded';
   (ctx as unknown as { letterSpacing?: string }).letterSpacing = '0.18em';
 }
