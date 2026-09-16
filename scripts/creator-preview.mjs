@@ -137,7 +137,10 @@ async function main() {
   await shot(page, 'setup');
   await click(page, '^Lancer la partie');
   await sleep(1200);
-  await page.waitForFunction(() => window.__fuRecorder?.status === 'recording', null, { timeout: 15000 });
+  // Depuis la v0.4.2, « Lancer la partie » passe par l'écran Réalisation : il faut appuyer sur REC.
+  await page.evaluate(() => document.querySelector('.rec-btn')?.click());
+  await sleep(1500);
+  await page.waitForFunction(() => window.__fuRecorder?.status === 'recording', null, { timeout: 20000 });
   const g = await game(page);
   const white = g.players.find((p) => p.role === 'white');
   const undercover = g.players.find((p) => p.role === 'undercover');

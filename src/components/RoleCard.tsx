@@ -17,6 +17,7 @@ export function RoleCard({
   category,
   open,
   onOpen,
+  onTapOpen,
   showCategory,
   whiteSeesCategory,
 }: {
@@ -24,6 +25,8 @@ export function RoleCard({
   category: Category;
   open: boolean;
   onOpen: () => void;
+  /** Appui sur la carte DÉJÀ ouverte : le réflexe des joueurs, renvoyé vers le bouton du bas. */
+  onTapOpen?: () => void;
   showCategory: boolean;
   whiteSeesCategory: boolean;
 }) {
@@ -72,10 +75,17 @@ export function RoleCard({
         if (!open) {
           void thump();
           onOpen();
+        } else if (onTapOpen) {
+          // Carte déjà ouverte : on ne cache pas par erreur, on fait sauter le bouton « je cache ».
+          void thump();
+          onTapOpen();
         }
       }}
       onKeyDown={(e) => {
-        if (!open && (e.key === 'Enter' || e.key === ' ')) onOpen();
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        if (!open) onOpen();
+        else onTapOpen?.();
       }}
     >
       <div className="tilt">

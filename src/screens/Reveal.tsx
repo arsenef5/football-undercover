@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EyeIcon, UsersIcon } from '../components/Icons';
 import { QuitGame } from '../components/QuitGame';
 import { ReorderSheet } from '../components/ReorderSheet';
@@ -26,6 +26,27 @@ export function Reveal() {
   const [busy, setBusy] = useState(false);
   const [review, setReview] = useState(false);
   const [reorder, setReorder] = useState(false);
+  // Coup de projecteur sur « C'est bon, je cache » quand on tapote la carte ouverte.
+  const [nudge, setNudge] = useState(false);
+  const nudgeTimer = useRef(0);
+  const nudgeFrame = useRef(0);
+  const bumpButton = () => {
+    window.clearTimeout(nudgeTimer.current);
+    cancelAnimationFrame(nudgeFrame.current);
+    setNudge(false);
+    // Une image sans la classe : sinon le navigateur ne rejoue pas l'animation.
+    nudgeFrame.current = requestAnimationFrame(() => {
+      setNudge(true);
+      nudgeTimer.current = window.setTimeout(() => setNudge(false), 620);
+    });
+  };
+  useEffect(
+    () => () => {
+      window.clearTimeout(nudgeTimer.current);
+      cancelAnimationFrame(nudgeFrame.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     setOpen(false);
@@ -106,7 +127,9 @@ export function Reveal() {
               <Button onClick={() => nav.replace({ name: 'discuss' })}>{T.reveal.startGame}</Button>
             </>
           ) : open ? (
-            <Button onClick={hide}>{T.reveal.memorized}</Button>
+            <Button className={`btn-attract${nudge ? ' is-nudged' : ''}`} onClick={hide}>
+              {T.reveal.memorized}
+            </Button>
           ) : (
             <div className="center muted" style={{ fontSize: 12 }}>
               {T.reveal.secret}
@@ -136,6 +159,7 @@ export function Reveal() {
               category={game.pair.cat}
               open={open}
               onOpen={() => setOpen(true)}
+              onTapOpen={bumpButton}
               showCategory={state.settings.showCategory}
               whiteSeesCategory={state.settings.whiteSeesCategory}
             />

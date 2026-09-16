@@ -102,15 +102,69 @@ function clamp01(t: number): number {
   return Math.max(0, Math.min(1, t));
 }
 
-function easeOut(t: number): number {
-  return 1 - Math.pow(1 - clamp01(t), 3);
-}
-
 function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   const x = clamp01(t);
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
+
+function easeOutExpo(t: number): number {
+  const x = clamp01(t);
+  return x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+}
+
+/*
+ * Rythme des incrustations (retour d'Arsène, 16/09/2026 : « très rapide, très dynamique »).
+ * Chaque panneau s'OUVRE en 0,28 s et se REFERME en 0,2 s — plus jamais de coupe sèche.
+ * Les textes qu'il contient arrivent derrière lui en cascade : le dernier au plus tard
+ * 0,46 s après l'ouverture (0,2 s de décalage maximum + 0,26 s d'arrivée).
+ */
+const IN = 0.28;
+const OUT = 0.2;
+const TEXT_IN = 0.26;
+const STAGGER = 0.05;
+const STAGGER_MAX = 0.2;
+
+/** Opacité, échelle et glissement vertical à appliquer à un élément à un instant donné. */
+interface Anim {
+  alpha: number;
+  scale: number;
+  dy: number;
+}
+
+/**
+ * Ouverture (rebond) puis fermeture (rétraction) d'un panneau.
+ * `remaining` = secondes avant sa disparition, Infinity tant qu'il reste à l'écran.
+ */
+function panelAnim(t: number, remaining = Infinity, inDur = IN, from = 0.88): Anim {
+  const a: Anim = {
+    alpha: clamp01(t / (inDur * 0.4)),
+    scale: from + (1 - from) * easeOutBack(t / inDur),
+    dy: (1 - easeOutExpo(t / inDur)) * 26,
+  };
+  if (remaining < OUT) {
+    const q = clamp01(remaining / OUT);
+    a.alpha = Math.min(a.alpha, q);
+    a.scale *= 0.94 + 0.06 * q;
+    a.dy += (1 - q) * 20;
+  }
+  return a;
+}
+
+/** Empreinte d'une scène, photos résumées à leur taille : sert à détecter un appel identique. */
+function sceneKey(scene: Scene): string {
+  return JSON.stringify(scene, (_k, v) => (typeof v === 'string' && v.length > 64 ? `#${v.length}:${v.slice(0, 24)}` : v));
+}
+
+/** Arrivée d'un texte DANS un panneau : `i` est son rang dans la cascade. */
+function textAnim(t: number, i: number, pop = false): Anim {
+  const k = (t - Math.min(i * STAGGER, STAGGER_MAX)) / TEXT_IN;
+  return {
+    alpha: clamp01(k * 2.5),
+    scale: pop ? 0.9 + 0.1 * easeOutBack(k) : 1,
+    dy: (1 - easeOutExpo(k)) * 16,
+  };
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -260,6 +314,10 @@ export class Recorder {
   private openGen = 0;
   private scene: Scene = { type: 'idle' };
   private sceneAt = 0;
+  /** Panneau sortant : il finit sa fermeture pendant que le suivant attend son tour. */
+  private closing: { scene: Scene; from: number; at: number } | null = null;
+  /** Vrai quand la scène est masquée par une carte d'élimination. */
+  private gated = false;
   private popups: LivePopup[] = [];
   private listeners = new Set<Listener>();
   private stopResolve: ((b: Blob | null) => void) | null = null;
@@ -317,8 +375,22 @@ export class Recorder {
   }
 
   setScene(scene: Scene) {
+    // Même contenu : on ne rejoue pas l'animation (les effets React peuvent repasser ici).
+    // Les photos sont des data-URL de plusieurs dizaines de Ko : on n'en compare que l'empreinte.
+    if (sceneKey(scene) === sceneKey(this.scene)) return;
+    const now = performance.now();
+    if (this.scene.type !== 'idle') {
+      // Le panneau en place se referme ; le nouveau entre juste après.
+      this.closing = { scene: this.scene, from: this.sceneAt, at: now };
+      this.sceneAt = now + OUT * 1000;
+    } else {
+      // Un panneau peut encore être en train de se refermer : le nouveau attend la fin, sans
+      // quoi les deux se superposent au même endroit pendant quelques images.
+      const left = this.closing ? OUT * 1000 - (now - this.closing.at) : 0;
+      this.sceneAt = now + Math.max(0, left);
+    }
     this.scene = scene;
-    this.sceneAt = performance.now();
+    this.gated = false;
   }
 
   popup(p: Popup, duration = p.kind === 'elim' ? 3200 : p.kind === 'guess' ? 3000 : 2400) {
@@ -442,8 +514,21 @@ export class Recorder {
     window.clearInterval(this.watchdog);
     this.releaseCamera();
     this.status = 'idle';
-    this.scene = { type: 'idle' };
+    this.resetScene();
     this.emit();
+  }
+
+  /**
+   * Oublie tout ce qui est affiché. Sans ça, le panneau de la partie PRÉCÉDENTE (le résultat, avec
+   * les deux mots) se repeint sur l'aperçu de l'écran Réalisation — qui promet de ne rien montrer —
+   * puis en tête de la vidéo suivante.
+   */
+  private resetScene() {
+    this.scene = { type: 'idle' };
+    this.sceneAt = 0;
+    this.closing = null;
+    this.gated = false;
+    this.popups = [];
   }
 
   /** Démarre l'enregistrement sur la caméra ouverte (l'ouvre si besoin). */
@@ -523,6 +608,7 @@ export class Recorder {
         this.emit();
         resolve(blob);
       }
+      this.resetScene();
       this.releaseCamera();
     });
   }
@@ -550,8 +636,7 @@ export class Recorder {
     this.chunks = [];
     this.lastBlob = null;
     this.status = 'idle';
-    this.scene = { type: 'idle' };
-    this.popups = [];
+    this.resetScene();
     this.releaseCamera();
     this.emit();
   }
@@ -673,26 +758,57 @@ export class Recorder {
     this.drawLogo();
     this.popups = this.popups.filter((p) => now - p.at < p.duration);
     const elimActive = this.popups.some((p) => p.popup.kind === 'elim');
-    const t = (now - this.sceneAt) / 1000;
-    switch (this.scene.type) {
+
+    /*
+     * La carte d'élimination prend le bas de l'écran : le panneau de scène se REFERME au lieu de
+     * disparaître d'un coup, et se rouvre une fois la carte partie.
+     */
+    const gated = elimActive && this.scene.type !== 'reveal' && this.scene.type !== 'idle';
+    if (gated !== this.gated) {
+      if (gated) this.closing = { scene: this.scene, from: this.sceneAt, at: now };
+      else this.sceneAt = now;
+      this.gated = gated;
+    }
+
+    if (this.closing) {
+      const left = OUT - (now - this.closing.at) / 1000;
+      if (left <= 0) this.closing = null;
+      else this.drawScene(this.closing.scene, (now - this.closing.from) / 1000, left);
+    }
+    if (!this.gated && now >= this.sceneAt) this.drawScene(this.scene, (now - this.sceneAt) / 1000, Infinity);
+    for (const p of this.popups) this.drawPopup(p, now);
+  }
+
+  private drawScene(scene: Scene, t: number, remaining: number) {
+    switch (scene.type) {
       case 'reveal':
-        this.drawReveal(this.scene, t);
+        this.drawReveal(scene, t, remaining);
         break;
       case 'discuss':
-        if (!elimActive) this.drawDiscuss(this.scene, t);
+        this.drawDiscuss(scene, t, remaining);
         break;
       case 'guess':
-        if (!elimActive) this.drawGuess(this.scene, t);
+        this.drawGuess(scene, t, remaining);
         break;
       case 'result':
-        // Le résultat attend la fin de la carte d'élimination, puis fait son entrée.
-        if (elimActive) this.sceneAt = now;
-        else this.drawResult(this.scene, t);
+        this.drawResult(scene, t, remaining);
         break;
       default:
         break;
     }
-    for (const p of this.popups) this.drawPopup(p, now);
+  }
+
+  /**
+   * Applique une animation autour d'un point : opacité multipliée (pour qu'un texte hérite de
+   * celle de son panneau), échelle et glissement. À refermer par un `ctx.restore()`.
+   */
+  private anim(a: Anim, cx: number, cy: number) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha *= a.alpha;
+    ctx.translate(cx, cy + a.dy);
+    ctx.scale(a.scale, a.scale);
+    ctx.translate(-cx, -cy);
   }
 
   /** Logo de l'app, petit, en haut à gauche. */
@@ -718,9 +834,8 @@ export class Recorder {
   }
 
   /** Révélation : photo en grand à gauche, prénom et mot à droite. Compact, en bas de la zone sûre. */
-  private drawReveal(s: Extract<Scene, { type: 'reveal' }>, t: number) {
+  private drawReveal(s: Extract<Scene, { type: 'reveal' }>, t: number, remaining: number) {
     const ctx = this.ctx;
-    const k = easeOutBack(t / 0.4);
     const w = 800;
     const x = SAFE_LEFT;
     const tx = x + 212;
@@ -731,27 +846,35 @@ export class Recorder {
     const wordH = word ? word.lines.length * word.size * 1.12 : 50;
     const h = Math.max(210, 26 + nameSize + 10 + 20 + 16 + wordH + 26);
     const y = SAFE_BOTTOM - h;
-    ctx.save();
-    ctx.globalAlpha = clamp01(t / 0.2);
-    ctx.translate(x + w / 2, y + h / 2);
-    ctx.scale(0.92 + 0.08 * k, 0.92 + 0.08 * k);
-    ctx.translate(-(x + w / 2), -(y + h / 2));
+    this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
     panel(ctx, x, y, w, h, 30, true);
+
+    // La photo arrive la première, puis le prénom, la catégorie, et le mot en dernier.
+    this.anim(textAnim(t, 0, true), x + 112, y + h / 2);
     this.drawFace(s.face, x + 112, y + h / 2, 150);
+    ctx.restore();
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
+    let cy = y + 26 + nameSize / 2;
+    this.anim(textAnim(t, 1), tx, cy);
     ctx.fillStyle = TEXT;
     displayFont(ctx, nameSize);
-    let cy = y + 26 + nameSize / 2;
     ctx.fillText(name, tx, cy);
+    ctx.restore();
+
     cy += nameSize / 2 + 10 + 10;
+    this.anim(textAnim(t, 2), tx, cy);
     ctx.fillStyle = MUTED;
     displayFont(ctx, 20, 700);
     ctx.fillText(`${s.wordLabel.toUpperCase()} · ${s.category.toUpperCase()}`, tx, cy);
+    ctx.restore();
+
     cy += 10 + 16;
     if (!word) {
       // Carton blanc : un petit carton blanc, puis le nom du rôle.
       const wy = cy + 25;
+      this.anim(textAnim(t, 3, true), tx + 120, wy);
       ctx.save();
       ctx.translate(tx + 18, wy);
       ctx.rotate(-0.12);
@@ -764,18 +887,21 @@ export class Recorder {
       ctx.fillStyle = TEXT;
       displayFont(ctx, fitSize(ctx, s.whiteLabel.toUpperCase(), tw - 60, 46, 26));
       ctx.fillText(s.whiteLabel.toUpperCase(), tx + 52, wy);
+      ctx.restore();
     } else {
+      this.anim(textAnim(t, 3, true), tx + 120, cy + wordH / 2);
       ctx.fillStyle = RED;
       displayFont(ctx, word.size);
       ctx.shadowColor = 'rgba(255,43,43,0.45)';
       ctx.shadowBlur = 20;
       word.lines.forEach((line, i) => ctx.fillText(line, tx, cy + word.size / 2 + i * word.size * 1.12));
+      ctx.restore();
     }
     ctx.restore();
   }
 
   /** Ordre de parole : photos et mots seulement, en bas à gauche. Le mot de l'undercover est en rouge. */
-  private drawDiscuss(s: Extract<Scene, { type: 'discuss' }>, t: number) {
+  private drawDiscuss(s: Extract<Scene, { type: 'discuss' }>, t: number, remaining: number) {
     const ctx = this.ctx;
     const headH = 58;
     const textX = 132;
@@ -792,10 +918,14 @@ export class Recorder {
     const h = headH + rows.reduce((sum, r) => sum + r.rowH, 0) + 16;
     const x = SAFE_LEFT;
     const y = SAFE_BOTTOM - h;
-    ctx.save();
-    ctx.globalAlpha = clamp01(t / 0.25);
+    this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
     panel(ctx, x, y, w, h, 26, true);
+
     // En-tête : point rouge + « Tour 1 »
+    const head = textAnim(t, 0);
+    ctx.save();
+    ctx.globalAlpha *= head.alpha;
+    ctx.translate(0, head.dy);
     ctx.fillStyle = RED;
     ctx.beginPath();
     ctx.arc(x + 40, y + headH / 2 + 2, 7, 0, Math.PI * 2);
@@ -805,16 +935,18 @@ export class Recorder {
     ctx.textBaseline = 'middle';
     displayFont(ctx, 24);
     ctx.fillText(s.title.toUpperCase(), x + 62, y + headH / 2 + 2);
+    ctx.restore();
 
     let ry = y + headH;
     rows.forEach((p, i) => {
-      const k = easeOut((t - i * 0.08) / 0.3);
+      const a = textAnim(t, i + 1);
       const cy = ry + p.rowH / 2;
       ry += p.rowH;
-      if (k <= 0) return;
+      if (a.alpha <= 0) return;
       ctx.save();
-      ctx.globalAlpha = k;
-      ctx.translate((1 - k) * 40, 0);
+      ctx.globalAlpha *= a.alpha;
+      // Les lignes glissent depuis la gauche pendant qu'elles apparaissent.
+      ctx.translate(a.dy * 2.2, 0);
       ctx.fillStyle = MUTED;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -832,27 +964,29 @@ export class Recorder {
     ctx.restore();
   }
 
-  private drawGuess(s: Extract<Scene, { type: 'guess' }>, t: number) {
+  private drawGuess(s: Extract<Scene, { type: 'guess' }>, t: number, remaining: number) {
     const ctx = this.ctx;
     const w = 780;
     const h = 130;
     const x = SAFE_LEFT;
     const y = SAFE_BOTTOM - h;
-    ctx.save();
-    ctx.globalAlpha = clamp01(t / 0.25);
+    this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
     panel(ctx, x, y, w, h, 26, true);
+    this.anim(textAnim(t, 0, true), x + 78, y + h / 2);
     this.drawFace(s.face, x + 78, y + h / 2, 84);
+    ctx.restore();
+    this.anim(textAnim(t, 1), x + 140, y + h / 2);
     ctx.fillStyle = TEXT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     displayFont(ctx, fitSize(ctx, s.label, w - 180, 28, 16, 800), 800);
     ctx.fillText(s.label, x + 140, y + h / 2 + 1);
     ctx.restore();
+    ctx.restore();
   }
 
-  private drawResult(s: Extract<Scene, { type: 'result' }>, t: number) {
+  private drawResult(s: Extract<Scene, { type: 'result' }>, t: number, remaining: number) {
     const ctx = this.ctx;
-    const k = easeOutBack(t / 0.6);
     const w = SAFE_W;
     const x = SAFE_LEFT;
     const pad = 36;
@@ -866,28 +1000,33 @@ export class Recorder {
     const rowH = (l: { size: number; lines: string[] }) => 20 + 10 + l.lines.length * l.size * 1.15 + 16;
     const h = pad + titleH + 10 + subH + 22 + rowH(civ) + rowH(und) + pad - 10;
     const y = SAFE_BOTTOM - h;
-    ctx.save();
-    ctx.globalAlpha = clamp01(t / 0.3);
-    ctx.translate(x + w / 2, y + h / 2);
-    ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
-    ctx.translate(-(x + w / 2), -(y + h / 2));
+    this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
     panel(ctx, x, y, w, h, 30, true);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let cy = y + pad;
+
+    this.anim(textAnim(t, 0, true), x + w / 2, cy + titleH / 2);
     ctx.fillStyle = TEXT;
     ctx.shadowColor = 'rgba(255,43,43,0.55)';
     ctx.shadowBlur = 30;
     displayFont(ctx, title.size);
     title.lines.forEach((line, i) => ctx.fillText(line, x + w / 2, cy + title.size / 2 + i * title.size * 1.08));
-    ctx.shadowColor = 'transparent';
+    ctx.restore();
     cy += titleH + 10;
+
+    this.anim(textAnim(t, 1), x + w / 2, cy + subH / 2);
     ctx.fillStyle = MUTED;
     displayFont(ctx, sub.size, 700);
     sub.lines.forEach((line, i) => ctx.fillText(line, x + w / 2, cy + sub.size / 2 + i * sub.size * 1.2));
+    ctx.restore();
     cy += subH + 22;
+
     ctx.textAlign = 'left';
-    const row = (label: string, l: { size: number; lines: string[] }, color: string) => {
+    const row = (label: string, l: { size: number; lines: string[] }, color: string, i: number) => {
+      const top = cy;
+      const height = rowH(l);
+      this.anim(textAnim(t, i), x + w / 2, top + height / 2);
       ctx.fillStyle = LINE;
       ctx.fillRect(x + pad, cy, inner, 2);
       cy += 20;
@@ -897,11 +1036,12 @@ export class Recorder {
       cy += 10 + 10;
       ctx.fillStyle = color;
       displayFont(ctx, l.size, 850);
-      l.lines.forEach((line, i) => ctx.fillText(line, x + pad, cy + l.size / 2 + i * l.size * 1.15));
+      l.lines.forEach((line, j) => ctx.fillText(line, x + pad, cy + l.size / 2 + j * l.size * 1.15));
       cy += l.lines.length * l.size * 1.15 + 16 - 10;
+      ctx.restore();
     };
-    row(s.civilLabel, civ, TEXT);
-    row(s.undercoverLabel, und, RED);
+    row(s.civilLabel, civ, TEXT, 2);
+    row(s.undercoverLabel, und, RED, 3);
     ctx.restore();
   }
 
@@ -909,29 +1049,27 @@ export class Recorder {
     const ctx = this.ctx;
     const t = (now - p.at) / 1000;
     const remaining = (p.duration - (now - p.at)) / 1000;
-    const alpha = Math.max(0, Math.min(1, t / 0.2, remaining / 0.3));
 
     if (p.popup.kind === 'vote') {
       // « Le groupe vote X » : pilule compacte dans le haut de la zone sûre, photo de la cible à droite.
-      const k = easeOutBack(t / 0.4);
       const h = 88;
       const y = SAFE_TOP + 120;
-      ctx.save();
-      ctx.globalAlpha = alpha;
       const line = `${p.popup.label.toUpperCase()}  ${p.popup.to.name.toUpperCase()}`;
       displayFont(ctx, fitSize(ctx, line, SAFE_W - 150, 30, 16, 850), 850);
       const tw = ctx.measureText(line).width;
       const w = Math.min(SAFE_W, tw + 140);
       const x = SAFE_LEFT;
-      ctx.translate(x + w / 2, y + h / 2);
-      ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
-      ctx.translate(-(x + w / 2), -(y + h / 2));
+      this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
       panel(ctx, x, y, w, h, h / 2);
+      this.anim(textAnim(t, 0, true), x + w - 48, y + h / 2);
       this.drawFace(p.popup.to, x + w - 48, y + h / 2, 60);
+      ctx.restore();
+      this.anim(textAnim(t, 1), x + 36, y + h / 2);
       ctx.fillStyle = TEXT;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(line, x + 36, y + h / 2 + 1);
+      ctx.restore();
       ctx.restore();
       return;
     }
@@ -941,60 +1079,74 @@ export class Recorder {
       const h = 150;
       const x = SAFE_LEFT;
       const y = SAFE_TOP + 110;
-      ctx.save();
-      ctx.globalAlpha = alpha;
+      this.anim(panelAnim(t, remaining), x + w / 2, y + h / 2);
       panel(ctx, x, y, w, h, 26);
       roundRect(ctx, x, y, w, h, 26);
       ctx.lineWidth = 3;
       ctx.strokeStyle = p.popup.correct ? GREEN : RED;
       ctx.stroke();
+      this.anim(textAnim(t, 0, true), x + 78, y + h / 2);
       this.drawFace(p.popup.face, x + 78, y + h / 2, 84);
+      ctx.restore();
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
+      this.anim(textAnim(t, 1), x + 140, y + 52);
       ctx.fillStyle = TEXT;
       displayFont(ctx, fitSize(ctx, `« ${p.popup.guess} »`, w - 180, 34, 18));
       ctx.fillText(`« ${p.popup.guess} »`, x + 140, y + 52);
+      ctx.restore();
+      this.anim(textAnim(t, 2, true), x + 140, y + 104);
       ctx.fillStyle = p.popup.correct ? GREEN : RED;
       displayFont(ctx, 28);
       ctx.fillText(p.popup.label.toUpperCase(), x + 140, y + 104);
       ctx.restore();
+      ctx.restore();
       return;
     }
 
-    // Élimination : flash rouge puis carte qui claque (1 s), maintenue ensuite, en bas de la zone sûre.
-    const flash = Math.max(0, 0.45 - t * 1.8);
+    // Élimination : flash rouge, puis la carte claque en 0,34 s et se rétracte à la sortie.
+    const flash = Math.max(0, 0.45 - t * 2.2);
     if (flash > 0) {
       ctx.fillStyle = `rgba(255,43,43,${flash})`;
       ctx.fillRect(0, 0, W, H);
     }
-    const k = easeOutBack(t / 0.9);
     const cw = 640;
     const ch = 400;
     const cy = SAFE_BOTTOM - ch / 2;
+    this.anim(panelAnim(t, remaining, 0.34, 0.62), SAFE_CX, cy);
     ctx.save();
-    ctx.globalAlpha = alpha;
     ctx.translate(SAFE_CX, cy);
-    ctx.scale(0.55 + 0.45 * k, 0.55 + 0.45 * k);
-    ctx.rotate((1 - k) * -0.06);
+    ctx.rotate((1 - easeOutExpo(t / 0.34)) * -0.07);
+    ctx.translate(-SAFE_CX, -cy);
+    ctx.translate(SAFE_CX, cy);
     panel(ctx, -cw / 2, -ch / 2, cw, ch, 36);
     roundRect(ctx, -cw / 2, -ch / 2, cw, ch, 36);
     ctx.lineWidth = 3;
     ctx.strokeStyle = p.popup.role === 'undercover' ? RED : 'rgba(255,255,255,0.35)';
     ctx.stroke();
+    this.anim(textAnim(t, 1, true), 0, -ch / 2 + 100);
     this.drawFace(p.popup.face, 0, -ch / 2 + 100, 130);
+    ctx.restore();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    this.anim(textAnim(t, 2), 0, 20);
     ctx.fillStyle = TEXT;
     displayFont(ctx, fitSize(ctx, p.popup.face.name.toUpperCase(), cw - 80, 46, 24));
     ctx.fillText(p.popup.face.name.toUpperCase(), 0, 20);
+    ctx.restore();
+    this.anim(textAnim(t, 3), 0, 66);
     ctx.fillStyle = MUTED;
     displayFont(ctx, 20, 700);
     ctx.fillText(p.popup.outLabel.toUpperCase(), 0, 66);
+    ctx.restore();
+    this.anim(textAnim(t, 4, true), 0, 128);
     ctx.fillStyle = p.popup.role === 'undercover' ? RED : TEXT;
     ctx.shadowColor = p.popup.role === 'undercover' ? 'rgba(255,43,43,0.7)' : 'rgba(255,255,255,0.35)';
     ctx.shadowBlur = 30;
     displayFont(ctx, fitSize(ctx, p.popup.roleLabel.toUpperCase(), cw - 80, 56, 28));
     ctx.fillText(p.popup.roleLabel.toUpperCase(), 0, 128);
+    ctx.restore();
+    ctx.restore();
     ctx.restore();
   }
 }
