@@ -178,12 +178,26 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-/** Police d'affichage (large et grasse), comme les titres de l'app. */
+/** Police d'affichage (large et grasse), comme la classe `.display` de l'app : wdth 125, wght 900. */
 function displayFont(ctx: CanvasRenderingContext2D, size: number, weight = 900) {
   // Largeur 125 % (axe wdth) : mot-clé dans le raccourci ET propriété, selon ce que le moteur accepte.
   ctx.font = `${weight} ${size}px ${DISPLAY}`;
   ctx.font = `${weight} expanded ${size}px ${DISPLAY}`;
   (ctx as unknown as { fontStretch?: string }).fontStretch = 'expanded';
+  // L'interlettrage reste collé au contexte : on le remet à zéro, seules les étiquettes en ont.
+  (ctx as unknown as { letterSpacing?: string }).letterSpacing = '0px';
+}
+
+/**
+ * Petites étiquettes en capitales (« TON MOT · JOUEUR », « EST ÉLIMINÉ », « TOUR 1 ») : mêmes
+ * réglages que `.eyebrow` / `.card-mark` de l'app, wdth ≈ 112 et lettres espacées, au lieu de la
+ * largeur maximale réservée aux mots.
+ */
+function labelFont(ctx: CanvasRenderingContext2D, size: number, weight = 700) {
+  ctx.font = `${weight} ${size}px ${DISPLAY}`;
+  ctx.font = `${weight} semi-expanded ${size}px ${DISPLAY}`;
+  (ctx as unknown as { fontStretch?: string }).fontStretch = 'semi-expanded';
+  (ctx as unknown as { letterSpacing?: string }).letterSpacing = '0.18em';
 }
 
 function fitSize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, max: number, min: number, weight = 900): number {
@@ -866,7 +880,7 @@ export class Recorder {
     cy += nameSize / 2 + 10 + 10;
     this.anim(textAnim(t, 2), tx, cy);
     ctx.fillStyle = MUTED;
-    displayFont(ctx, 20, 700);
+    labelFont(ctx, 20);
     ctx.fillText(`${s.wordLabel.toUpperCase()} · ${s.category.toUpperCase()}`, tx, cy);
     ctx.restore();
 
@@ -933,7 +947,7 @@ export class Recorder {
     ctx.fillStyle = TEXT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    displayFont(ctx, 24);
+    labelFont(ctx, 22, 800);
     ctx.fillText(s.title.toUpperCase(), x + 62, y + headH / 2 + 2);
     ctx.restore();
 
@@ -1031,7 +1045,7 @@ export class Recorder {
       ctx.fillRect(x + pad, cy, inner, 2);
       cy += 20;
       ctx.fillStyle = MUTED;
-      displayFont(ctx, 20, 700);
+      labelFont(ctx, 20);
       ctx.fillText(label.toUpperCase(), x + pad, cy);
       cy += 10 + 10;
       ctx.fillStyle = color;
@@ -1136,7 +1150,7 @@ export class Recorder {
     ctx.restore();
     this.anim(textAnim(t, 3), 0, 66);
     ctx.fillStyle = MUTED;
-    displayFont(ctx, 20, 700);
+    labelFont(ctx, 20);
     ctx.fillText(p.popup.outLabel.toUpperCase(), 0, 66);
     ctx.restore();
     this.anim(textAnim(t, 4, true), 0, 128);
