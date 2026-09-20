@@ -32,7 +32,7 @@ TOUT SE RÈGLE
 • Langue des menus et langue des mots, chacune en français ou en anglais.
 
 VERSION PRO
-Un achat unique : zéro publicité, plus de 1 000 combinaisons supplémentaires et le mode créateur pour filmer tes parties (mots, votes et éliminations incrustés, format TikTok).
+Débloquée par un code : zéro publicité, plus de 1 000 combinaisons supplémentaires et le mode créateur pour filmer tes parties (mots, votes et éliminations incrustés, format TikTok).
 
 Plus qu'un jeu. Discrétion, bluff, légende.
 

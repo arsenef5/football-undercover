@@ -32,7 +32,7 @@ EVERYTHING IS ADJUSTABLE
 • Menu language and word language, each in English or French.
 
 PRO VERSION
-A single purchase: zero ads, 1,000+ extra combos and creator mode to film your games (words, votes and eliminations overlaid, TikTok format).
+Unlocked with a code: zero ads, 1,000+ extra combos and creator mode to film your games (words, votes and eliminations overlaid, TikTok format).
 
 More than a game. Stealth, bluff, legend.
 

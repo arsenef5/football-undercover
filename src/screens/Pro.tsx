@@ -3,7 +3,7 @@ import { CheckIcon, SparkIcon } from '../components/Icons';
 import { Button, Screen, Sheet, useToast } from '../components/ui';
 import { T } from '../i18n';
 import { checkProCode, normalizeCode } from '../monetization/codes';
-import { PRO_COMBOS_CLAIM, PRO_PRICE_LABEL } from '../monetization/config';
+import { PRO_COMBOS_CLAIM } from '../monetization/config';
 import { fetchProOffer, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
 import { isNative, notify } from '../native';
 import { useNav } from '../nav';
@@ -96,15 +96,17 @@ export function Pro() {
       </Button>
     );
   } else if (!purchasesAvailable) {
+    /*
+     * Tant que la boutique n'est pas ouverte (contrat « applications payantes » non signé), on
+     * n'affiche NI prix NI bouton d'achat : annoncer un paiement qui ne peut pas aboutir est un
+     * motif de refus à la revue Apple. La Version Pro s'active alors par code.
+     */
     cta = (
       <>
-        <Button variant="gold" disabled>
-          {T.pro.buy(PRO_PRICE_LABEL)}
-        </Button>
+        {codeButton}
         <div className="center muted" style={{ fontSize: 12 }}>
           {isNative ? T.pro.note : T.pro.unavailableWeb}
         </div>
-        {codeButton}
       </>
     );
   } else {
