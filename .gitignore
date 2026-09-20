@@ -12,3 +12,6 @@ ios/App/build
 
 store/screenshots
 store/creator-preview
+
+# Mode en ligne : état local du serveur de salons
+server/.wrangler

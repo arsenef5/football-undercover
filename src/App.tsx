@@ -19,6 +19,7 @@ import { Result } from './screens/Result';
 import { Reveal } from './screens/Reveal';
 import { Rules } from './screens/Rules';
 import { Settings } from './screens/Settings';
+import { Online } from './screens/Online';
 import { Setup } from './screens/Setup';
 import { Teams } from './screens/Teams';
 import { Videos } from './screens/Videos';
@@ -83,6 +84,8 @@ function CurrentScreen({ route }: { route: Route }) {
       return <Pro />;
     case 'setup':
       return <Setup />;
+    case 'online':
+      return <Online />;
     case 'videos':
       return <Videos />;
     case 'creator':

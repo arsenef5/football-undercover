@@ -67,6 +67,9 @@ export function Home() {
           <PlayIcon size={18} />
           {T.home.play}
         </Button>
+        <Button variant="secondary" sub={T.online.pitchShort} onClick={() => nav.go({ name: 'online' })}>
+          {T.online.title}
+        </Button>
         <button type="button" className="link-row" onClick={() => nav.go({ name: 'rules' })}>
           <InfoIcon />
           <span className="grow">

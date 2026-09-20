@@ -10,6 +10,7 @@ export type Route =
   | { name: 'rules' }
   | { name: 'pro' }
   | { name: 'setup'; teamId?: string }
+  | { name: 'online' }
   | { name: 'videos' }
   | { name: 'creator' }
   | { name: 'reveal' }

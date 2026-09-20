@@ -3004,3 +3004,128 @@ p,
   border-radius: 14px;
   background: #000;
 }
+
+/* ------------------------------------------------------------------ MODE EN LIGNE 🌐 */
+.room-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 0 6px;
+}
+.room-code strong {
+  font-size: 44px;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: var(--text);
+  text-shadow: 0 0 30px var(--red-glow);
+}
+
+.code-field {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 120, 'wght' 800;
+}
+
+.online-lost {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 43, 43, 0.14);
+  border: 1px solid rgba(255, 43, 43, 0.35);
+  color: var(--text);
+  font-size: 12px;
+  text-align: center;
+}
+
+.online-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.online-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+.online-player.out {
+  opacity: 0.45;
+}
+.online-player.away .nm::after {
+  content: ' · ';
+  opacity: 0.5;
+}
+.online-player .col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.online-player .nm {
+  font-variation-settings: 'wdth' 110, 'wght' 750;
+  font-size: 15px;
+}
+.online-player .st {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.online-player .st.red {
+  color: var(--red);
+}
+.online-player .num {
+  width: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-variation-settings: 'wdth' 110, 'wght' 800;
+  font-size: 13px;
+}
+.online-player .pts {
+  font-variation-settings: 'wdth' 115, 'wght' 850;
+  color: var(--muted);
+}
+.online-player .pts.win {
+  color: #37d67a;
+}
+.online-player .kick {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+}
+
+.online-word {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 210px;
+  margin: 10px 0 18px;
+  padding: 26px 18px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, #262626 0%, #141414 55%, #0d0d0d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.online-word .word {
+  font-size: clamp(26px, 8vw, 38px);
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.28);
+}
+
+.my-word {
+  margin-top: 18px;
+  text-align: center;
+}
