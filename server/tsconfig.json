@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false
   },
-  "include": ["src/**/*.ts", "../src/game/**/*.ts", "../src/data/**/*.ts", "../src/online/protocol.ts"]
+  "include": ["src/**/*.ts", "../src/game/**/*.ts", "../src/data/words.ts", "../src/data/groups/**/*.ts", "../src/online/protocol.ts"]
 }

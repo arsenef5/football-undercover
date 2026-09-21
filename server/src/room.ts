@@ -59,8 +59,6 @@ interface Persisted {
 export class Room {
   private ctx: DurableObjectState;
   private s: Persisted;
-  /** Connexions vivantes : une par siège (une seule fenêtre par joueur). */
-  private sockets = new Map<string, WebSocket>();
 
   constructor(ctx: DurableObjectState) {
     this.ctx = ctx;
@@ -104,40 +102,64 @@ export class Room {
     }
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('attendu : websocket', { status: 426 });
 
+    /*
+     * `acceptWebSocket` confie la connexion au runtime : le salon peut alors S'ENDORMIR entre deux
+     * messages, connexions ouvertes, sans être facturé pendant ce temps. Sur un jeu où il ne se
+     * passe presque rien entre deux votes, c'est la différence entre une facture qui suit le temps
+     * passé et une facture qui suit ce que les joueurs font vraiment.
+     */
     const pair = new WebSocketPair();
-    const [client, server] = [pair[0], pair[1]];
-    server.accept();
-    let seatId = '';
-    server.addEventListener('message', async (ev) => {
-      let msg: ClientMsg;
-      try {
-        msg = JSON.parse(String(ev.data));
-      } catch {
-        return;
-      }
-      try {
-        seatId = (await this.onMessage(server, seatId, msg)) || seatId;
-      } catch (e) {
-        this.send(server, { t: 'error', code: 'bad-move', message: String((e as Error)?.message || e) });
-      }
-    });
-    const bye = async () => {
-      if (!seatId) return;
-      this.sockets.delete(seatId);
-      const seat = this.s.seats.find((p) => p.id === seatId);
-      if (seat) {
-        seat.connected = false;
-        seat.lastSeen = Date.now();
-        // Dans le salon d'attente, partir c'est partir. En partie, on garde sa place.
-        if (!this.s.game) this.s.seats = this.s.seats.filter((p) => p.id !== seatId);
-        this.passHostIfNeeded();
-        await this.save();
-        this.broadcast();
-      }
-    };
-    server.addEventListener('close', bye);
-    server.addEventListener('error', bye);
-    return new Response(null, { status: 101, webSocket: client });
+    this.ctx.acceptWebSocket(pair[1]);
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+
+  /** Le salon se réveille ici, avec son état relu depuis le stockage. */
+  async webSocketMessage(ws: WebSocket, data: string | ArrayBuffer) {
+    let msg: ClientMsg;
+    try {
+      msg = JSON.parse(typeof data === 'string' ? data : new TextDecoder().decode(data));
+    } catch {
+      return;
+    }
+    const known = this.seatOf(ws);
+    try {
+      const seatId = (await this.onMessage(ws, known, msg)) || known;
+      if (seatId && seatId !== known) ws.serializeAttachment({ seatId });
+    } catch (e) {
+      this.send(ws, { t: 'error', code: 'bad-move', message: String((e as Error)?.message || e) });
+    }
+  }
+
+  async webSocketClose(ws: WebSocket) {
+    await this.onBye(ws);
+  }
+
+  async webSocketError(ws: WebSocket) {
+    await this.onBye(ws);
+  }
+
+  private async onBye(ws: WebSocket) {
+    const seatId = this.seatOf(ws);
+    if (!seatId) return;
+    const seat = this.s.seats.find((p) => p.id === seatId);
+    if (!seat) return;
+    seat.connected = false;
+    seat.lastSeen = Date.now();
+    // Dans le salon d'attente, partir c'est partir. En partie, on garde sa place.
+    if (!this.s.game) this.s.seats = this.s.seats.filter((p) => p.id !== seatId);
+    this.passHostIfNeeded();
+    await this.save();
+    this.broadcast();
+  }
+
+  /** À qui appartient cette connexion ? L'étiquette survit au sommeil du salon. */
+  private seatOf(ws: WebSocket): string {
+    const att = ws.deserializeAttachment() as { seatId?: string } | null;
+    return att?.seatId ?? '';
+  }
+
+  private socketOf(seatId: string): WebSocket | undefined {
+    return this.ctx.getWebSockets().find((ws) => this.seatOf(ws) === seatId);
   }
 
   /** Nettoyage : un salon vide finit par disparaître. */
@@ -163,11 +185,14 @@ export class Room {
 
   private broadcast() {
     const view = this.view();
-    for (const [id, ws] of this.sockets) this.send(ws, { t: 'room', room: view, you: id });
+    for (const ws of this.ctx.getWebSockets()) {
+      const id = this.seatOf(ws);
+      if (id) this.send(ws, { t: 'room', room: view, you: id });
+    }
   }
 
   private sendPrivate(id: string) {
-    const ws = this.sockets.get(id);
+    const ws = this.socketOf(id);
     if (!ws) return;
     this.send(ws, { t: 'private', priv: this.privateOf(id) });
   }
@@ -226,7 +251,7 @@ export class Room {
       if (!this.s.code) this.s.code = (msg.code || '').toUpperCase();
       if (!this.s.hostId) this.s.hostId = msg.seatId;
       // Une seule fenêtre par joueur : la nouvelle remplace l'ancienne.
-      const old = this.sockets.get(msg.seatId);
+      const old = this.socketOf(msg.seatId);
       if (old && old !== ws) {
         try {
           old.close(4000, 'remplacé');
@@ -234,7 +259,7 @@ export class Room {
           /* déjà fermée */
         }
       }
-      this.sockets.set(msg.seatId, ws);
+      ws.serializeAttachment({ seatId: msg.seatId });
       await this.save();
       this.broadcast();
       this.sendPrivate(msg.seatId);
@@ -317,10 +342,14 @@ export class Room {
       case 'kick': {
         if (!isHost || this.s.game) return this.deny(ws, isHost);
         this.s.seats = this.s.seats.filter((p) => p.id !== msg.target);
-        const ws2 = this.sockets.get(msg.target);
+        const ws2 = this.socketOf(msg.target);
         if (ws2) {
           this.send(ws2, { t: 'error', code: 'kicked', message: 'Tu as été retiré du salon.' });
-          this.sockets.delete(msg.target);
+          try {
+            ws2.close(4001, 'expulsé');
+          } catch {
+            /* déjà fermée */
+          }
         }
         break;
       }
@@ -342,7 +371,10 @@ export class Room {
     this.s.lastElimination = null;
     this.s.whiteGuess = null;
     for (const p of this.s.seats) p.seen = false;
-    for (const id of this.sockets.keys()) this.sendPrivate(id);
+    for (const ws of this.ctx.getWebSockets()) {
+      const id = this.seatOf(ws);
+      if (id) this.send(ws, { t: 'private', priv: this.privateOf(id) });
+    }
   }
 
   /** Tous les vivants ont voté : on dépouille. Égalité = personne n'est éliminé. */
