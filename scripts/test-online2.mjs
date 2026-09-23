@@ -62,7 +62,7 @@ await sleep(1000);
 
 // --- Réglages : le capitaine met 1 undercover et garde le carton blanc
 const reglages = await txt(hote.page);
-console.log('réglages visibles :', /Réglages du salon/.test(reglages) ? 'oui' : 'NON');
+console.log('réglages visibles :', /r.glages du salon/i.test(reglages) ? 'oui' : 'NON');
 
 // --- Distribution
 await tap(hote.page, 'Lancer la partie', 2000);

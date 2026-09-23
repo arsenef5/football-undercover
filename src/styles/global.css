@@ -3180,3 +3180,29 @@ p,
   color: var(--text-2);
 }
 .online-out em { font-style: normal; color: var(--red); font-variation-settings: 'wdth' 110, 'wght' 800; }
+
+/* Confirmation avant un geste irréversible dans un salon (signaler, exclure). */
+.online-confirm {
+  margin: 10px 0 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+.online-confirm p {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+}
+/* Les deux petits boutons d'une ligne de joueur : assez grands pour un pouce, assez espacés. */
+.online-player .kick {
+  min-width: 44px;
+  min-height: 44px;
+}
+/* Une carte de vote inactive DOIT avoir l'air inactive : sinon on appuie dans le vide. */
+.vote-card:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

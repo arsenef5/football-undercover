@@ -6,14 +6,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build": "tsc --noEmit -p tsconfig.json && npm run check:server && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "icons": "node scripts/make-icons.mjs && npx @capacitor/assets generate --iconBackgroundColor '#0A0A0A' --iconBackgroundColorDark '#0A0A0A' --splashBackgroundColor '#0A0A0A' --splashBackgroundColorDark '#0A0A0A'",
     "screenshots": "node scripts/screenshots.mjs",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",
-    "ios": "npm run sync && npx cap open ios"
+    "ios": "npm run sync && npx cap open ios",
+    "check:server": "tsc --noEmit -p server/tsconfig.json",
+    "salon": "wrangler dev --local --port 8787 --config server/wrangler.toml"
   },
   "dependencies": {
     "@capacitor-community/admob": "^7.2.0",

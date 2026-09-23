@@ -40,6 +40,10 @@ const VOTE_MS = 90 * 1000;
 const GUESS_MS = 120 * 1000;
 /** Absence à partir de laquelle le groupe peut reprendre sans attendre le carton blanc. */
 const GONE_MS = 20 * 1000;
+/** Au-delà, on ne compte plus ce joueur parmi ceux dont on attend une voix. */
+const JOIGNABLE_MS = 3 * 60 * 1000;
+/** Absence de l'orateur à partir de laquelle n'importe qui peut passer au suivant. */
+const TOUR_ABSENT_MS = 15 * 1000;
 /** Un salon meurt quand plus personne n'a donné signe de vie depuis ce délai. */
 const IDLE_MS = 2 * 60 * 60 * 1000;
 /** Fréquence du ménage. */
@@ -125,7 +129,13 @@ export class Room {
      */
     const blanc = this.s.game?.phase === 'whiteGuess' ? this.s.seats.find((p) => p.id === this.s.game?.pendingWhiteId) : undefined;
     const ouvertureDuBouton = blanc && !blanc.connected ? blanc.lastSeen + GONE_MS + 500 : 0;
-    const echeances = [this.s.voteUntil, this.s.guessUntil, ouvertureDuBouton].filter((t) => t > now);
+    // Idem pour la fin du délai de grâce du capitaine : il faut se réveiller pour la constater.
+    const h = this.host();
+    const finDeGrace = h && !h.connected && !h.gone ? h.lastSeen + HOST_GRACE_MS + 500 : 0;
+    const g = this.s.game;
+    const orateur = g?.phase === 'discuss' ? this.s.seats.find((p) => p.id === g.speakingOrder[this.s.turn]) : undefined;
+    const ouvertureDuTour = orateur && !orateur.connected ? orateur.lastSeen + TOUR_ABSENT_MS + 500 : 0;
+    const echeances = [this.s.voteUntil, this.s.guessUntil, ouvertureDuBouton, finDeGrace, ouvertureDuTour].filter((t) => t > now);
     const next = echeances.length ? Math.min(...echeances, now + SWEEP_MS) : now + SWEEP_MS;
     await this.ctx.storage.setAlarm(next);
   }
@@ -164,6 +174,13 @@ export class Room {
       return Response.json({ ok: true });
     }
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('attendu : websocket', { status: 426 });
+    /*
+     * Un salon n'existe que s'il a été RÉSERVÉ par « Créer un salon ». Sans cette garde, se
+     * connecter à une adresse au hasard suffisait à en faire naître un : la liste des codes
+     * grossiers devenait contournable, et un script pouvait en créer des centaines de milliers,
+     * tous facturés au propriétaire.
+     */
+    if (!this.s.code) return new Response('salon inconnu', { status: 404 });
 
     /*
      * `acceptWebSocket` confie la connexion au runtime : le salon peut alors S'ENDORMIR entre deux
@@ -202,6 +219,16 @@ export class Room {
    * sauté, pas de vote dépouillé. Sans quoi passer sur WhatsApp pour partager le code suffirait à
    * effacer le salon qu'on vient de créer.
    */
+  /**
+   * On ne quitte l'écran du mot que lorsque TOUT LE MONDE l'a vu : personne ne joue sans le sien.
+   * À vérifier aussi quand quelqu'un s'en va — sinon la table attend éternellement le mot d'un
+   * joueur qui n'est plus là, et plus rien n'a de raison d'être émis.
+   */
+  private verifierRevelation() {
+    const assis = this.s.seats.filter((p) => !p.gone);
+    if (this.s.game?.phase === 'reveal' && assis.length > 0 && assis.every((p) => p.seen)) this.startDiscussion();
+  }
+
   private async onBye(ws: WebSocket) {
     const seatId = this.seatOf(ws);
     if (!seatId) return;
@@ -235,6 +262,13 @@ export class Room {
 
   async alarm() {
     const now = Date.now();
+    /*
+     * Le capitanat se vérifie ICI. À l'instant où le capitaine se déconnecte, son absence dure
+     * zéro seconde : le délai de grâce ne peut donc jamais expirer pendant sa déconnexion. Sans ce
+     * réveil, un capitaine qui éteint son téléphone laissait le salon sans chef, et plus personne
+     * ne pouvait lancer le vote ni rejouer.
+     */
+    this.passHostIfNeeded();
     // Échéance du vote : on dépouille avec ce qu'on a plutôt que d'attendre un absent.
     if (this.s.voteUntil && now >= this.s.voteUntil && this.s.game?.phase === 'vote') {
       this.resolveVotes(true);
@@ -252,12 +286,30 @@ export class Room {
       this.broadcast();
     }
     // Rien n'a peut-être changé côté règles, mais l'écran attend peut-être une nouvelle vue.
-    if (this.s.game?.phase === 'whiteGuess') this.broadcast();
+    if (this.s.game?.phase === 'whiteGuess' || this.s.game?.phase === 'discuss') this.broadcast();
     if (now - this.lastActivity() > IDLE_MS) {
+      // On prévient les téléphones encore ouverts : sinon ils affichent « connecté » dans le vide.
+      for (const w of this.ctx.getWebSockets()) {
+        try {
+          w.close(4002, 'salon expiré');
+        } catch {
+          /* déjà fermée */
+        }
+      }
       await this.ctx.storage.deleteAll();
-      this.s.seats = [];
-      this.s.game = null;
-      this.s.hostId = null;
+      this.s = {
+        ...this.s,
+        code: '',
+        seats: [],
+        game: null,
+        hostId: null,
+        votes: {},
+        turn: 0,
+        voteUntil: 0,
+        guessUntil: 0,
+        lastElimination: null,
+        whiteGuess: null,
+      };
       return;
     }
     await this.planAlarm();
@@ -350,7 +402,7 @@ export class Room {
         };
         this.s.seats.push(seat);
       }
-      if (!this.s.code) this.s.code = (msg.code || '').toUpperCase();
+      // Le code vient de la réservation, jamais du téléphone.
       if (!this.s.hostId) this.s.hostId = seat.id;
 
       // On étiquette la NOUVELLE connexion d'abord : le mot secret ne doit jamais partir sur l'ancienne.
@@ -386,7 +438,8 @@ export class Room {
         const cfg = { ...this.s.config };
         if (typeof msg.undercovers === 'number') cfg.undercovers = msg.undercovers;
         if (typeof msg.mrWhite === 'boolean') cfg.mrWhite = msg.mrWhite;
-        if (msg.lang) cfg.lang = msg.lang;
+        // Une langue inconnue faisait échouer toute distribution, et le réglage restait sur disque.
+        if (msg.lang === 'fr' || msg.lang === 'en') cfg.lang = msg.lang;
         if (typeof msg.pro === 'boolean') cfg.pro = msg.pro;
         /*
          * On garde L'INTENTION du capitaine telle quelle. La ramener à ce que permet la table
@@ -410,9 +463,7 @@ export class Room {
       }
       case 'seen': {
         me.seen = true;
-        // On ne bascule que si TOUT LE MONDE a vu son mot : personne ne joue sans le sien.
-        const assis = this.s.seats.filter((p) => !p.gone);
-        if (this.s.game?.phase === 'reveal' && assis.every((p) => p.seen)) this.startDiscussion();
+        this.verifierRevelation();
         break;
       }
       case 'ready': {
@@ -426,16 +477,15 @@ export class Room {
         if (!g || g.phase !== 'discuss') return;
         if (g.speakingOrder[this.s.turn] !== seatId) return;
         this.s.turn += 1;
+        this.avancerSiPartis();
         break;
       }
       case 'skip': {
         const g = this.s.game;
         if (!g || g.phase !== 'discuss') return;
-        const courant = g.speakingOrder[this.s.turn];
-        const orateur = this.s.seats.find((p) => p.id === courant);
-        const absent = !!orateur && !orateur.connected && Date.now() - orateur.lastSeen > 15000;
-        if (!isHost && !absent) return this.deny(ws, isHost);
+        if (!isHost && !this.orateurAbsent()) return this.deny(ws, isHost);
         if (this.s.turn < g.speakingOrder.length) this.s.turn += 1;
+        this.avancerSiPartis();
         break;
       }
       case 'toVote': {
@@ -463,6 +513,8 @@ export class Room {
         if (!g || g.phase !== 'whiteGuess' || g.pendingWhiteId !== seatId) return;
         const text = String(msg.text || '').slice(0, 40);
         const white = g.players.find((p) => p.id === seatId);
+        // UNE SEULE proposition, comme à table. Sinon on énumère la liste des mots jusqu'à gagner.
+        if (this.s.whiteGuess?.guess) return;
         this.s.whiteGuess = { id: seatId, name: white?.name ?? '', guess: text };
         if (acceptsGuessAlone(text, g.civilWord)) this.applyGuess(text, true);
         break;
@@ -478,18 +530,25 @@ export class Room {
          * se figerait pour toujours.
          */
         if (seatId === g.pendingWhiteId) return;
+        if (me.gone) return; // Un joueur parti ne tranche pas la partie des autres.
         this.applyGuess(this.s.whiteGuess?.guess ?? '', msg.correct);
         break;
       }
       case 'again': {
+        /*
+         * Seulement une fois la partie finie. Sans cette garde, le capitaine pouvait retirer les
+         * rôles en boucle jusqu'à tomber sur celui qui rapporte le plus — il voyait le sien à
+         * chaque tirage — et annuler d'un seul geste une partie mal engagée.
+         */
         if (!isHost) return this.deny(ws, isHost);
+        if (this.s.game && this.s.game.phase !== 'over') return;
         this.newGame();
         break;
       }
       case 'toLobby': {
         // Revenir au salon d'attente : c'est le seul moment où de nouveaux amis peuvent entrer.
         if (!isHost) return this.deny(ws, isHost);
-        if (this.s.game?.phase !== 'over') return;
+        // Depuis N'IMPORTE QUELLE phase : c'est la porte de secours d'une table qui tourne en rond.
         this.s.game = null;
         this.s.votes = {};
         this.s.turn = 0;
@@ -521,6 +580,8 @@ export class Room {
         me.connected = false;
         if (!this.s.game) this.s.seats = this.s.seats.filter((p) => p.id !== seatId);
         this.passHostIfNeeded();
+        this.verifierRevelation();
+        this.avancerSiPartis();
         break;
       }
       case 'report': {
@@ -556,6 +617,7 @@ export class Room {
     if (!g) return;
     this.s.game = { ...g, phase: 'discuss', revealIndex: g.players.length };
     this.s.turn = 0;
+    this.avancerSiPartis();
   }
 
   private newGame() {
@@ -587,7 +649,17 @@ export class Room {
     if (!g || g.phase !== 'vote') return;
     const alive = g.players.filter((p) => p.alive);
     const exprimes = alive.filter((p) => this.s.votes[p.id]).length;
-    const quorum = Math.ceil(alive.length / 2);
+    /*
+     * Le quorum se compte sur les joueurs JOIGNABLES, pas sur l'effectif théorique. Compté sur
+     * l'effectif, une table dont la moitié a éteint son téléphone n'atteignait jamais le quorum :
+     * le dépouillement repartait en discussion, le capitaine relançait, et la soirée tournait en
+     * rond sans fin. Deux voix restent le minimum pour éliminer quelqu'un.
+     */
+    const joignables = alive.filter((p) => {
+      const seat = this.s.seats.find((x) => x.id === p.id);
+      return !!seat && !seat.gone && (seat.connected || Date.now() - seat.lastSeen < JOIGNABLE_MS);
+    });
+    const quorum = Math.min(alive.length, Math.max(2, Math.ceil(joignables.length / 2)));
     if (!force) {
       /*
        * On dépouille dès que TOUS LES PRÉSENTS ont voté, à condition qu'ils soient assez nombreux.
@@ -648,6 +720,36 @@ export class Room {
    * groupe peut reprendre sans lui. Cette règle sert AUSSI à afficher le bouton, pour qu'il
    * n'apparaisse jamais avant que le salon ne l'accepte.
    */
+  /**
+   * L'orateur en cours s'est-il absenté assez longtemps pour qu'on passe au suivant sans lui ?
+   * Cette règle sert au salon ET à l'écran : sans ça, le bouton apparaissait quinze secondes trop
+   * tôt et le joueur qui appuyait recevait « seul le capitaine peut faire ça » en rouge.
+   */
+  private orateurAbsent(): boolean {
+    const g = this.s.game;
+    if (!g || g.phase !== 'discuss') return false;
+    const orateur = this.s.seats.find((p) => p.id === g.speakingOrder[this.s.turn]);
+    if (!orateur) return false;
+    // Un joueur qui a claqué la porte ne revient pas : inutile de lui laisser quinze secondes.
+    if (orateur.gone) return true;
+    return !orateur.connected && Date.now() - orateur.lastSeen > TOUR_ABSENT_MS;
+  }
+
+  /**
+   * Le tour de parole saute tout seul ceux qui ont quitté la table. Sans ça, la manche attendait
+   * la parole de quelqu'un qui a fermé l'application pour de bon, et il fallait que quelqu'un
+   * pense à appuyer sur « Passer au suivant » pour chacun d'eux.
+   */
+  private avancerSiPartis() {
+    const g = this.s.game;
+    if (!g || g.phase !== 'discuss') return;
+    while (this.s.turn < g.speakingOrder.length) {
+      const seat = this.s.seats.find((p) => p.id === g.speakingOrder[this.s.turn]);
+      if (seat && !seat.gone) break;
+      this.s.turn += 1;
+    }
+  }
+
   private blancParti(): boolean {
     const id = this.s.game?.pendingWhiteId;
     const blanc = this.s.seats.find((p) => p.id === id);
@@ -677,7 +779,13 @@ export class Room {
   private view(): RoomView {
     const g = this.s.game;
     const revealed = (p: GamePlayer): Role | null => (!p.alive || g?.phase === 'over' ? p.role : null);
-    const assis = this.s.seats.filter((p) => !p.gone);
+    /*
+     * Un joueur parti EN COURS DE PARTIE reste affiché. Le cacher était la panne la plus grave du
+     * mode en ligne : son nom restait dans l'ordre de parole alors qu'il avait disparu de la
+     * liste, et l'écran des autres plantait. Le cacher le rendait aussi INÉLIMINABLE — son camp
+     * gagnait par forfait. Il reste donc à table, marqué absent, jusqu'à la fin de la manche.
+     */
+    const assis = this.s.seats.filter((p) => !p.gone || g?.players.some((x) => x.id === p.id));
     const players: RoomPlayer[] = assis.map((seat) => {
       const gp = g?.players.find((p) => p.id === seat.id);
       return {
@@ -686,6 +794,7 @@ export class Room {
         color: seat.color,
         host: seat.id === this.s.hostId,
         connected: seat.connected,
+        gone: seat.gone,
         alive: gp ? gp.alive : true,
         seen: seat.seen,
         voted: !!this.s.votes[seat.id],
@@ -694,20 +803,22 @@ export class Room {
       };
     });
     const phase: RoomView['phase'] = !g ? 'lobby' : (g.phase as RoomView['phase']);
-    const n = assis.length;
+    const n = assis.filter((p) => !p.gone).length;
     const blocked = n < MIN_PLAYERS ? `Il faut au moins ${MIN_PLAYERS} joueurs (vous êtes ${n}).` : null;
     return {
       code: this.s.code,
       phase,
       round: g?.round ?? 0,
       players,
-      speakingOrder: g?.phase === 'discuss' ? g.speakingOrder : [],
+      // On n'annonce jamais un orateur absent de la liste : l'écran ne doit rien avoir à deviner.
+      speakingOrder: g?.phase === 'discuss' ? g.speakingOrder.filter((id) => players.some((p) => p.id === id)) : [],
       turnId: g?.phase === 'discuss' ? (g.speakingOrder[this.s.turn] ?? null) : null,
       config: { undercovers: this.s.config.undercovers, mrWhite: this.s.config.mrWhite, lang: this.s.config.lang },
       category: g ? g.pair.cat : null,
       voteEndsIn: this.s.voteUntil ? Math.max(0, Math.round((this.s.voteUntil - Date.now()) / 1000)) : null,
       guessEndsIn: this.s.guessUntil ? Math.max(0, Math.round((this.s.guessUntil - Date.now()) / 1000)) : null,
       canSkipWhite: this.s.game?.phase === 'whiteGuess' && !this.s.whiteGuess?.guess && this.blancParti(),
+      canSkipTurn: this.orateurAbsent(),
       lastElimination: this.s.lastElimination,
       whiteGuess: this.s.whiteGuess,
       result:

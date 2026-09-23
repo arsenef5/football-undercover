@@ -35,6 +35,8 @@ export interface RoomPlayer {
   color: string;
   host: boolean;
   connected: boolean;
+  /** A quitté la table : affiché jusqu'à la fin de la manche, mais il ne reviendra pas. */
+  gone: boolean;
   alive: boolean;
   /** A vu son mot (phase de distribution). */
   seen: boolean;
@@ -63,6 +65,8 @@ export interface RoomView {
   guessEndsIn: number | null;
   /** Vrai quand le salon accepte de reprendre sans la réponse du carton blanc (il a quitté la table). */
   canSkipWhite: boolean;
+  /** Vrai quand le salon accepte de passer l'orateur en cours (capitaine, ou orateur absent). */
+  canSkipTurn: boolean;
   lastElimination: { id: string; name: string; role: Role } | null;
   whiteGuess: { id: string; name: string; guess: string | null } | null;
   result: {

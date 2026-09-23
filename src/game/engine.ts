@@ -187,7 +187,8 @@ export function createGame(
   const cfg = { undercovers: cfgInput.undercovers, mrWhite: cfgInput.mrWhite };
 
   const pair = pickPair(pairs, opts);
-  const [wordA, wordB] = pair[opts.lang ?? 'fr'];
+  // Repli sur le français : un réglage abîmé ne doit jamais empêcher une partie de démarrer.
+  const [wordA, wordB] = pair[opts.lang ?? 'fr'] ?? pair.fr;
   const flip = rng() < 0.5;
   const civilWord = flip ? wordB : wordA;
   const undercoverWord = flip ? wordA : wordB;

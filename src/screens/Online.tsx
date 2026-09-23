@@ -7,7 +7,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, Button, Screen, SectionTitle } from '../components/ui';
-import { createRoom, forgetRoom, lastRoom, OnlineClient, roomExists, type OnlineState } from '../online/client';
+import { createRoom, forgetRoom, lastRoom, ONLINE_OUVERT, OnlineClient, roomExists, type OnlineState } from '../online/client';
 import { isRoomCode, nameError, normalizeCode } from '../online/protocol';
 import { T } from '../i18n';
 import { useNav } from '../nav';
@@ -24,10 +24,17 @@ export function Online() {
   const client = clientRef.current;
 
   const [net, setNet] = useState<OnlineState>(client.state);
-  const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || state.players[0]?.name || '');
+  const [name, setName] = useState(() => {
+    try {
+      return localStorage.getItem(NAME_KEY) || state.players[0]?.name || '';
+    } catch {
+      return state.players[0]?.name || '';
+    }
+  });
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState<'create' | 'join' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ quoi: 'kick' | 'report'; id: string; nom: string } | null>(null);
   const [guess, setGuess] = useState('');
 
   const [reprise, setReprise] = useState<string | null>(null);
@@ -124,6 +131,17 @@ export function Online() {
     envoye === null ? null : Math.max(0, envoye - Math.floor((Date.now() - recu.current) / 1000));
 
   /* ------------------------------------------------------------------ hors salon */
+  if (!ONLINE_OUVERT) {
+    // Mieux vaut le dire que laisser un bouton tourner dans le vide.
+    return (
+      <Screen title={T.online.title} onBack={() => nav.go({ name: 'home' })}>
+        <p className="muted center" style={{ marginTop: 24 }}>
+          {T.online.notOpenYet}
+        </p>
+      </Screen>
+    );
+  }
+
   if (!room) {
     return (
       <Screen title={T.online.title} onBack={() => nav.go({ name: 'home' })}>
@@ -171,10 +189,17 @@ export function Online() {
             {T.online.join}
           </Button>
         </div>
-        {notice ? (
+        {/*
+          * Le salon refuse parfois l'entrée : partie commencée, salon complet, siège pris. Ce
+          * message n'était affiché que DANS le salon — donc jamais ici. Le joueur retombait sur le
+          * même formulaire sans un mot d'explication et réessayait en boucle.
+          */}
+        {notice || net.error ? (
           <div className="center" style={{ color: 'var(--red)', fontSize: 13, marginTop: 14 }}>
-            {notice}
+            {notice || net.error}
           </div>
+        ) : net.status === 'connecting' || net.status === 'lost' ? (
+          <div className="center muted" style={{ fontSize: 13, marginTop: 14 }}>{T.online.joining}</div>
         ) : null}
         <p className="muted center" style={{ fontSize: 12, marginTop: 24 }}>
           {T.online.callHint}
@@ -190,6 +215,35 @@ export function Online() {
       <div className="online-lost">{T.online.reconnecting}</div>
     ) : null;
 
+  /*
+   * Signaler et exclure sont irréversibles, et les deux boutons se touchent sur un téléphone de
+   * 400 px. On demande donc confirmation, en nommant la personne visée.
+   */
+  const confirmation = confirm ? (
+    <div className="online-confirm">
+      <p>{confirm.quoi === 'kick' ? T.online.confirmKick(confirm.nom) : T.online.confirmReport(confirm.nom)}</p>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setConfirm(null);
+          }}
+        >
+          {T.common.cancel}
+        </Button>
+        <Button
+          onClick={() => {
+            client.send(confirm.quoi === 'kick' ? { t: 'kick', target: confirm.id } : { t: 'report', target: confirm.id });
+            if (confirm.quoi === 'report') setNotice(T.online.reported);
+            setConfirm(null);
+          }}
+        >
+          {T.common.confirm}
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
   const sortie = () => {
     client.leave();
     nav.go({ name: 'home' });
@@ -198,6 +252,8 @@ export function Online() {
   const header = (
     <>
       {banner}
+      {confirmation}
+      {notice ? <div className="online-out">{notice}</div> : null}
       {net.error ? <div className="online-lost erreur">{net.error}</div> : null}
       {room.lastElimination && room.phase !== 'over' ? (
         <div className="online-out">
@@ -239,16 +295,19 @@ export function Online() {
               className="kick"
               aria-label={T.online.report}
               title={T.online.report}
-              onClick={() => {
-                client.send({ t: 'report', target: p.id });
-                setNotice(T.online.reported);
-              }}
+              onClick={() => setConfirm({ quoi: 'report', id: p.id, nom: p.name })}
             >
               ⚑
             </button>
           ) : null}
           {isHost && room.phase === 'lobby' && p.id !== net.me ? (
-            <button type="button" className="kick" aria-label={T.online.kick} onClick={() => client.send({ t: 'kick', target: p.id })}>
+            <button
+              type="button"
+              className="kick"
+              aria-label={T.online.kick}
+              title={T.online.kick}
+              onClick={() => setConfirm({ quoi: 'kick', id: p.id, nom: p.name })}
+            >
               ✕
             </button>
           ) : null}
@@ -383,7 +442,7 @@ export function Online() {
   if (room.phase === 'discuss') {
     const monTour = room.turnId === net.me;
     const qui = room.players.find((p) => p.id === room.turnId) ?? null;
-    const absent = !!qui && !qui.connected;
+    const absent = room.canSkipTurn;
     return (
       <Screen
         title={T.online.round(room.round)}
@@ -414,7 +473,9 @@ export function Online() {
         <SectionTitle>{T.discuss.order}</SectionTitle>
         <div className="online-players">
           {room.speakingOrder.map((id, i) => {
-            const p = room.players.find((x) => x.id === id)!;
+            // Jamais de « ! » sur une donnée venue du réseau : c'est ce qui noircissait l'écran.
+            const p = room.players.find((x) => x.id === id);
+            if (!p) return null;
             const encours = room.turnId === id;
             const fait = room.turnId ? room.speakingOrder.indexOf(room.turnId) > i : true;
             return (
@@ -444,17 +505,19 @@ export function Online() {
     return (
       <Screen title={T.vote.title} onBack={sortie}>
         {header}
-        <p className="muted center">{voted ? T.online.voteDone : T.vote.hint}</p>
+        <p className="muted center">{!me?.alive ? T.online.outWatching : voted ? T.online.voteDone : T.vote.hint}</p>
         {room.voteEndsIn !== null ? (
           <div className="center muted" style={{ fontSize: 12 }}>{T.online.voteEnds(restant(room.voteEndsIn) ?? 0)}</div>
         ) : null}
         <div className="grid-2" style={{ marginTop: 14 }}>
-          {alive.map((p) => (
+          {alive.map((p) => {
+            const bloque = voted || p.id === net.me || !me?.alive;
+            return (
             <button
               key={p.id}
               type="button"
-              className="vote-card"
-              disabled={voted || p.id === net.me || !me?.alive}
+              className={`vote-card${bloque ? ' dead' : ''}`}
+              disabled={bloque}
               onClick={() => {
                 void tap();
                 client.send({ t: 'vote', target: p.id });
@@ -462,9 +525,14 @@ export function Online() {
             >
               <Avatar name={p.name} color={p.color} size="md" />
               <span className="nm">{p.name}</span>
-              {p.voted ? <span className="st">{T.online.hasVoted}</span> : null}
+              {p.gone ? (
+                <span className="st">{T.online.left}</span>
+              ) : p.voted ? (
+                <span className="st">{T.online.hasVoted}</span>
+              ) : null}
             </button>
-          ))}
+            );
+          })}
         </div>
         {players}
         <MyWord priv={net.priv} />
@@ -523,6 +591,7 @@ export function Online() {
   return (
     <Screen
       title={T.result.title}
+      onBack={sortie}
       footer={
         isHost ? (
           <>
