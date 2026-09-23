@@ -103,6 +103,26 @@ export function Online() {
     setBusy(null);
   };
 
+  /*
+   * Un compte à rebours n'a de sens que s'il DESCEND. Le salon n'envoie une vue qu'aux moments
+   * utiles : on retranche donc localement le temps écoulé depuis la dernière vue reçue, et on
+   * redessine chaque seconde tant qu'il y a une échéance à afficher.
+   */
+  const recu = useRef(0);
+  const [, tic] = useState(0);
+  useEffect(() => {
+    recu.current = Date.now();
+    tic((n) => n + 1);
+  }, [room?.voteEndsIn, room?.guessEndsIn]);
+  const compteARebours = room?.voteEndsIn ?? room?.guessEndsIn ?? null;
+  useEffect(() => {
+    if (compteARebours === null) return;
+    const id = window.setInterval(() => tic((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [compteARebours === null]);
+  const restant = (envoye: number | null) =>
+    envoye === null ? null : Math.max(0, envoye - Math.floor((Date.now() - recu.current) / 1000));
+
   /* ------------------------------------------------------------------ hors salon */
   if (!room) {
     return (
@@ -426,7 +446,7 @@ export function Online() {
         {header}
         <p className="muted center">{voted ? T.online.voteDone : T.vote.hint}</p>
         {room.voteEndsIn !== null ? (
-          <div className="center muted" style={{ fontSize: 12 }}>{T.online.voteEnds(room.voteEndsIn)}</div>
+          <div className="center muted" style={{ fontSize: 12 }}>{T.online.voteEnds(restant(room.voteEndsIn) ?? 0)}</div>
         ) : null}
         <div className="grid-2" style={{ marginTop: 14 }}>
           {alive.map((p) => (
@@ -482,7 +502,17 @@ export function Online() {
             )}
           </>
         ) : (
-          <p className="muted center">{T.online.waitWhite(room.whiteGuess?.name ?? '')}</p>
+          <>
+            <p className="muted center">{T.online.waitWhite(room.whiteGuess?.name ?? '')}</p>
+            {room.guessEndsIn !== null ? (
+              <p className="center muted" style={{ fontSize: 12 }}>{T.online.guessEnds(restant(room.guessEndsIn) ?? 0)}</p>
+            ) : null}
+            {!iAmWhite && room.canSkipWhite ? (
+              <Button variant="secondary" onClick={() => client.send({ t: 'judge', correct: false })}>
+                {T.online.skipWhite}
+              </Button>
+            ) : null}
+          </>
         )}
       </Screen>
     );
@@ -497,6 +527,9 @@ export function Online() {
         isHost ? (
           <>
             <Button onClick={() => client.send({ t: 'again' })}>{T.result.again}</Button>
+            <Button variant="secondary" onClick={() => client.send({ t: 'toLobby' })}>
+              {T.online.backToLobby}
+            </Button>
             <Button variant="secondary" onClick={sortie}>
               {T.result.finish}
             </Button>

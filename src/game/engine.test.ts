@@ -18,6 +18,7 @@ import {
   revealNext,
   suggestConfig,
   validateConfig,
+  acceptsGuessAlone,
 } from './engine';
 import { ALL_GROUPS, BASE_COMBO_COUNT, BASE_GROUPS, BASE_WORD_COUNT, countCombos, countCombosByCategory, countWords, countWordsByCategory, PRO_EXTRA_COMBOS, PRO_GROUPS, TOTAL_COMBO_COUNT, TOTAL_WORD_COUNT } from '../data/words';
 import { pairFromGroup } from './engine';
@@ -421,5 +422,20 @@ describe('le verdict sur la réponse de Mr. White', () => {
     expect(isGuessLikelyCorrect('de', 'Kevin De Bruyne')).toBe(false);
     expect(isGuessLikelyCorrect('Vinicius', 'Neymar')).toBe(false);
     expect(isGuessLikelyCorrect('Ligue Europa', 'Ligue des champions')).toBe(false);
+  });
+});
+
+describe('une réponse acceptée sans arbitre', () => {
+  it('accepte une vraie trouvaille, même mal orthographiée', () => {
+    expect(acceptsGuessAlone('ronaldo', 'Cristiano Ronaldo')).toBe(true);
+    expect(acceptsGuessAlone('Cristiano Ronaldo', 'Cristiano Ronaldo')).toBe(true);
+  });
+
+  it("refuse l'énumération de noms, qui contient forcément le bon", () => {
+    expect(acceptsGuessAlone('Mbappé Messi Ronaldo Haaland', 'Cristiano Ronaldo')).toBe(false);
+  });
+
+  it('refuse une réponse simplement fausse', () => {
+    expect(acceptsGuessAlone('Zidane', 'Cristiano Ronaldo')).toBe(false);
   });
 });

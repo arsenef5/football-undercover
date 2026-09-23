@@ -18,11 +18,11 @@
  * peuvent pas diverger entre le salon et le téléphone.
  */
 import {
+  acceptsGuessAlone,
   clampConfig,
   createGame,
   eliminate,
   goToVote,
-  isGuessLikelyCorrect,
   nextRoundOrder,
   resolveWhiteGuess,
   MAX_PLAYERS,
@@ -36,6 +36,10 @@ import { badWord, cleanName } from '../../src/online/protocol';
 const COLORS = ['#FF2B2B', '#1AC8ED', '#37D67A', '#FFC21A', '#8B5CF6', '#FF7A1A', '#00C2A8', '#E84393'];
 /** Temps laissé à un vote avant dépouillement d'office. */
 const VOTE_MS = 90 * 1000;
+/** Temps laissé au carton blanc pour proposer un mot avant que la manche reprenne sans lui. */
+const GUESS_MS = 120 * 1000;
+/** Absence à partir de laquelle le groupe peut reprendre sans attendre le carton blanc. */
+const GONE_MS = 20 * 1000;
 /** Un salon meurt quand plus personne n'a donné signe de vie depuis ce délai. */
 const IDLE_MS = 2 * 60 * 60 * 1000;
 /** Fréquence du ménage. */
@@ -69,6 +73,8 @@ interface Persisted {
   votes: Record<string, string>;
   /** Échéance du vote en cours (horloge serveur), 0 hors vote. */
   voteUntil: number;
+  /** Échéance laissée au carton blanc, 0 hors dernière chance. */
+  guessUntil: number;
   lastElimination: RoomView['lastElimination'];
   whiteGuess: RoomView['whiteGuess'];
 }
@@ -95,6 +101,7 @@ export class Room {
       turn: 0,
       votes: {},
       voteUntil: 0,
+      guessUntil: 0,
       lastElimination: null,
       whiteGuess: null,
     };
@@ -108,10 +115,18 @@ export class Room {
     await this.ctx.storage.put('state', this.s);
   }
 
-  /** Prochain réveil : l'échéance du vote si elle arrive avant le prochain ménage. */
+  /** Prochain réveil : la plus proche des échéances en cours, sinon le ménage. */
   private async planAlarm() {
     const now = Date.now();
-    const next = this.s.voteUntil > now ? Math.min(this.s.voteUntil, now + SWEEP_MS) : now + SWEEP_MS;
+    /*
+     * Le bouton « Passer sans sa réponse » n'apparaît qu'après vingt secondes d'absence. Personne
+     * n'écrit rien pendant ce temps-là : sans réveil programmé, aucun message ne partirait et le
+     * bouton n'apparaîtrait jamais. On se réveille donc pile à l'instant où la règle devient vraie.
+     */
+    const blanc = this.s.game?.phase === 'whiteGuess' ? this.s.seats.find((p) => p.id === this.s.game?.pendingWhiteId) : undefined;
+    const ouvertureDuBouton = blanc && !blanc.connected ? blanc.lastSeen + GONE_MS + 500 : 0;
+    const echeances = [this.s.voteUntil, this.s.guessUntil, ouvertureDuBouton].filter((t) => t > now);
+    const next = echeances.length ? Math.min(...echeances, now + SWEEP_MS) : now + SWEEP_MS;
     await this.ctx.storage.setAlarm(next);
   }
 
@@ -140,6 +155,7 @@ export class Room {
         turn: 0,
         votes: {},
         voteUntil: 0,
+        guessUntil: 0,
         lastElimination: null,
         whiteGuess: null,
       };
@@ -200,6 +216,8 @@ export class Room {
     seat.lastSeen = Date.now();
     this.passHostIfNeeded();
     await this.save();
+    // Ce départ peut ouvrir un droit vingt secondes plus tard : il faut programmer ce réveil-là.
+    await this.planAlarm();
     this.broadcast();
   }
 
@@ -223,6 +241,18 @@ export class Room {
       await this.save();
       this.broadcast();
     }
+    /*
+     * Échéance de la dernière chance. Sans elle, un carton blanc qui ne revient jamais fige la
+     * partie POUR TOUJOURS : lui seul peut proposer un mot, et personne ne peut juger une
+     * proposition qui n'existe pas. Passé le délai, la manche reprend sans lui.
+     */
+    if (this.s.guessUntil && now >= this.s.guessUntil && this.s.game?.phase === 'whiteGuess') {
+      this.applyGuess(this.s.whiteGuess?.guess ?? '', false);
+      await this.save();
+      this.broadcast();
+    }
+    // Rien n'a peut-être changé côté règles, mais l'écran attend peut-être une nouvelle vue.
+    if (this.s.game?.phase === 'whiteGuess') this.broadcast();
     if (now - this.lastActivity() > IDLE_MS) {
       await this.ctx.storage.deleteAll();
       this.s.seats = [];
@@ -358,11 +388,15 @@ export class Room {
         if (typeof msg.mrWhite === 'boolean') cfg.mrWhite = msg.mrWhite;
         if (msg.lang) cfg.lang = msg.lang;
         if (typeof msg.pro === 'boolean') cfg.pro = msg.pro;
-        const clamped = clampConfig(this.s.seats.filter((p) => !p.gone).length, {
-          undercovers: cfg.undercovers,
-          mrWhite: cfg.mrWhite,
-        });
-        this.s.config = { ...clamped, lang: cfg.lang, pro: cfg.pro };
+        /*
+         * On garde L'INTENTION du capitaine telle quelle. La ramener à ce que permet la table
+         * ACTUELLE effacerait ses réglages à chaque message reçu pendant que le salon est encore
+         * vide : à un seul joueur, aucune table n'accepte d'imposteur, et le carton blanc
+         * disparaissait en silence de toutes les parties. Les bornes sont appliquées au moment
+         * qui compte, quand la partie démarre et que la table est enfin connue.
+         */
+        cfg.undercovers = Math.min(3, Math.max(0, Math.floor(cfg.undercovers)));
+        this.s.config = cfg;
         break;
       }
       case 'start': {
@@ -430,24 +464,41 @@ export class Room {
         const text = String(msg.text || '').slice(0, 40);
         const white = g.players.find((p) => p.id === seatId);
         this.s.whiteGuess = { id: seatId, name: white?.name ?? '', guess: text };
-        if (isGuessLikelyCorrect(text, g.civilWord)) this.applyGuess(text, true);
+        if (acceptsGuessAlone(text, g.civilWord)) this.applyGuess(text, true);
         break;
       }
       case 'judge': {
         const g = this.s.game;
-        if (!g || g.phase !== 'whiteGuess' || !this.s.whiteGuess?.guess) return;
+        if (!g || g.phase !== 'whiteGuess') return;
+        // Sans proposition, on ne tranche que si le carton blanc a vraiment quitté la table.
+        if (!this.s.whiteGuess?.guess && !this.blancParti()) return;
         /*
          * N'importe quel joueur présent tranche, SAUF le carton blanc lui-même. Le capitaine n'a
          * aucun privilège ici : s'il était le seul juge et qu'il tirait le carton blanc, la partie
          * se figerait pour toujours.
          */
         if (seatId === g.pendingWhiteId) return;
-        this.applyGuess(this.s.whiteGuess.guess, msg.correct);
+        this.applyGuess(this.s.whiteGuess?.guess ?? '', msg.correct);
         break;
       }
       case 'again': {
         if (!isHost) return this.deny(ws, isHost);
         this.newGame();
+        break;
+      }
+      case 'toLobby': {
+        // Revenir au salon d'attente : c'est le seul moment où de nouveaux amis peuvent entrer.
+        if (!isHost) return this.deny(ws, isHost);
+        if (this.s.game?.phase !== 'over') return;
+        this.s.game = null;
+        this.s.votes = {};
+        this.s.turn = 0;
+        this.s.voteUntil = 0;
+        this.s.guessUntil = 0;
+        this.s.lastElimination = null;
+        this.s.whiteGuess = null;
+        for (const p of this.s.seats) p.seen = false;
+        for (const w of this.ctx.getWebSockets()) this.send(w, { t: 'private', priv: null });
         break;
       }
       case 'kick': {
@@ -515,6 +566,7 @@ export class Room {
     this.s.votes = {};
     this.s.turn = 0;
     this.s.voteUntil = 0;
+    this.s.guessUntil = 0;
     this.s.lastElimination = null;
     this.s.whiteGuess = null;
     for (const p of this.s.seats) p.seen = false;
@@ -582,13 +634,30 @@ export class Room {
     this.s.lastElimination = { id: out.id, name: out.name, role: out.role };
     this.s.game = after;
     this.s.turn = 0;
-    if (after.phase === 'whiteGuess') this.s.whiteGuess = { id: outId, name: out.name, guess: null };
+    if (after.phase === 'whiteGuess') {
+      this.s.whiteGuess = { id: outId, name: out.name, guess: null };
+      this.s.guessUntil = Date.now() + GUESS_MS;
+      void this.planAlarm();
+    }
     if (after.phase === 'over') this.awardPoints(after);
+  }
+
+  /**
+   * Le carton blanc a-t-il quitté la table ? Une coupure de quelques secondes n'en est pas une :
+   * verrouiller son écran pour aller écrire dans WhatsApp arrive à chaque manche. Au-delà, le
+   * groupe peut reprendre sans lui. Cette règle sert AUSSI à afficher le bouton, pour qu'il
+   * n'apparaisse jamais avant que le salon ne l'accepte.
+   */
+  private blancParti(): boolean {
+    const id = this.s.game?.pendingWhiteId;
+    const blanc = this.s.seats.find((p) => p.id === id);
+    return !!blanc && !blanc.connected && Date.now() - blanc.lastSeen > GONE_MS;
   }
 
   private applyGuess(text: string, correct: boolean) {
     const g = this.s.game;
     if (!g) return;
+    this.s.guessUntil = 0;
     const after = resolveWhiteGuess(g, text, correct);
     this.s.game = after;
     this.s.whiteGuess = { ...(this.s.whiteGuess ?? { id: '', name: '' }), guess: text } as RoomView['whiteGuess'];
@@ -637,6 +706,8 @@ export class Room {
       config: { undercovers: this.s.config.undercovers, mrWhite: this.s.config.mrWhite, lang: this.s.config.lang },
       category: g ? g.pair.cat : null,
       voteEndsIn: this.s.voteUntil ? Math.max(0, Math.round((this.s.voteUntil - Date.now()) / 1000)) : null,
+      guessEndsIn: this.s.guessUntil ? Math.max(0, Math.round((this.s.guessUntil - Date.now()) / 1000)) : null,
+      canSkipWhite: this.s.game?.phase === 'whiteGuess' && !this.s.whiteGuess?.guess && this.blancParti(),
       lastElimination: this.s.lastElimination,
       whiteGuess: this.s.whiteGuess,
       result:

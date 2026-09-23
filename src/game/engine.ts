@@ -395,6 +395,17 @@ export function finish(game: Game, winner: Winner, whiteWinnerIds: string[] = []
   return { ...game, phase: 'over', result, pendingWhiteId: null };
 }
 
+/**
+ * Le salon peut-il accepter cette réponse TOUT SEUL, sans demander l'avis du groupe ?
+ * Non si le carton blanc a énuméré des noms : « Mbappé Messi Haaland » contient forcément le bon
+ * et gagnerait sans avoir rien deviné. Une réponse sobre, en revanche, n'a pas besoin d'arbitre.
+ */
+export function acceptsGuessAlone(guess: string, word: string): boolean {
+  const mots = normalize(guess).split(' ').filter(Boolean).length;
+  const attendus = normalize(word).split(' ').filter(Boolean).length;
+  return mots <= attendus + 1 && isGuessLikelyCorrect(guess, word);
+}
+
 /** Retire accents, ponctuation et parenthèses : « Cristiano Ronaldo (CR7) » → « cristiano ronaldo ». */
 export function normalize(s: string): string {
   return s

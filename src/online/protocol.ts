@@ -59,6 +59,10 @@ export interface RoomView {
   category: Category | null;
   /** Secondes restantes avant le dépouillement d'office, null hors vote. */
   voteEndsIn: number | null;
+  /** Secondes restantes laissées au carton blanc pour répondre, null hors dernière chance. */
+  guessEndsIn: number | null;
+  /** Vrai quand le salon accepte de reprendre sans la réponse du carton blanc (il a quitté la table). */
+  canSkipWhite: boolean;
   lastElimination: { id: string; name: string; role: Role } | null;
   whiteGuess: { id: string; name: string; guess: string | null } | null;
   result: {
@@ -92,6 +96,7 @@ export type ClientMsg =
   | { t: 'guess'; text: string }
   | { t: 'judge'; correct: boolean }
   | { t: 'again' }
+  | { t: 'toLobby' }
   | { t: 'kick'; target: string }
   | { t: 'report'; target: string }
   | { t: 'ping' };

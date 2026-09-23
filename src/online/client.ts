@@ -152,6 +152,11 @@ export class OnlineClient {
       const { code, name, color } = this.identity!;
       this.send({ t: 'hello', code, seatId: newSeatId(), name, color, token: tokenFor(code) });
       this.emit({ status: 'live' });
+      if (this.enAttente) {
+        const m = this.enAttente;
+        this.enAttente = null;
+        this.send(m);
+      }
     };
     ws.onmessage = (ev) => {
       let m: ServerMsg;
@@ -198,8 +203,19 @@ export class OnlineClient {
     this.timer = window.setTimeout(() => this.open(), wait);
   }
 
+  /**
+   * Un appui pendant une coupure ne doit pas disparaître en silence : on garde la dernière
+   * intention de jeu et on la renvoie dès que la connexion revient. C'est fréquent : le réseau
+   * mobile lâche pile au moment où l'on vote.
+   */
+  private enAttente: ClientMsg | null = null;
+
   send(m: ClientMsg) {
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m));
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(m));
+      return;
+    }
+    if (m.t === 'vote' || m.t === 'spoke' || m.t === 'guess' || m.t === 'seen' || m.t === 'judge') this.enAttente = m;
   }
 
   leave() {
