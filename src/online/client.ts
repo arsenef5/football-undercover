@@ -26,6 +26,38 @@ export interface OnlineState {
 
 type Listener = (s: OnlineState) => void;
 
+/** Dernier salon rejoint, pour proposer de reprendre la partie au retour. */
+export const ROOM_KEY = 'fu.online.room';
+/** Secret remis par le salon : c'est lui qui prouve que ce siège est le nôtre. */
+const TOKEN_KEY = 'fu.online.token';
+
+function tokenFor(code: string): string | undefined {
+  try {
+    const all = JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}') as Record<string, string>;
+    return all[code];
+  } catch {
+    return undefined;
+  }
+}
+
+function rememberToken(code: string, token: string) {
+  try {
+    const all = JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}') as Record<string, string>;
+    all[code] = token;
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(all));
+  } catch {
+    /* stockage plein ou bloqué : on jouera sans reprise possible */
+  }
+}
+
+export function lastRoom(): string | null {
+  return localStorage.getItem(ROOM_KEY);
+}
+
+export function forgetRoom() {
+  localStorage.removeItem(ROOM_KEY);
+}
+
 export function newSeatId(): string {
   const k = 'fu.seat.v1';
   let id = localStorage.getItem(k);
@@ -75,6 +107,8 @@ export class OnlineClient {
 
   connect(code: string, name: string, color: string) {
     this.identity = { code, name, color };
+    // On note le salon : si l'app est tuée (iOS le fait sans prévenir), on saura où revenir.
+    localStorage.setItem(ROOM_KEY, code);
     this.closed = false;
     this.open();
     // Retour au premier plan : iOS a coupé la connexion, on la refait immédiatement.
@@ -91,6 +125,18 @@ export class OnlineClient {
   private open() {
     if (!this.identity) return;
     window.clearTimeout(this.timer);
+    // Une ancienne connexion encore debout relancerait la boucle de reconnexion à sa fermeture.
+    const vieille = this.ws;
+    if (vieille) {
+      vieille.onclose = null;
+      vieille.onerror = null;
+      vieille.onmessage = null;
+      try {
+        vieille.close();
+      } catch {
+        /* déjà fermée */
+      }
+    }
     this.emit({ status: this.state.room ? 'lost' : 'connecting', error: null });
     const url = `${BASE.replace(/^http/, 'ws')}/ws?code=${this.identity.code}`;
     let ws: WebSocket;
@@ -104,7 +150,7 @@ export class OnlineClient {
     ws.onopen = () => {
       this.retry = 0;
       const { code, name, color } = this.identity!;
-      this.send({ t: 'hello', code, seatId: newSeatId(), name, color });
+      this.send({ t: 'hello', code, seatId: newSeatId(), name, color, token: tokenFor(code) });
       this.emit({ status: 'live' });
     };
     ws.onmessage = (ev) => {
@@ -116,9 +162,29 @@ export class OnlineClient {
       }
       if (m.t === 'room') this.emit({ room: m.room, me: m.you, status: 'live', error: null });
       else if (m.t === 'private') this.emit({ priv: m.priv });
-      else if (m.t === 'error') this.emit({ error: m.message });
+      else if (m.t === 'welcome') rememberToken(this.identity?.code ?? '', m.token);
+      else if (m.t === 'reported') this.emit({ error: null });
+      else if (m.t === 'error') {
+        this.emit({ error: m.message });
+        // Refusé à l'entrée : se reconnecter en boucle ne ferait que répéter le refus.
+        if (m.code === 'kicked' || m.code === 'taken' || m.code === 'full' || m.code === 'started' || m.code === 'bad-name') {
+          this.closed = true;
+          try {
+            this.ws?.close();
+          } catch {
+            /* déjà fermée */
+          }
+          this.emit({ status: 'idle', room: null });
+        }
+      }
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
+      // 4000 = une autre fenêtre a pris le siège, 4001 = expulsé. Dans les deux cas on ne revient pas.
+      if (ev.code === 4000 || ev.code === 4001) {
+        this.closed = true;
+        this.emit({ status: 'idle', room: null });
+        return;
+      }
       if (!this.closed) this.scheduleRetry();
     };
     ws.onerror = () => {
@@ -137,7 +203,10 @@ export class OnlineClient {
   }
 
   leave() {
+    // Départ explicite : le salon libère le siège au lieu de nous croire simplement absents.
+    this.send({ t: 'leave' });
     this.closed = true;
+    forgetRoom();
     document.removeEventListener('visibilitychange', this.onVisible);
     window.clearTimeout(this.timer);
     try {

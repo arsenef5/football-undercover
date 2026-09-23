@@ -17,12 +17,14 @@ export function isRoomCode(s: string): boolean {
   return c.length === CODE_LENGTH && [...c].every((ch) => CODE_ALPHABET.includes(ch));
 }
 
+/**
+ * Nettoie ce que le joueur tape. On ne supprime QUE les lettres absentes de l'alphabet des codes :
+ * I, O et Q ne sont jamais tirées (confusions avec 1, 0 et O), donc les rencontrer ici est une
+ * faute de frappe. Attention : ne jamais supprimer une lettre que le serveur peut tirer, sinon
+ * une partie des codes devient impossible à saisir.
+ */
 export function normalizeCode(s: string): string {
-  return s
-    .toUpperCase()
-    .replace(/[IL|]/g, '')
-    .replace(/[^A-Z]/g, '')
-    .slice(0, CODE_LENGTH);
+  return [...s.toUpperCase()].filter((c) => CODE_ALPHABET.includes(c)).join('').slice(0, CODE_LENGTH);
 }
 
 export type OnlinePhase = 'lobby' | 'reveal' | 'discuss' | 'vote' | 'whiteGuess' | 'over';
@@ -51,8 +53,12 @@ export interface RoomView {
   players: RoomPlayer[];
   /** Ordre de parole du tour (identifiants), vide hors discussion. */
   speakingOrder: string[];
+  /** À qui c'est de parler. null = tout le monde a parlé, place au débat. */
+  turnId: string | null;
   config: { undercovers: number; mrWhite: boolean; lang: WordLang };
   category: Category | null;
+  /** Secondes restantes avant le dépouillement d'office, null hors vote. */
+  voteEndsIn: number | null;
   lastElimination: { id: string; name: string; role: Role } | null;
   whiteGuess: { id: string; name: string; guess: string | null } | null;
   result: {
@@ -73,22 +79,29 @@ export interface PrivateView {
 }
 
 export type ClientMsg =
-  | { t: 'hello'; code: string; seatId: string; name: string; color: string }
-  | { t: 'config'; undercovers?: number; mrWhite?: boolean; lang?: WordLang }
+  | { t: 'hello'; code: string; seatId: string; name: string; color: string; token?: string }
+  | { t: 'config'; undercovers?: number; mrWhite?: boolean; lang?: WordLang; pro?: boolean }
   | { t: 'start' }
   | { t: 'seen' }
+  | { t: 'ready' }
+  | { t: 'leave' }
+  | { t: 'spoke' }
+  | { t: 'skip' }
   | { t: 'toVote' }
   | { t: 'vote'; target: string }
   | { t: 'guess'; text: string }
   | { t: 'judge'; correct: boolean }
   | { t: 'again' }
   | { t: 'kick'; target: string }
+  | { t: 'report'; target: string }
   | { t: 'ping' };
 
 export type ServerMsg =
   | { t: 'room'; room: RoomView; you: string }
   | { t: 'private'; priv: PrivateView | null }
-  | { t: 'error'; code: 'full' | 'started' | 'unknown-room' | 'bad-name' | 'kicked' | 'not-host' | 'bad-move'; message: string }
+  | { t: 'welcome'; seatId: string; token: string }
+  | { t: 'error'; code: 'full' | 'started' | 'unknown-room' | 'bad-name' | 'kicked' | 'not-host' | 'bad-move' | 'taken'; message: string }
+  | { t: 'reported' }
   | { t: 'pong' };
 
 /** Pseudos : courts, sans emoji (les emoji servent à contourner les filtres de mots). */
@@ -98,4 +111,34 @@ export function cleanName(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 14);
+}
+
+/*
+ * Un pseudo tapé par un joueur s'affiche sur l'écran des autres : c'est du contenu d'utilisateur,
+ * et les stores demandent alors un filtre. Liste volontairement courte et lisible ; elle sera
+ * étoffée avant l'ouverture au public. Le filtre tourne des DEUX côtés : le téléphone pour le
+ * confort, le salon parce que c'est lui qui fait foi.
+ */
+const INTERDITS = [
+  'connard', 'connasse', 'enculé', 'encule', 'pute', 'putain', 'salope', 'batard', 'bâtard',
+  'nique', 'niquer', 'ntm', 'pd', 'tapette', 'bougnoule', 'negro', 'nègre', 'youpin', 'bicot',
+  'fuck', 'fucker', 'shit', 'bitch', 'cunt', 'nigger', 'nigga', 'faggot', 'whore', 'rape',
+  'hitler', 'nazi',
+];
+
+/** Rend le mot interdit trouvé dans le pseudo, ou null s'il est acceptable. */
+export function badWord(name: string): string | null {
+  const nu = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z]/g, '');
+  return INTERDITS.find((m) => nu.includes(m.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, ''))) ?? null;
+}
+
+export function nameError(raw: string): 'court' | 'grossier' | null {
+  const n = cleanName(raw);
+  if (n.length < 2) return 'court';
+  if (badWord(n)) return 'grossier';
+  return null;
 }

@@ -7,12 +7,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, Button, Screen, SectionTitle } from '../components/ui';
-import { createRoom, OnlineClient, roomExists, type OnlineState } from '../online/client';
-import { isRoomCode, normalizeCode } from '../online/protocol';
+import { createRoom, forgetRoom, lastRoom, OnlineClient, roomExists, type OnlineState } from '../online/client';
+import { isRoomCode, nameError, normalizeCode } from '../online/protocol';
 import { T } from '../i18n';
 import { useNav } from '../nav';
-import { useStore } from '../store/store';
-import { tap } from '../native';
+import { isPro, useStore } from '../store/store';
+import { shareText, tap } from '../native';
 
 const NAME_KEY = 'fu.online.name';
 
@@ -30,8 +30,25 @@ export function Online() {
   const [notice, setNotice] = useState<string | null>(null);
   const [guess, setGuess] = useState('');
 
+  const [reprise, setReprise] = useState<string | null>(null);
+
   useEffect(() => client.subscribe(setNet), [client]);
   useEffect(() => () => client.leave(), [client]);
+
+  // Au retour (app fermée par iOS, rechargement), on propose de reprendre le salon quitté.
+  useEffect(() => {
+    const code = lastRoom();
+    if (!code) return;
+    let vivant = true;
+    void roomExists(code).then((ok) => {
+      if (!vivant) return;
+      if (ok) setReprise(code);
+      else forgetRoom();
+    });
+    return () => {
+      vivant = false;
+    };
+  }, []);
 
   const color = state.players[0]?.color ?? '#FF2B2B';
   const room = net.room;
@@ -43,8 +60,23 @@ export function Online() {
     client.connect(roomCode, name.trim() || 'Joueur', color);
   };
 
+  // Le capitaine partage sa banque de mots : s'il est Pro, tout le salon en profite.
+  const pro = isPro(state.settings);
+  useEffect(() => {
+    if (room?.phase === 'lobby' && me?.host) client.send({ t: 'config', pro });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.phase, me?.host, pro]);
+
+  /** Vérifie le pseudo avant d'entrer : mieux vaut le dire ici que se faire refuser par le salon. */
+  const pseudoOk = () => {
+    const err = nameError(name);
+    if (err === 'court') setNotice(T.online.needName);
+    if (err === 'grossier') setNotice(T.online.badName);
+    return err === null;
+  };
+
   const create = async () => {
-    if (!name.trim()) return setNotice(T.online.needName);
+    if (!pseudoOk()) return;
     setBusy('create');
     setNotice(null);
     try {
@@ -57,7 +89,7 @@ export function Online() {
   };
 
   const join = async () => {
-    if (!name.trim()) return setNotice(T.online.needName);
+    if (!pseudoOk()) return;
     const c = normalizeCode(code);
     if (!isRoomCode(c)) return setNotice(T.online.badCode);
     setBusy('join');
@@ -78,6 +110,20 @@ export function Online() {
         <p className="muted center" style={{ marginTop: 4 }}>
           {T.online.pitch}
         </p>
+        {reprise ? (
+          <>
+            <div style={{ height: 8 }} />
+            <Button
+              onClick={() => {
+                setNotice(null);
+                enter(reprise);
+              }}
+              sub={reprise}
+            >
+              {T.online.resume}
+            </Button>
+          </>
+        ) : null}
         <SectionTitle>{T.online.yourName}</SectionTitle>
         <input
           className="input"
@@ -124,9 +170,20 @@ export function Online() {
       <div className="online-lost">{T.online.reconnecting}</div>
     ) : null;
 
+  const sortie = () => {
+    client.leave();
+    nav.go({ name: 'home' });
+  };
+
   const header = (
     <>
       {banner}
+      {net.error ? <div className="online-lost erreur">{net.error}</div> : null}
+      {room.lastElimination && room.phase !== 'over' ? (
+        <div className="online-out">
+          <strong>{room.lastElimination.name}</strong> {T.online.wasRole} <em>{T.roles[room.lastElimination.role]}</em>
+        </div>
+      ) : null}
       <div className="room-code">
         <span className="eyebrow">{T.online.code}</span>
         <strong className="display">{room.code}</strong>
@@ -145,25 +202,33 @@ export function Online() {
               {p.id === net.me ? ` ${T.online.you}` : ''}
             </span>
             <span className="st">
-              {!p.connected
-                ? T.online.away
-                : p.host
-                  ? T.online.host
-                  : room.phase === 'reveal'
-                    ? p.seen
-                      ? T.online.ready
-                      : T.online.reading
-                    : room.phase === 'vote'
-                      ? p.voted
-                        ? T.online.hasVoted
-                        : T.online.voting
-                      : p.role
-                        ? T.roles[p.role]
-                        : ''}
+              {[
+                !p.connected ? T.online.away : null,
+                p.host ? T.online.host : null,
+                !p.alive && p.role ? T.roles[p.role] : null,
+                p.alive && room.phase === 'reveal' ? (p.seen ? T.online.ready : T.online.reading) : null,
+                p.alive && room.phase === 'vote' ? (p.voted ? T.online.hasVoted : T.online.voting) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </div>
+          {p.id !== net.me ? (
+            <button
+              type="button"
+              className="kick"
+              aria-label={T.online.report}
+              title={T.online.report}
+              onClick={() => {
+                client.send({ t: 'report', target: p.id });
+                setNotice(T.online.reported);
+              }}
+            >
+              ⚑
+            </button>
+          ) : null}
           {isHost && room.phase === 'lobby' && p.id !== net.me ? (
-            <button type="button" className="kick" onClick={() => client.send({ t: 'kick', target: p.id })}>
+            <button type="button" className="kick" aria-label={T.online.kick} onClick={() => client.send({ t: 'kick', target: p.id })}>
               ✕
             </button>
           ) : null}
@@ -176,10 +241,7 @@ export function Online() {
     return (
       <Screen
         title={T.online.lobby}
-        onBack={() => {
-          client.leave();
-          nav.go({ name: 'home' });
-        }}
+        onBack={sortie}
         footer={
           isHost ? (
             <>
@@ -200,13 +262,60 @@ export function Online() {
           variant="secondary"
           onClick={() => {
             void tap();
-            void navigator.clipboard?.writeText(room.code);
+            void shareText(T.online.invite(room.code));
             setNotice(T.online.copied);
           }}
         >
           {T.online.share}
         </Button>
         {notice ? <div className="center muted" style={{ fontSize: 12, marginTop: 8 }}>{notice}</div> : null}
+        {isHost ? (
+          <>
+            <SectionTitle>{T.online.settings}</SectionTitle>
+            <div className="online-settings">
+              <div className="row">
+                <span>{T.setup.undercovers}</span>
+                <div className="chips">
+                  {[1, 2, 3].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`chip${room.config.undercovers === n ? ' on' : ''}`}
+                      onClick={() => client.send({ t: 'config', undercovers: n })}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="row">
+                <span>{T.roles.white}</span>
+                <button
+                  type="button"
+                  className={`chip${room.config.mrWhite ? ' on' : ''}`}
+                  onClick={() => client.send({ t: 'config', mrWhite: !room.config.mrWhite })}
+                >
+                  {room.config.mrWhite ? T.online.on : T.online.off}
+                </button>
+              </div>
+              <div className="row">
+                <span>{T.lang.words}</span>
+                <div className="chips">
+                  {(['fr', 'en'] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      className={`chip${room.config.lang === l ? ' on' : ''}`}
+                      onClick={() => client.send({ t: 'config', lang: l })}
+                    >
+                      {l.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
         <SectionTitle>{T.online.inRoom(room.players.length)}</SectionTitle>
         {players}
         <p className="muted center" style={{ fontSize: 12, marginTop: 18 }}>
@@ -219,7 +328,7 @@ export function Online() {
   if (room.phase === 'reveal') {
     const seen = !!me?.seen;
     return (
-      <Screen title={T.online.yourWordTitle}>
+      <Screen title={T.online.yourWordTitle} onBack={sortie}>
         {header}
         <div className="online-word">
           {!net.priv ? (
@@ -241,6 +350,10 @@ export function Online() {
         </div>
         {!seen ? (
           <Button onClick={() => client.send({ t: 'seen' })}>{T.reveal.memorized}</Button>
+        ) : isHost && room.players.some((p) => !p.seen) ? (
+          <Button variant="secondary" onClick={() => client.send({ t: 'ready' })}>
+            {T.online.startAnyway}
+          </Button>
         ) : null}
         {players}
       </Screen>
@@ -248,11 +361,28 @@ export function Online() {
   }
 
   if (room.phase === 'discuss') {
+    const monTour = room.turnId === net.me;
+    const qui = room.players.find((p) => p.id === room.turnId) ?? null;
+    const absent = !!qui && !qui.connected;
     return (
       <Screen
         title={T.online.round(room.round)}
+        onBack={sortie}
         footer={
-          isHost ? (
+          monTour ? (
+            <Button onClick={() => client.send({ t: 'spoke' })}>{T.online.done}</Button>
+          ) : qui ? (
+            <>
+              <div className="center" style={{ fontSize: 13 }}>
+                {absent ? T.online.turnAway(qui.name) : T.online.turnOf(qui.name)}
+              </div>
+              {isHost || absent ? (
+                <Button variant="secondary" onClick={() => client.send({ t: 'skip' })}>
+                  {T.online.skip}
+                </Button>
+              ) : null}
+            </>
+          ) : isHost ? (
             <Button onClick={() => client.send({ t: 'toVote' })}>{T.discuss.vote}</Button>
           ) : (
             <div className="center muted" style={{ fontSize: 13 }}>{T.online.waitHostVote}</div>
@@ -260,13 +390,15 @@ export function Online() {
         }
       >
         {header}
-        <p className="muted center">{T.discuss.hint}</p>
+        <p className="muted center">{qui ? (monTour ? T.online.yourTurn : T.discuss.hint) : T.online.debate}</p>
         <SectionTitle>{T.discuss.order}</SectionTitle>
         <div className="online-players">
           {room.speakingOrder.map((id, i) => {
             const p = room.players.find((x) => x.id === id)!;
+            const encours = room.turnId === id;
+            const fait = room.turnId ? room.speakingOrder.indexOf(room.turnId) > i : true;
             return (
-              <div key={id} className="online-player">
+              <div key={id} className={`online-player${encours ? ' speaking' : ''}${fait ? ' done' : ''}`}>
                 <span className="num">{i + 1}</span>
                 <Avatar name={p.name} color={p.color} size="sm" />
                 <div className="col">
@@ -274,7 +406,9 @@ export function Online() {
                     {p.name}
                     {p.id === net.me ? ` ${T.online.you}` : ''}
                   </span>
-                  {i === 0 ? <span className="st red">{T.discuss.starts}</span> : null}
+                  <span className={`st${encours ? ' red' : ''}`}>
+                    {encours ? T.online.speaking : fait ? T.online.spoke : ''}
+                  </span>
                 </div>
               </div>
             );
@@ -288,9 +422,12 @@ export function Online() {
   if (room.phase === 'vote') {
     const voted = !!me?.voted;
     return (
-      <Screen title={T.vote.title}>
+      <Screen title={T.vote.title} onBack={sortie}>
         {header}
         <p className="muted center">{voted ? T.online.voteDone : T.vote.hint}</p>
+        {room.voteEndsIn !== null ? (
+          <div className="center muted" style={{ fontSize: 12 }}>{T.online.voteEnds(room.voteEndsIn)}</div>
+        ) : null}
         <div className="grid-2" style={{ marginTop: 14 }}>
           {alive.map((p) => (
             <button
@@ -309,6 +446,7 @@ export function Online() {
             </button>
           ))}
         </div>
+        {players}
         <MyWord priv={net.priv} />
       </Screen>
     );
@@ -318,7 +456,7 @@ export function Online() {
     const iAmWhite = room.whiteGuess?.id === net.me;
     const proposal = room.whiteGuess?.guess;
     return (
-      <Screen title={T.whiteGuess.title}>
+      <Screen title={T.whiteGuess.title} onBack={sortie}>
         {header}
         {iAmWhite && !proposal ? (
           <>
@@ -332,7 +470,7 @@ export function Online() {
         ) : proposal ? (
           <>
             <p className="center display h2">« {proposal} »</p>
-            {isHost && !iAmWhite ? (
+            {!iAmWhite ? (
               <div style={{ display: 'flex', gap: 10 }}>
                 <Button variant="secondary" onClick={() => client.send({ t: 'judge', correct: false })}>
                   {T.whiteGuess.reject}
@@ -359,13 +497,7 @@ export function Online() {
         isHost ? (
           <>
             <Button onClick={() => client.send({ t: 'again' })}>{T.result.again}</Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                client.leave();
-                nav.go({ name: 'home' });
-              }}
-            >
+            <Button variant="secondary" onClick={sortie}>
               {T.result.finish}
             </Button>
           </>

@@ -3129,3 +3129,54 @@ p,
   margin-top: 18px;
   text-align: center;
 }
+
+/* Réglages du salon et tour de parole (mode en ligne). */
+.online-settings { display: flex; flex-direction: column; gap: 10px; }
+.online-settings .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+.online-settings .chips { display: flex; gap: 6px; }
+.online-settings .chip {
+  min-width: 42px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 13px;
+  font-variation-settings: 'wdth' 110, 'wght' 750;
+}
+.online-settings .chip.on {
+  color: #fff;
+  background: linear-gradient(180deg, #ff4141, #d31a1a);
+  border-color: transparent;
+}
+.online-player.speaking {
+  border-color: rgba(255, 43, 43, 0.55);
+  background: rgba(255, 43, 43, 0.08);
+}
+.online-player.done { opacity: 0.6; }
+
+.online-lost.erreur {
+  background: rgba(255, 43, 43, 0.2);
+  border-color: rgba(255, 43, 43, 0.5);
+}
+.online-out {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.online-out em { font-style: normal; color: var(--red); font-variation-settings: 'wdth' 110, 'wght' 800; }

@@ -5,43 +5,57 @@
  * les règles. Les téléphones ne sont que des écrans. C'est la seule façon d'avoir un jeu de bluff
  * honnête à distance : un joueur qui fouille son téléphone n'y trouve que son propre mot.
  *
+ * LE PRINCIPE QUI GOUVERNE TOUT CE FICHIER : une déconnexion n'est PAS un départ.
+ * Sur iPhone, l'app est suspendue dès qu'elle passe en arrière-plan — et le jeu demande justement
+ * aux joueurs de basculer sur WhatsApp ou Discord pour se parler. Verrouiller son écran, lire un
+ * message, répondre à un appel : à chaque fois la connexion tombe. Donc :
+ *   - un siège n'est jamais supprimé parce que la connexion est tombée, seulement sur un départ
+ *     explicite ou quand le salon meurt de vieillesse ;
+ *   - rien n'attend indéfiniment un joueur : le vote a une échéance ;
+ *   - mais rien ne se décide non plus à la place des absents : il faut un quorum.
+ *
  * Le moteur de jeu est CELUI DE L'APP (src/game/engine.ts), importé tel quel : les règles ne
  * peuvent pas diverger entre le salon et le téléphone.
  */
 import {
   clampConfig,
-  computeOutcome,
-  counts,
   createGame,
   eliminate,
-  finish,
   goToVote,
   isGuessLikelyCorrect,
   nextRoundOrder,
   resolveWhiteGuess,
-  suggestConfig,
   MAX_PLAYERS,
   MIN_PLAYERS,
 } from '../../src/game/engine';
 import type { Game, GamePlayer, Role, Seat, WordLang } from '../../src/game/types';
 import { groupsFor } from '../../src/data/words';
 import type { ClientMsg, PrivateView, RoomPlayer, RoomView, ServerMsg } from '../../src/online/protocol';
-import { cleanName } from '../../src/online/protocol';
+import { badWord, cleanName } from '../../src/online/protocol';
 
 const COLORS = ['#FF2B2B', '#1AC8ED', '#37D67A', '#FFC21A', '#8B5CF6', '#FF7A1A', '#00C2A8', '#E84393'];
-/** Un salon sans personne disparaît au bout de ce délai. */
-const EMPTY_TTL_MS = 10 * 60 * 1000;
-/** Un salon vit au maximum 4 heures. */
-const MAX_LIFE_MS = 4 * 60 * 60 * 1000;
+/** Temps laissé à un vote avant dépouillement d'office. */
+const VOTE_MS = 90 * 1000;
+/** Un salon meurt quand plus personne n'a donné signe de vie depuis ce délai. */
+const IDLE_MS = 2 * 60 * 60 * 1000;
+/** Fréquence du ménage. */
+const SWEEP_MS = 15 * 60 * 1000;
+/** Le capitanat ne change qu'après ce délai d'absence : verrouiller son écran ne le fait pas perdre. */
+const HOST_GRACE_MS = 60 * 1000;
 
 interface Seated {
+  /** Identifiant public, visible de tous. */
   id: string;
+  /** Secret remis au premier arrivé : lui seul prouve que ce siège est le tien. */
+  token: string;
   name: string;
   color: string;
   connected: boolean;
   seen: boolean;
   points: number;
   lastSeen: number;
+  /** Le joueur a explicitement quitté le salon. */
+  gone: boolean;
 }
 
 interface Persisted {
@@ -49,11 +63,20 @@ interface Persisted {
   createdAt: number;
   hostId: string | null;
   seats: Seated[];
-  config: { undercovers: number; mrWhite: boolean; lang: WordLang };
+  config: { undercovers: number; mrWhite: boolean; lang: WordLang; pro: boolean };
   game: Game | null;
+  turn: number;
   votes: Record<string, string>;
+  /** Échéance du vote en cours (horloge serveur), 0 hors vote. */
+  voteUntil: number;
   lastElimination: RoomView['lastElimination'];
   whiteGuess: RoomView['whiteGuess'];
+}
+
+function newToken(): string {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 export class Room {
@@ -67,9 +90,11 @@ export class Room {
       createdAt: Date.now(),
       hostId: null,
       seats: [],
-      config: { undercovers: 1, mrWhite: true, lang: 'fr' },
+      config: { undercovers: 1, mrWhite: true, lang: 'fr', pro: false },
       game: null,
+      turn: 0,
       votes: {},
+      voteUntil: 0,
       lastElimination: null,
       whiteGuess: null,
     };
@@ -83,30 +108,50 @@ export class Room {
     await this.ctx.storage.put('state', this.s);
   }
 
+  /** Prochain réveil : l'échéance du vote si elle arrive avant le prochain ménage. */
+  private async planAlarm() {
+    const now = Date.now();
+    const next = this.s.voteUntil > now ? Math.min(this.s.voteUntil, now + SWEEP_MS) : now + SWEEP_MS;
+    await this.ctx.storage.setAlarm(next);
+  }
+
+  private lastActivity(): number {
+    return this.s.seats.reduce((max, p) => Math.max(max, p.lastSeen), this.s.createdAt);
+  }
+
   async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const code = (url.searchParams.get('code') || '').toUpperCase();
 
     if (url.pathname.endsWith('/exists')) {
-      const alive = this.s.seats.length > 0 && Date.now() - this.s.createdAt < MAX_LIFE_MS;
-      return Response.json({ exists: alive, code: this.s.code });
+      const vivant = this.s.seats.length > 0 && Date.now() - this.lastActivity() < IDLE_MS;
+      return Response.json({ exists: vivant, code: this.s.code });
     }
     if (url.pathname.endsWith('/claim')) {
-      const free = this.s.seats.length === 0 || Date.now() - this.s.createdAt > MAX_LIFE_MS;
-      if (!free) return Response.json({ ok: false });
-      this.s = { ...this.s, code, createdAt: Date.now(), hostId: null, seats: [], game: null, votes: {}, lastElimination: null, whiteGuess: null };
-      this.s.config = { undercovers: 1, mrWhite: true, lang: 'fr' };
+      const libre = this.s.seats.length === 0 || Date.now() - this.lastActivity() > IDLE_MS;
+      if (!libre) return Response.json({ ok: false });
+      this.s = {
+        code,
+        createdAt: Date.now(),
+        hostId: null,
+        seats: [],
+        config: { undercovers: 1, mrWhite: true, lang: 'fr', pro: false },
+        game: null,
+        turn: 0,
+        votes: {},
+        voteUntil: 0,
+        lastElimination: null,
+        whiteGuess: null,
+      };
       await this.save();
-      await this.ctx.storage.setAlarm(Date.now() + EMPTY_TTL_MS);
+      await this.planAlarm();
       return Response.json({ ok: true });
     }
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('attendu : websocket', { status: 426 });
 
     /*
      * `acceptWebSocket` confie la connexion au runtime : le salon peut alors S'ENDORMIR entre deux
-     * messages, connexions ouvertes, sans être facturé pendant ce temps. Sur un jeu où il ne se
-     * passe presque rien entre deux votes, c'est la différence entre une facture qui suit le temps
-     * passé et une facture qui suit ce que les joueurs font vraiment.
+     * messages, connexions ouvertes, sans être facturé pendant ce temps.
      */
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
@@ -121,10 +166,8 @@ export class Room {
     } catch {
       return;
     }
-    const known = this.seatOf(ws);
     try {
-      const seatId = (await this.onMessage(ws, known, msg)) || known;
-      if (seatId && seatId !== known) ws.serializeAttachment({ seatId });
+      await this.onMessage(ws, msg);
     } catch (e) {
       this.send(ws, { t: 'error', code: 'bad-move', message: String((e as Error)?.message || e) });
     }
@@ -138,15 +181,23 @@ export class Room {
     await this.onBye(ws);
   }
 
+  /**
+   * Une connexion tombe. On note l'absence, et RIEN d'autre : pas de siège supprimé, pas de tour
+   * sauté, pas de vote dépouillé. Sans quoi passer sur WhatsApp pour partager le code suffirait à
+   * effacer le salon qu'on vient de créer.
+   */
   private async onBye(ws: WebSocket) {
     const seatId = this.seatOf(ws);
     if (!seatId) return;
+    // Une connexion fantôme qui se ferme APRÈS le retour du joueur ne doit rien marquer.
+    const vivante = this.ctx
+      .getWebSockets()
+      .some((o) => o !== ws && this.seatOf(o) === seatId && o.readyState === WebSocket.READY_STATE_OPEN);
+    if (vivante) return;
     const seat = this.s.seats.find((p) => p.id === seatId);
     if (!seat) return;
     seat.connected = false;
     seat.lastSeen = Date.now();
-    // Dans le salon d'attente, partir c'est partir. En partie, on garde sa place.
-    if (!this.s.game) this.s.seats = this.s.seats.filter((p) => p.id !== seatId);
     this.passHostIfNeeded();
     await this.save();
     this.broadcast();
@@ -158,21 +209,28 @@ export class Room {
     return att?.seatId ?? '';
   }
 
+  /** La connexion VIVANTE de ce siège (jamais une socket fantôme : le mot secret y serait perdu). */
   private socketOf(seatId: string): WebSocket | undefined {
-    return this.ctx.getWebSockets().find((ws) => this.seatOf(ws) === seatId);
+    const toutes = this.ctx.getWebSockets().filter((ws) => this.seatOf(ws) === seatId);
+    return toutes.find((ws) => ws.readyState === WebSocket.READY_STATE_OPEN) ?? toutes[0];
   }
 
-  /** Nettoyage : un salon vide finit par disparaître. */
   async alarm() {
-    const someone = this.s.seats.some((p) => p.connected);
-    const old = Date.now() - this.s.createdAt > MAX_LIFE_MS;
-    if (!someone || old) {
+    const now = Date.now();
+    // Échéance du vote : on dépouille avec ce qu'on a plutôt que d'attendre un absent.
+    if (this.s.voteUntil && now >= this.s.voteUntil && this.s.game?.phase === 'vote') {
+      this.resolveVotes(true);
+      await this.save();
+      this.broadcast();
+    }
+    if (now - this.lastActivity() > IDLE_MS) {
       await this.ctx.storage.deleteAll();
       this.s.seats = [];
       this.s.game = null;
+      this.s.hostId = null;
       return;
     }
-    await this.ctx.storage.setAlarm(Date.now() + EMPTY_TTL_MS);
+    await this.planAlarm();
   }
 
   private send(ws: WebSocket, m: ServerMsg) {
@@ -209,14 +267,15 @@ export class Room {
     return this.s.seats.find((p) => p.id === this.s.hostId);
   }
 
+  /** Le capitanat ne bouge qu'après une vraie absence : verrouiller son écran ne le fait pas perdre. */
   private passHostIfNeeded() {
     const h = this.host();
-    if (h && h.connected) return;
-    const next = this.s.seats.find((p) => p.connected) ?? this.s.seats[0];
+    if (h && !h.gone && (h.connected || Date.now() - h.lastSeen < HOST_GRACE_MS)) return;
+    const next = this.s.seats.find((p) => p.connected && !p.gone) ?? this.s.seats.find((p) => !p.gone);
     this.s.hostId = next ? next.id : null;
   }
 
-  private async onMessage(ws: WebSocket, seatId: string, msg: ClientMsg): Promise<string | void> {
+  private async onMessage(ws: WebSocket, msg: ClientMsg) {
     if (msg.t === 'ping') {
       this.send(ws, { t: 'pong' });
       return;
@@ -224,51 +283,71 @@ export class Room {
 
     if (msg.t === 'hello') {
       const name = cleanName(msg.name) || 'Joueur';
-      const existing = this.s.seats.find((p) => p.id === msg.seatId);
-      if (!existing) {
+      if (name.length < 2 || badWord(name)) {
+        this.send(ws, { t: 'error', code: 'bad-name', message: 'Ce pseudo ne passe pas. Choisis-en un autre.' });
+        return;
+      }
+      let seat = this.s.seats.find((p) => p.id === msg.seatId);
+      if (seat) {
+        // Un siège existant ne se reprend qu'avec son secret : sinon n'importe qui lirait ce mot.
+        if (!msg.token || msg.token !== seat.token) {
+          this.send(ws, { t: 'error', code: 'taken', message: 'Ce siège appartient à un autre joueur.' });
+          return;
+        }
+        seat.name = name;
+        seat.connected = true;
+        seat.gone = false;
+        seat.lastSeen = Date.now();
+      } else {
         if (this.s.game) {
           this.send(ws, { t: 'error', code: 'started', message: 'La partie a déjà commencé.' });
           return;
         }
-        if (this.s.seats.length >= MAX_PLAYERS) {
+        if (this.s.seats.filter((p) => !p.gone).length >= MAX_PLAYERS) {
           this.send(ws, { t: 'error', code: 'full', message: 'Le salon est complet.' });
           return;
         }
-        this.s.seats.push({
+        seat = {
           id: msg.seatId,
+          token: newToken(),
           name,
-          color: msg.color || COLORS[this.s.seats.length % COLORS.length],
+          color: COLORS[this.s.seats.length % COLORS.length],
           connected: true,
           seen: false,
           points: 0,
           lastSeen: Date.now(),
-        });
-      } else {
-        existing.name = name;
-        existing.connected = true;
-        existing.lastSeen = Date.now();
+          gone: false,
+        };
+        this.s.seats.push(seat);
       }
       if (!this.s.code) this.s.code = (msg.code || '').toUpperCase();
-      if (!this.s.hostId) this.s.hostId = msg.seatId;
-      // Une seule fenêtre par joueur : la nouvelle remplace l'ancienne.
-      const old = this.socketOf(msg.seatId);
-      if (old && old !== ws) {
-        try {
-          old.close(4000, 'remplacé');
-        } catch {
-          /* déjà fermée */
+      if (!this.s.hostId) this.s.hostId = seat.id;
+
+      // On étiquette la NOUVELLE connexion d'abord : le mot secret ne doit jamais partir sur l'ancienne.
+      ws.serializeAttachment({ seatId: seat.id });
+      for (const autre of this.ctx.getWebSockets()) {
+        if (autre !== ws && this.seatOf(autre) === seat.id) {
+          try {
+            autre.close(4000, 'remplacé');
+          } catch {
+            /* déjà fermée */
+          }
         }
       }
-      ws.serializeAttachment({ seatId: msg.seatId });
+      this.send(ws, { t: 'welcome', seatId: seat.id, token: seat.token });
       await this.save();
+      await this.planAlarm();
       this.broadcast();
-      this.sendPrivate(msg.seatId);
-      return msg.seatId;
+      this.sendPrivate(seat.id);
+      return;
     }
 
+    const seatId = this.seatOf(ws);
     if (!seatId) return;
     const me = this.s.seats.find((p) => p.id === seatId);
     if (!me) return;
+    me.lastSeen = Date.now();
+    me.connected = true;
     const isHost = this.s.hostId === seatId;
 
     switch (msg.t) {
@@ -278,13 +357,17 @@ export class Room {
         if (typeof msg.undercovers === 'number') cfg.undercovers = msg.undercovers;
         if (typeof msg.mrWhite === 'boolean') cfg.mrWhite = msg.mrWhite;
         if (msg.lang) cfg.lang = msg.lang;
-        const clamped = clampConfig(this.s.seats.length, { undercovers: cfg.undercovers, mrWhite: cfg.mrWhite });
-        this.s.config = { ...clamped, lang: cfg.lang };
+        if (typeof msg.pro === 'boolean') cfg.pro = msg.pro;
+        const clamped = clampConfig(this.s.seats.filter((p) => !p.gone).length, {
+          undercovers: cfg.undercovers,
+          mrWhite: cfg.mrWhite,
+        });
+        this.s.config = { ...clamped, lang: cfg.lang, pro: cfg.pro };
         break;
       }
       case 'start': {
         if (!isHost || this.s.game) return this.deny(ws, isHost);
-        if (this.s.seats.length < MIN_PLAYERS) {
+        if (this.s.seats.filter((p) => !p.gone).length < MIN_PLAYERS) {
           this.send(ws, { t: 'error', code: 'bad-move', message: `Il faut au moins ${MIN_PLAYERS} joueurs.` });
           return;
         }
@@ -293,9 +376,32 @@ export class Room {
       }
       case 'seen': {
         me.seen = true;
-        if (this.s.game && this.s.seats.every((p) => p.seen)) {
-          this.s.game = { ...this.s.game, phase: 'discuss', revealIndex: this.s.game.players.length };
-        }
+        // On ne bascule que si TOUT LE MONDE a vu son mot : personne ne joue sans le sien.
+        const assis = this.s.seats.filter((p) => !p.gone);
+        if (this.s.game?.phase === 'reveal' && assis.every((p) => p.seen)) this.startDiscussion();
+        break;
+      }
+      case 'ready': {
+        // Le capitaine passe outre quand quelqu'un ne revient pas : la soirée ne s'arrête pas pour lui.
+        if (!isHost) return this.deny(ws, isHost);
+        if (this.s.game?.phase === 'reveal') this.startDiscussion();
+        break;
+      }
+      case 'spoke': {
+        const g = this.s.game;
+        if (!g || g.phase !== 'discuss') return;
+        if (g.speakingOrder[this.s.turn] !== seatId) return;
+        this.s.turn += 1;
+        break;
+      }
+      case 'skip': {
+        const g = this.s.game;
+        if (!g || g.phase !== 'discuss') return;
+        const courant = g.speakingOrder[this.s.turn];
+        const orateur = this.s.seats.find((p) => p.id === courant);
+        const absent = !!orateur && !orateur.connected && Date.now() - orateur.lastSeen > 15000;
+        if (!isHost && !absent) return this.deny(ws, isHost);
+        if (this.s.turn < g.speakingOrder.length) this.s.turn += 1;
         break;
       }
       case 'toVote': {
@@ -303,6 +409,9 @@ export class Room {
         if (!this.s.game || this.s.game.phase !== 'discuss') return;
         this.s.game = goToVote(this.s.game);
         this.s.votes = {};
+        this.s.turn = 0;
+        this.s.voteUntil = Date.now() + VOTE_MS;
+        await this.planAlarm();
         break;
       }
       case 'vote': {
@@ -312,7 +421,7 @@ export class Room {
         const target = g.players.find((p) => p.id === msg.target);
         if (!voter?.alive || !target?.alive) return;
         this.s.votes[seatId] = msg.target;
-        this.resolveVotesIfDone();
+        this.resolveVotes(false);
         break;
       }
       case 'guess': {
@@ -321,16 +430,18 @@ export class Room {
         const text = String(msg.text || '').slice(0, 40);
         const white = g.players.find((p) => p.id === seatId);
         this.s.whiteGuess = { id: seatId, name: white?.name ?? '', guess: text };
-        // Le salon tranche tout seul quand la réponse est manifestement bonne ou fausse ;
-        // l'hôte n'arbitre que les cas limites (et jamais s'il est le carton blanc).
         if (isGuessLikelyCorrect(text, g.civilWord)) this.applyGuess(text, true);
         break;
       }
       case 'judge': {
         const g = this.s.game;
         if (!g || g.phase !== 'whiteGuess' || !this.s.whiteGuess?.guess) return;
-        if (seatId === g.pendingWhiteId) return; // le carton blanc ne se juge pas lui-même
-        if (!isHost) return this.deny(ws, isHost);
+        /*
+         * N'importe quel joueur présent tranche, SAUF le carton blanc lui-même. Le capitaine n'a
+         * aucun privilège ici : s'il était le seul juge et qu'il tirait le carton blanc, la partie
+         * se figerait pour toujours.
+         */
+        if (seatId === g.pendingWhiteId) return;
         this.applyGuess(this.s.whiteGuess.guess, msg.correct);
         break;
       }
@@ -353,21 +464,57 @@ export class Room {
         }
         break;
       }
+      case 'leave': {
+        // Départ explicite : là, oui, le siège est libéré.
+        me.gone = true;
+        me.connected = false;
+        if (!this.s.game) this.s.seats = this.s.seats.filter((p) => p.id !== seatId);
+        this.passHostIfNeeded();
+        break;
+      }
+      case 'report': {
+        /*
+         * Signalement : le salon n'a pas de base de données, mais la trace part dans le journal
+         * Cloudflare, consultable par Arsène. C'est le minimum exigé dès qu'un joueur voit le
+         * pseudo d'un autre (règle 1.2 d'Apple). Le blocage durable viendra avec les comptes.
+         */
+        const vise = this.s.seats.find((p) => p.id === msg.target);
+        console.log(
+          JSON.stringify({
+            signalement: true,
+            salon: this.s.code,
+            par: me.name,
+            vise: vise?.name ?? msg.target,
+            quand: new Date().toISOString(),
+          }),
+        );
+        this.send(ws, { t: 'reported' });
+        return;
+      }
     }
     await this.save();
     this.broadcast();
   }
 
   private deny(ws: WebSocket, isHost: boolean) {
-    if (!isHost) this.send(ws, { t: 'error', code: 'not-host', message: "Seul le capitaine peut faire ça." });
+    if (!isHost) this.send(ws, { t: 'error', code: 'not-host', message: 'Seul le capitaine peut faire ça.' });
+  }
+
+  private startDiscussion() {
+    const g = this.s.game;
+    if (!g) return;
+    this.s.game = { ...g, phase: 'discuss', revealIndex: g.players.length };
+    this.s.turn = 0;
   }
 
   private newGame() {
-    const seats: Seat[] = this.s.seats.map((p) => ({ id: p.id, name: p.name, avatar: '⚽', color: p.color, photo: null }));
-    const cfg = clampConfig(seats.length, this.s.config);
-    const groups = groupsFor(true);
-    this.s.game = createGame(seats, cfg, groups, { lang: this.s.config.lang });
+    const assis = this.s.seats.filter((p) => !p.gone);
+    const seats: Seat[] = assis.map((p) => ({ id: p.id, name: p.name, avatar: '⚽', color: p.color, photo: null }));
+    const cfg = clampConfig(seats.length, { undercovers: this.s.config.undercovers, mrWhite: this.s.config.mrWhite });
+    this.s.game = createGame(seats, cfg, groupsFor(this.s.config.pro), { lang: this.s.config.lang });
     this.s.votes = {};
+    this.s.turn = 0;
+    this.s.voteUntil = 0;
     this.s.lastElimination = null;
     this.s.whiteGuess = null;
     for (const p of this.s.seats) p.seen = false;
@@ -377,12 +524,38 @@ export class Room {
     }
   }
 
-  /** Tous les vivants ont voté : on dépouille. Égalité = personne n'est éliminé. */
-  private resolveVotesIfDone() {
+  /**
+   * Dépouillement. Deux chemins :
+   *   - tout le monde a voté, c'est le cas normal ;
+   *   - l'échéance est tombée (`force`), et alors il faut un quorum : au moins la moitié des
+   *     joueurs en vie. Sans ce garde-fou, un seul joueur réveillé déciderait de l'élimination.
+   */
+  private resolveVotes(force: boolean) {
     const g = this.s.game;
-    if (!g) return;
+    if (!g || g.phase !== 'vote') return;
     const alive = g.players.filter((p) => p.alive);
-    if (alive.some((p) => !this.s.votes[p.id])) return;
+    const exprimes = alive.filter((p) => this.s.votes[p.id]).length;
+    const quorum = Math.ceil(alive.length / 2);
+    if (!force) {
+      /*
+       * On dépouille dès que TOUS LES PRÉSENTS ont voté, à condition qu'ils soient assez nombreux.
+       * Les deux moitiés de la règle comptent : sans la première, trois joueurs attendraient
+       * 90 secondes un copain parti se coucher ; sans la seconde, un seul joueur réveillé
+       * éliminerait qui il veut pendant que les autres sont sur Discord.
+       */
+      const presents = alive.filter((p) => this.s.seats.find((x) => x.id === p.id)?.connected);
+      const tousOntVote = presents.length > 0 && presents.every((p) => this.s.votes[p.id]);
+      if (!tousOntVote || exprimes < quorum) return;
+    }
+    if (force && exprimes < quorum) {
+      // Pas assez de monde : personne n'est éliminé, le groupe se retrouve et revote.
+      this.s.votes = {};
+      this.s.voteUntil = 0;
+      this.s.game = { ...g, phase: 'discuss' };
+      this.s.turn = 0;
+      this.s.lastElimination = null;
+      return;
+    }
 
     const tally = new Map<string, number>();
     for (const target of Object.values(this.s.votes)) tally.set(target, (tally.get(target) ?? 0) + 1);
@@ -395,10 +568,12 @@ export class Room {
       } else if (n === max) best.push(id);
     }
     this.s.votes = {};
+    this.s.voteUntil = 0;
     if (best.length !== 1) {
-      // Égalité : la manche repart en discussion, personne n'est éliminé.
+      // Égalité : personne n'est éliminé, la manche repart.
       this.s.game = { ...g, phase: 'discuss', speakingOrder: nextRoundOrder(g), round: g.round + 1 };
       this.s.lastElimination = null;
+      this.s.turn = 0;
       return;
     }
     const outId = best[0];
@@ -406,6 +581,7 @@ export class Room {
     const after = eliminate(g, outId);
     this.s.lastElimination = { id: out.id, name: out.name, role: out.role };
     this.s.game = after;
+    this.s.turn = 0;
     if (after.phase === 'whiteGuess') this.s.whiteGuess = { id: outId, name: out.name, guess: null };
     if (after.phase === 'over') this.awardPoints(after);
   }
@@ -416,6 +592,7 @@ export class Room {
     const after = resolveWhiteGuess(g, text, correct);
     this.s.game = after;
     this.s.whiteGuess = { ...(this.s.whiteGuess ?? { id: '', name: '' }), guess: text } as RoomView['whiteGuess'];
+    this.s.turn = 0;
     if (after.phase === 'over') this.awardPoints(after);
   }
 
@@ -431,7 +608,8 @@ export class Room {
   private view(): RoomView {
     const g = this.s.game;
     const revealed = (p: GamePlayer): Role | null => (!p.alive || g?.phase === 'over' ? p.role : null);
-    const players: RoomPlayer[] = this.s.seats.map((seat) => {
+    const assis = this.s.seats.filter((p) => !p.gone);
+    const players: RoomPlayer[] = assis.map((seat) => {
       const gp = g?.players.find((p) => p.id === seat.id);
       return {
         id: seat.id,
@@ -447,7 +625,7 @@ export class Room {
       };
     });
     const phase: RoomView['phase'] = !g ? 'lobby' : (g.phase as RoomView['phase']);
-    const n = this.s.seats.length;
+    const n = assis.length;
     const blocked = n < MIN_PLAYERS ? `Il faut au moins ${MIN_PLAYERS} joueurs (vous êtes ${n}).` : null;
     return {
       code: this.s.code,
@@ -455,8 +633,10 @@ export class Room {
       round: g?.round ?? 0,
       players,
       speakingOrder: g?.phase === 'discuss' ? g.speakingOrder : [],
-      config: this.s.config,
+      turnId: g?.phase === 'discuss' ? (g.speakingOrder[this.s.turn] ?? null) : null,
+      config: { undercovers: this.s.config.undercovers, mrWhite: this.s.config.mrWhite, lang: this.s.config.lang },
       category: g ? g.pair.cat : null,
+      voteEndsIn: this.s.voteUntil ? Math.max(0, Math.round((this.s.voteUntil - Date.now()) / 1000)) : null,
       lastElimination: this.s.lastElimination,
       whiteGuess: this.s.whiteGuess,
       result:
@@ -477,6 +657,3 @@ export class Room {
     };
   }
 }
-
-/** Compteurs exposés pour les tests du serveur. */
-export const _internals = { counts, computeOutcome, finish, suggestConfig };

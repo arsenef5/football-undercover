@@ -95,3 +95,29 @@ export function onHardwareBack(handler: () => boolean): () => void {
     void sub.then((s) => s.remove());
   };
 }
+
+/**
+ * Partage d'un texte (le code du salon) : feuille de partage native sur téléphone, partage web
+ * sinon, et copie dans le presse-papiers en dernier recours — sur iPhone, la copie seule échoue
+ * souvent hors contexte sécurisé.
+ */
+export async function shareText(text: string): Promise<void> {
+  try {
+    if (isNative) {
+      const { Share } = await import('@capacitor/share');
+      await Share.share({ title: 'Football Undercover', text });
+      return;
+    }
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      await navigator.share({ title: 'Football Undercover', text });
+      return;
+    }
+  } catch {
+    /* partage refusé ou indisponible : on retombe sur la copie */
+  }
+  try {
+    await navigator.clipboard?.writeText(text);
+  } catch {
+    /* rien de plus à tenter */
+  }
+}
