@@ -324,6 +324,7 @@ export const fr = {
     codeOk: 'Code accepté : Version Pro active.',
     codeBad: 'Code inconnu. Vérifie les lettres et les tirets.',
     buy: (price: string) => `Passer en Pro · ${price}`,
+    pending: "Achat en attente de l'accord d'un parent.",
     buying: 'Achat en cours…',
     restore: 'Restaurer mes achats',
     restoring: 'Restauration…',

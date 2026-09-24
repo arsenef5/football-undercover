@@ -8,7 +8,7 @@ import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { routeForPhase, useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
-import { proOffered } from '../monetization/access';
+import { useProOffered } from '../monetization/access';
 
 /** Le vrai logo (assets → public/logo.png) s'il est présent, sinon le lockup texte. */
 function HeroArt() {
@@ -25,6 +25,7 @@ function HeroArt() {
 
 export function Home() {
   const { state } = useStore();
+  const proOffered = useProOffered();
   const { game } = useGame();
   const nav = useNav();
   const words = groupsFor(isPro(state.settings));
@@ -75,7 +76,14 @@ export function Home() {
           </span>
           <ChevronIcon size={18} />
         </button>
-        {!proOffered ? null : !isPro(state.settings) ? (
+        {isPro(state.settings) ? (
+          <div className="link-row">
+            <BallIcon className="gold" />
+            <span className="grow">
+              <span className="t">{T.pro.active}</span>
+            </span>
+          </div>
+        ) : proOffered ? (
           <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
             <SparkIcon className="gold" />
             <span className="grow">
@@ -86,14 +94,7 @@ export function Home() {
             </span>
             <ChevronIcon size={18} />
           </button>
-        ) : (
-          <div className="link-row">
-            <BallIcon className="gold" />
-            <span className="grow">
-              <span className="t">{T.pro.active}</span>
-            </span>
-          </div>
-        )}
+        ) : null}
       </div>
     </Screen>
   );

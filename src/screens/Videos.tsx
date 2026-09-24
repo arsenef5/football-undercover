@@ -3,7 +3,7 @@ import { PlayIcon, ShareIcon, TrashIcon, VideoIcon } from '../components/Icons';
 import { Button, Confirm, EmptyState, Screen, Sheet, useToast } from '../components/ui';
 import { deleteVideo, formatBytes, formatDuration, listVideos, shareVideo, videoUrl, type VideoEntry } from '../creator/library';
 import { T } from '../i18n';
-import { proOffered } from '../monetization/access';
+import { useProOffered } from '../monetization/access';
 import { isNative } from '../native';
 import { useNav } from '../nav';
 
@@ -14,6 +14,7 @@ function dateLabel(ts: number): string {
 /** Mes vidéos : les parties filmées, gardées dans l'app jusqu'à suppression. */
 export function Videos() {
   const nav = useNav();
+  const proOffered = useProOffered();
   const [items, setItems] = useState<VideoEntry[]>(() => listVideos());
   const [askDelete, setAskDelete] = useState<VideoEntry | null>(null);
   const [playing, setPlaying] = useState<{ entry: VideoEntry; url: string } | null>(null);

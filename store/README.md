@@ -10,7 +10,6 @@ d'écran se génèrent avec `npm run screenshots`.
 | Apple Developer Program (developer.apple.com) | 99 $/an | App Store, TestFlight |
 | Google Play Console (play.google.com/console) | 25 $ une fois | Play Store |
 | AdMob (admob.google.com) | gratuit | publicités de la version gratuite |
-| RevenueCat (app.revenuecat.com) | gratuit jusqu'à 2 500 $/mois | achat « Version Pro » sur les deux stores |
 | Codemagic (codemagic.io) ou un Mac | gratuit (500 min/mois) | compiler l'app iOS depuis Windows |
 
 ## 1. Identifiants à coller dans le code
@@ -21,14 +20,13 @@ Fichier `src/monetization/config.ts` :
   `USE_TEST_ADS = false`. Reporter aussi l'App ID Android dans `android/app/src/main/AndroidManifest.xml`
   (`com.google.android.gms.ads.APPLICATION_ID`) et l'App ID iOS dans `ios/App/App/Info.plist`
   (`GADApplicationIdentifier`). Tant que ce n'est pas fait, l'app sert les annonces de test de Google.
-- `REVENUECAT_API_KEY` (clé publique iOS `appl_…` et Android `goog_…`).
+L'achat « Version Pro » passe directement par la boutique (StoreKit 2 sur iPhone, via le module
+`@capgo/native-purchases`) : aucun service tiers, aucune clé à coller. Il suffit que le produit existe.
 
-Dans RevenueCat : un projet, les deux apps (App Store + Play), le produit `fu_pro` importé des stores, un
-droit (« entitlement ») nommé `pro` qui contient ce produit, et une offre courante (« current offering »)
-qui propose le package `fu_pro`.
-
-Dans App Store Connect et Google Play : créer le produit intégré non consommable `fu_pro` (nom « Version Pro »,
-prix conseillé 2,99 €). Sur Apple, signer les contrats payants (Agreements, Tax, and Banking) avant.
+Dans App Store Connect : produit intégré non consommable `fu_pro` (nom « Version Pro », 2,99 € base France),
+FAIT le 24/09/2026. Il faut un contrat « applications payantes » ACTIF (compte bancaire + formulaire fiscal)
+pour vendre et même pour tester en bac à sable, et le premier achat intégré part avec une nouvelle version.
+Google Play : à faire quand le compte existera (le module gère aussi Google Play Billing).
 
 ## 2. Politique de confidentialité
 

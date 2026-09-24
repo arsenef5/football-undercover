@@ -52,5 +52,6 @@ https://YOUR-ACCOUNT.github.io/football-undercover/privacy.html
 
 ## App Privacy (App Store) / Data safety (Google Play)
 Free version: device data collected by AdMob (advertising identifier, ad usage data) — purpose "third-party
-advertising", with consent. In-app purchase: anonymous identifier and receipts via RevenueCat — purpose "app
-functionality". No direct personal data (name, e-mail, location). No tracking without ATT consent on iOS.
+advertising", with consent. "Pro version" in-app purchase: handled entirely by Apple (StoreKit); the app
+neither receives nor sends any purchase data, nothing to declare. No direct personal data (name, e-mail,
+location). No tracking without ATT consent on iOS.

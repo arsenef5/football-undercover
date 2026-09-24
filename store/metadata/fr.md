@@ -52,6 +52,6 @@ https://TON-COMPTE.github.io/football-undercover/privacy.html
 
 ## Déclaration « App Privacy » (App Store) / « Data safety » (Google Play)
 Version gratuite : données liées à l'appareil collectées par AdMob (identifiant publicitaire, données d'usage
-publicitaire) — finalité « publicité tierce », avec consentement. Achat intégré : identifiant anonyme et reçus
-d'achat via RevenueCat — finalité « fonctionnement de l'app ». Aucune donnée personnelle directe (nom, e-mail,
-position). Aucun suivi hors consentement ATT sur iOS.
+publicitaire) — finalité « publicité tierce », avec consentement. Achat intégré « Version Pro » : traité
+entièrement par Apple (StoreKit) ; l'app ne reçoit ni ne transmet aucune donnée d'achat, rien à déclarer.
+Aucune donnée personnelle directe (nom, e-mail, position). Aucun suivi hors consentement ATT sur iOS.

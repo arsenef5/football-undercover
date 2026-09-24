@@ -1,7 +1,7 @@
 {
   "name": "football-undercover",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "Football Undercover — le jeu de bluff façon Undercover, 100 % foot.",
   "type": "module",
   "scripts": {
@@ -26,9 +26,9 @@
     "@capacitor/share": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
+    "@capgo/native-purchases": "7.19.3",
     "@fontsource-variable/archivo": "^5.2.0",
     "@fontsource/anton": "^5.2.0",
-    "@revenuecat/purchases-capacitor": "^11.3.2",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "react": "^18.3.1",

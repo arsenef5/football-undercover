@@ -34,17 +34,11 @@ export const AD_UNITS = USE_TEST_ADS ? TEST_UNITS : REAL_UNITS;
 /** Un interstitiel après CHAQUE partie terminée (version gratuite seulement) — demande d'Arsène, 12/09/2026. */
 export const INTERSTITIAL_EVERY_GAMES = 1;
 
-/** RevenueCat : clés publiques (une par plateforme) et identifiants produit / droit. */
-export const REVENUECAT_API_KEY = {
-  android: 'goog_REMPLACER_PAR_LA_CLE_PUBLIQUE_ANDROID',
-  ios: 'appl_REMPLACER_PAR_LA_CLE_PUBLIQUE_IOS',
-};
-
-/** Identifiant du produit non consommable dans App Store Connect et Google Play. */
-export const PRO_PRODUCT_ID = 'fu_pro';
-
-/** Prix de référence affiché tant que la boutique n'a pas répondu (le vrai prix vient du store). */
-export const PRO_PRICE_LABEL = '2,99 €';
+/**
+ * Identifiant du produit non consommable « Version Pro » dans App Store Connect (créé le 24/09/2026,
+ * identifiant Apple 6815841155, 2,99 € en France). Le prix affiché vient TOUJOURS de l'App Store.
+ */
+export { PRO_PRODUCT_ID } from './entitlement';
 
 /**
  * Promesse marketing « +N combinaisons » : le vrai apport de la version Pro (duos absents de la version
@@ -52,9 +46,3 @@ export const PRO_PRICE_LABEL = '2,99 €';
  */
 export const PRO_COMBOS_CLAIM = Math.floor(PRO_EXTRA_COMBOS / 50) * 50;
 
-/** Identifiant du droit (« entitlement ») configuré dans RevenueCat. */
-export const PRO_ENTITLEMENT_ID = 'pro';
-
-export function isPlaceholderKey(key: string): boolean {
-  return key.includes('REMPLACER');
-}

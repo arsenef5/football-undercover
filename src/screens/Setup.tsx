@@ -13,10 +13,11 @@ import { T } from '../i18n';
 import { thump } from '../native';
 import { useNav } from '../nav';
 import { drawOptions, findTeamByRoster, isPro, nextTeamName, type Player, useStore } from '../store/store';
-import { proOffered } from '../monetization/access';
+import { useProOffered } from '../monetization/access';
 
 export function Setup() {
   const { state, dispatch, addPlayer, addTeam } = useStore();
+  const proOffered = useProOffered();
   const game = useGame();
   const nav = useNav();
   const [toast, showToast] = useToast();

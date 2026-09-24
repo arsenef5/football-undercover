@@ -317,6 +317,7 @@ export const en: Strings = {
     codeOk: 'Code accepted: Pro version active.',
     codeBad: 'Unknown code. Check the letters and dashes.',
     buy: (price: string) => `Go Pro · ${price}`,
+    pending: 'Purchase waiting for a parent’s approval.',
     buying: 'Purchasing…',
     restore: 'Restore purchases',
     restoring: 'Restoring…',

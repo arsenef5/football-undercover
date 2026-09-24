@@ -3,7 +3,7 @@ import { COLORS, DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { fileToPhoto } from '../data/photo';
 import { T } from '../i18n';
 import type { Player } from '../store/store';
-import { proOffered } from '../monetization/access';
+import { useProOffered } from '../monetization/access';
 import { tap } from '../native';
 import { CameraIcon, TrashIcon } from './Icons';
 import { Avatar, Button, Sheet } from './ui';
@@ -34,6 +34,7 @@ export function PlayerSheet({
   onClose: () => void;
 }) {
   const [name, setName] = useState('');
+  const proOffered = useProOffered();
   const [color, setColor] = useState(COLORS[0]);
   const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -3,44 +3,43 @@ import { CheckIcon, SparkIcon } from '../components/Icons';
 import { Button, Screen, Sheet, useToast } from '../components/ui';
 import { T } from '../i18n';
 import { PRO_COMBOS_CLAIM } from '../monetization/config';
-import { fetchProOffer, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
-import { isNative, notify } from '../native';
+import { currentOffer, fetchProOffer, onOfferChange, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
+import { notify } from '../native';
 import { useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
-import { codesAllowed, proOffered } from '../monetization/access';
+import { codesAllowed, useProOffered } from '../monetization/access';
 
 /**
- * Vitrine + achat de la Version Pro (RevenueCat). Sur le web ou sans clés : boutons inactifs
- * et message explicatif, le reste de l'app fonctionne normalement.
+ * Vitrine + achat de la Version Pro. Sur iPhone : l'App Store en direct (prix, achat,
+ * restauration). Sur le web : les codes. Ailleurs, l'écran n'est pas proposé.
  */
 export function Pro() {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [toast, showToast] = useToast();
-  const [offer, setOffer] = useState<ProOffer | null>(null);
-  const [loading, setLoading] = useState(purchasesAvailable);
+  const [offer, setOffer] = useState<ProOffer | null>(currentOffer);
+  const [loading, setLoading] = useState(purchasesAvailable && !currentOffer());
+  const proOffered = useProOffered();
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const [code, setCode] = useState('');
   const [codeBusy, setCodeBusy] = useState(false);
   const premium = isPro(state.settings);
 
-  // Sans boutique ouverte, cet écran n'a rien à proposer sur téléphone : on n'y reste pas.
+  // Rien à proposer ni à montrer : on n'y reste pas.
   useEffect(() => {
-    if (!proOffered) nav.back();
-  }, [nav]);
+    if (!proOffered && !premium) nav.back();
+  }, [nav, proOffered, premium]);
 
+  // L'offre est partagée avec le reste de l'app ; on la redemande en arrivant ici.
   useEffect(() => {
     if (!purchasesAvailable) return;
-    let alive = true;
+    const stop = onOfferChange((o) => setOffer(o));
     void fetchProOffer().then((o) => {
-      if (!alive) return;
       setOffer(o);
       setLoading(false);
     });
-    return () => {
-      alive = false;
-    };
+    return stop;
   }, []);
 
   const activate = (msg: string) => {
@@ -55,7 +54,7 @@ export function Pro() {
     const res = await purchasePro(offer);
     setBusy(null);
     if (res.ok) activate(T.pro.thanks);
-    else showToast(res.cancelled ? T.pro.cancelled : T.pro.error);
+    else showToast(res.cancelled ? T.pro.cancelled : res.pending ? T.pro.pending : T.pro.error);
   };
 
   // Code Pro (Arsène et ses amis) : accepté → Version Pro sur cet appareil, sans boutique.
@@ -101,20 +100,16 @@ export function Pro() {
   if (premium) {
     cta = (
       <Button variant="gold" disabled>
-        {state.settings.proCode ? T.pro.activeCode : T.pro.active}
+        {codesAllowed && state.settings.proCode ? T.pro.activeCode : T.pro.active}
       </Button>
     );
   } else if (!purchasesAvailable) {
-    /*
-     * Tant que la boutique n'est pas ouverte (contrat « applications payantes » non signé), on
-     * n'affiche NI prix NI bouton d'achat : annoncer un paiement qui ne peut pas aboutir est un
-     * motif de refus à la revue Apple. La Version Pro s'active alors par code.
-     */
+    // Sur le web : pas de boutique, la Version Pro s'active avec un code.
     cta = (
       <>
         {codeButton}
         <div className="center muted" style={{ fontSize: 12 }}>
-          {isNative ? T.pro.note : T.pro.unavailableWeb}
+          {T.pro.unavailableWeb}
         </div>
       </>
     );

@@ -11,10 +11,11 @@ import { requestProPromo } from '../monetization/promo';
 import { isNative } from '../native';
 import { useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
-import { proOffered } from '../monetization/access';
+import { useProOffered } from '../monetization/access';
 
 export function Settings() {
   const { state, dispatch } = useStore();
+  const proOffered = useProOffered();
   const hasVideos = useMemo(() => listVideos().length > 0, []);
   const game = useGame();
   const nav = useNav();
@@ -90,7 +91,7 @@ export function Settings() {
         </div>
 
         {/* Sans boutique ouverte, la Version Pro n'existe pas sur téléphone : aucune section. */}
-        {proOffered ? (
+        {proOffered || isPro(s) ? (
           <>
             <SectionTitle>{T.settings.pro}</SectionTitle>
             <div className="list">
@@ -109,7 +110,8 @@ export function Settings() {
                   <Toggle on={s.premium} label={T.settings.proToggle} onChange={(v) => set({ premium: v })} />
                 </Setting>
               ) : null}
-              {!isPro(s) ? (
+              {/* Outil de test : jamais dans l'app publiée. */}
+              {import.meta.env.DEV && !isPro(s) ? (
                 <button type="button" className="link-row" onClick={() => requestProPromo()}>
                   <SparkIcon />
                   <span className="grow">
@@ -138,7 +140,7 @@ export function Settings() {
             <span className="grow">
               <span className="t">{T.settings.version(pkg.version)}</span>
               <span className="s" style={{ display: 'block' }}>
-                {proOffered ? T.settings.words(BASE_COMBO_COUNT, PRO_EXTRA_COMBOS) : T.settings.wordsFree(BASE_COMBO_COUNT)}
+                {proOffered || isPro(s) ? T.settings.words(BASE_COMBO_COUNT, PRO_EXTRA_COMBOS) : T.settings.wordsFree(BASE_COMBO_COUNT)}
               </span>
             </span>
           </div>

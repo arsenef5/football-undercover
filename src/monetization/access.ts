@@ -1,24 +1,39 @@
 /**
- * QUI PEUT OBTENIR LA VERSION PRO, ET PAR QUEL CHEMIN.
+ * QUI PEUT OBTENIR LA VERSION PRO, ET QUAND LA PROPOSER.
  *
- * Sur l'App Store (et sur Google Play), un contenu payant ne peut se débloquer QUE par l'achat
- * intégré de la boutique. Apple a refusé la 1.0 pour cette raison précise (règle 3.1.1, 23/09/2026) :
- * la Version Pro s'activait avec un code. Toute l'app passe donc par ces deux règles, et nulle part
- * ailleurs :
+ * Sur l'App Store, un contenu payant ne se débloque QUE par l'achat intégré d'Apple. La 1.0 a été
+ * refusée pour cette raison (règle 3.1.1, 23/09/2026) : la Version Pro s'activait avec un code.
+ * Toute l'app passe par les règles ci-dessous, et nulle part ailleurs.
  *
- *   - sur téléphone, la Pro n'existe que si le vrai achat intégré fonctionne. Tant que la boutique
- *     n'est pas ouverte (contrat « applications payantes » non signé), l'app est simplement la
- *     version gratuite : aucun écran Pro, aucun prix, aucune promesse, aucun code ;
- *   - les codes ne valent que sur le web, où aucune boutique n'impose ses règles.
- *
- * Le jour où la clé RevenueCat est renseignée et le produit créé, `purchasesAvailable` devient vrai
- * et tout ce qui concerne la Pro réapparaît de lui-même, avec un vrai bouton d'achat.
+ *   - `storeExists` : une vraie boutique existe-t-elle ici ? Sur téléphone, seulement là où
+ *     l'achat intégré est branché. Sans elle, personne n'a la Pro, code mémorisé ou pas.
+ *   - `proOfferedNow()` / `useProOffered()` : peut-on PROPOSER la Pro maintenant ? Sur téléphone,
+ *     seulement quand l'App Store a répondu avec le produit et son prix. On n'affiche jamais un
+ *     bouton d'achat qui ne peut pas aboutir.
+ *   - `codesAllowed` : les codes ne valent que sur le web (et sont absents du binaire des stores,
+ *     voir __PRO_CODES__ dans vite.config.ts).
  */
+import { useEffect, useState } from 'react';
 import { isNative } from '../native';
-import { purchasesAvailable } from './purchases';
+import { currentOffer, onOfferChange, purchasesAvailable } from './purchases';
 
 /** Les codes Pro sont-ils acceptés ici ? Jamais dans une app publiée sur un store. */
 export const codesAllowed = __PRO_CODES__ && !isNative;
 
-/** Peut-on parler de la Version Pro ici ? Sur téléphone, seulement si l'achat peut aboutir. */
-export const proOffered = !isNative || purchasesAvailable;
+/** Une vraie boutique existe-t-elle ici ? Sur le web, la Pro passe par les codes. */
+export const storeExists = !isNative || purchasesAvailable;
+
+/** Peut-on proposer la Pro à cet instant ? */
+export function proOfferedNow(): boolean {
+  return !isNative || currentOffer() !== null;
+}
+
+/** La même règle pour un écran : il se redessine quand l'App Store répond. */
+export function useProOffered(): boolean {
+  const [offered, setOffered] = useState(proOfferedNow);
+  useEffect(() => {
+    setOffered(proOfferedNow());
+    return onOfferChange(() => setOffered(proOfferedNow()));
+  }, []);
+  return offered;
+}

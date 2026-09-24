@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNo
 import type { Category, Game, WordLang, WordPair } from '../game/types';
 import { ALL_CATEGORIES, duoKey } from '../game/engine';
 import type { Lang } from '../i18n';
-import { codesAllowed, proOffered } from '../monetization/access';
+import { codesAllowed, storeExists } from '../monetization/access';
 
 /* ------------------------------------------------------------------ */
 /* Modèle persistant                                                   */
@@ -59,7 +59,7 @@ export function nextTeamName(teams: readonly Team[]): string {
 }
 
 export interface Settings {
-  /** Version Pro achetée en boutique (RevenueCat). Sur le web : bascule de test. */
+  /** Version Pro achetée sur l'App Store (mémoire du dernier verdict de StoreKit). Sur le web : bascule de test. */
   premium: boolean;
   /** Code Pro accepté (Arsène et ses amis) : vaut Version Pro sur cet appareil, sans boutique. */
   proCode: string | null;
@@ -329,7 +329,12 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'session/reset':
       return { ...state, session: {} };
     case 'all/reset':
-      return INITIAL_STATE;
+      // « Tout effacer » vide joueurs, équipes et scores. Un achat n'est pas une donnée de jeu :
+      // la Version Pro payée (et le code, sur le web) survit à la remise à zéro.
+      return {
+        ...INITIAL_STATE,
+        settings: { ...DEFAULT_SETTINGS, premium: state.settings.premium, proCode: state.settings.proCode },
+      };
     default:
       return state;
   }
@@ -409,7 +414,7 @@ export function useStore(): StoreValue {
  * code et l'interrupteur de test restent valables.
  */
 export function isPro(settings: Settings): boolean {
-  if (!proOffered) return false;
+  if (!storeExists) return false;
   return settings.premium || (codesAllowed && !!settings.proCode);
 }
 

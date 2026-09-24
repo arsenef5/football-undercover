@@ -2,13 +2,12 @@ import { PRO_COMBOS_CLAIM } from '../monetization/config';
 import { useEffect, useState } from 'react';
 import { T } from '../i18n';
 import { releaseBanner, suppressBanner } from '../monetization/ads';
-import { PRO_PRICE_LABEL } from '../monetization/config';
 import { markPromoShown } from '../monetization/promo';
 import { thump } from '../native';
 import { useNav } from '../nav';
 import { CloseIcon } from './Icons';
 import { Button, FitText } from './ui';
-import { purchasesAvailable } from '../monetization/purchases';
+import { currentOffer } from '../monetization/purchases';
 
 /**
  * Fenêtre promotionnelle plein écran, dans la DA du logo : le visuel (public/promo-pro.jpg)
@@ -66,7 +65,7 @@ export function ProPromo({ open, onClose }: { open: boolean; onClose: () => void
           }}
         >
           {/* Un prix ne s'affiche que si la boutique peut réellement encaisser. */}
-          {purchasesAvailable ? T.promo.cta(PRO_PRICE_LABEL) : T.promo.ctaNoPrice}
+          {currentOffer() ? T.promo.cta(currentOffer()!.priceString) : T.promo.ctaNoPrice}
         </Button>
         <Button variant="ghost" small onClick={onClose}>
           {T.promo.later}

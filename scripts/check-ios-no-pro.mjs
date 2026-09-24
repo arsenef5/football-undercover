@@ -35,8 +35,9 @@ const cle = await page.evaluate(() => Object.keys(localStorage).find((x) => loca
 if (cle) {
   await page.evaluate((k) => {
     const s = JSON.parse(localStorage.getItem(k));
+    // Un ancien détenteur de code. (Sur iPhone, `premium` est la mémoire d'un VRAI achat App Store
+    // depuis la 1.1 : l'injecter simulerait un acheteur, pas un code.)
     s.settings.proCode = 'FU-TIKITAKA-8DE9';
-    s.settings.premium = true;
     s.settings.creatorMode = true;
     localStorage.setItem(k, JSON.stringify(s));
   }, cle);

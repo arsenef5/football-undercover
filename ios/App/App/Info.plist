@@ -41,7 +41,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-8681861872152811~8888064711</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Pour prendre la photo d'un joueur. / To take a player's photo.</string>
+	<string>Pour prendre la photo d'un joueur et, en mode créateur, filmer la partie. / To take a player's photo and, in creator mode, to film the game.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le mode créateur enregistre le son de la partie. / Creator mode records the game audio.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

@@ -6,7 +6,7 @@ import { GameProvider, useGame } from './game/useGame';
 import { setLang, T } from './i18n';
 import { initAds, setAdsEnabled, setBannerWanted } from './monetization/ads';
 import { onProPromo } from './monetization/promo';
-import { fetchProActive, onProChange, purchasesAvailable } from './monetization/purchases';
+import { currentOffer, fetchProActive, fetchProOffer, onProChange, purchasesAvailable } from './monetization/purchases';
 import { onHardwareBack, setHapticsEnabled, setupNativeUi, tap } from './native';
 import { NavProvider, TABS, useNav, type Route, type TabName } from './nav';
 import { Discuss } from './screens/Discuss';
@@ -26,7 +26,7 @@ import { CreatorSetup } from './screens/CreatorSetup';
 import { Vote } from './screens/Vote';
 import { WhiteGuess } from './screens/WhiteGuess';
 import { isPro, StoreProvider, useStore } from './store/store';
-import { proOffered } from './monetization/access';
+import { useProOffered } from './monetization/access';
 
 const GAME_ROUTES: Route['name'][] = ['creator', 'reveal', 'discuss', 'vote', 'eliminated', 'whiteGuess', 'result'];
 
@@ -81,8 +81,7 @@ function CurrentScreen({ route }: { route: Route }) {
     case 'rules':
       return <Rules />;
     case 'pro':
-      // Sans boutique ouverte, l'écran Pro n'existe pas sur téléphone : on retombe sur l'accueil.
-      if (!proOffered) return <Home />;
+      // L'écran Pro décide lui-même : il accueille un acheteur, et renvoie les autres si rien n'est à vendre.
       return <Pro />;
     case 'setup':
       return <Setup />;
@@ -109,6 +108,7 @@ function CurrentScreen({ route }: { route: Route }) {
 
 function Shell() {
   const nav = useNav();
+  const proOffered = useProOffered();
   const { state, dispatch } = useStore();
   const { game } = useGame();
   const route = nav.route;
@@ -127,24 +127,81 @@ function Shell() {
     void setupNativeUi();
   }, []);
 
-  // Version Pro : l'achat (RevenueCat) fait foi sur mobile ; sur le web on garde l'interrupteur de test.
+  /*
+   * Le produit « Version Pro » est demandé à l'App Store au lancement, puis à chaque retour dans
+   * l'app tant qu'il n'a pas répondu (réseau absent au démarrage, par exemple). Rien de la Pro ne
+   * s'affiche avant sa réponse.
+   */
   useEffect(() => {
     if (!purchasesAvailable) return;
-    void fetchProActive().then((active) => {
-      if (active !== null) dispatch({ type: 'settings/set', patch: { premium: active } });
-    });
-    return onProChange((active) => dispatch({ type: 'settings/set', patch: { premium: active } }));
+    void fetchProOffer();
+    // Pas de réponse au premier essai : on réessaie tout seul, sans attendre que l'app passe en
+    // arrière-plan. Un examinateur Apple qui ne trouve pas l'achat refuse la version.
+    const essais = [5000, 30000, 120000].map((ms) =>
+      window.setTimeout(() => {
+        if (!currentOffer()) void fetchProOffer();
+      }, ms),
+    );
+    const relancer = () => {
+      if (!currentOffer()) void fetchProOffer();
+    };
+    const auRetour = () => {
+      if (document.visibilityState === 'visible') relancer();
+    };
+    document.addEventListener('visibilitychange', auRetour);
+    window.addEventListener('online', relancer);
+    return () => {
+      essais.forEach((t) => window.clearTimeout(t));
+      document.removeEventListener('visibilitychange', auRetour);
+      window.removeEventListener('online', relancer);
+    };
+  }, []);
+
+  /*
+   * Version Pro : sur iPhone, l'App Store fait foi ; sur le web, les codes et l'interrupteur de test.
+   * On relit l'achat au lancement et à chaque retour dans l'app : une perte locale (réinstallation,
+   * nouvel iPhone) se répare toute seule.
+   */
+  const [proConnu, setProConnu] = useState(!purchasesAvailable);
+  useEffect(() => {
+    if (!purchasesAvailable) return;
+    let vivant = true;
+    const relire = () =>
+      fetchProActive().then((active) => {
+        if (!vivant) return;
+        if (active !== null) dispatch({ type: 'settings/set', patch: { premium: active } });
+        setProConnu(true);
+      });
+    void relire();
+    // Filet : si StoreKit ne répond pas, on n'attend pas indéfiniment pour afficher l'app normale.
+    const filet = window.setTimeout(() => vivant && setProConnu(true), 4000);
+    const auRetour = () => {
+      if (document.visibilityState === 'visible') void relire();
+    };
+    document.addEventListener('visibilitychange', auRetour);
+    const stop = onProChange((active) => dispatch({ type: 'settings/set', patch: { premium: active } }));
+    return () => {
+      vivant = false;
+      window.clearTimeout(filet);
+      document.removeEventListener('visibilitychange', auRetour);
+      stop();
+    };
   }, [dispatch]);
 
-  // Publicité : uniquement en version gratuite, jamais sur les écrans de partie.
+  /*
+   * Publicité : uniquement en version gratuite, jamais sur les écrans de partie. Sur iPhone, on
+   * attend le verdict de l'App Store : un acheteur qui réinstalle l'app ne doit voir ni le formulaire
+   * de consentement publicitaire, ni la demande de suivi, ni une bannière.
+   */
   useEffect(() => {
+    if (!proConnu) return;
     setAdsEnabled(!premium);
     if (!premium) void initAds();
-  }, [premium]);
+  }, [premium, proConnu]);
 
   useEffect(() => {
-    setBannerWanted(!premium && !isGameRoute);
-  }, [premium, isGameRoute, route.name]);
+    setBannerWanted(proConnu && !premium && !isGameRoute);
+  }, [premium, proConnu, isGameRoute, route.name]);
 
   useEffect(() => {
     setHapticsEnabled(state.settings.haptics);

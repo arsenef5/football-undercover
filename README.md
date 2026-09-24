@@ -34,7 +34,7 @@ télécharge, prête pour TikTok. Sans caméra, les incrustations sont enregistr
 ## Monétisation
 
 Version gratuite avec publicités AdMob (bannière hors écrans de partie, interstitiel toutes les 3 parties) et
-achat intégré unique « Version Pro » via RevenueCat (plus de pub, mots Pro). Tout est dans
+achat intégré unique « Version Pro » par l'App Store en direct (StoreKit 2, sans service tiers). Tout est dans
 `src/monetization/` ; les identifiants de test de Google sont en place tant que `USE_TEST_ADS` est vrai.
 La marche à suivre complète (comptes, identifiants, captures, TestFlight, Play Console) est dans
 [store/README.md](store/README.md).
@@ -107,6 +107,6 @@ src/
 
 ## Version Pro (plan)
 
-Le code distingue déjà `pack: 'base' | 'pro'` sur chaque mot et un réglage `premium`. Ce qui reste à brancher
-au moment de publier : la publicité dans la version gratuite (ex. AdMob via plugin Capacitor) et l'achat
-in-app qui active `premium` (ex. RevenueCat). L'écran « Version Pro » est en place avec un bouton inactif.
+Le code distingue `pack: 'base' | 'pro'` sur chaque mot et un réglage `premium`, mis à jour par l'App Store
+(`src/monetization/purchases.ts`). La règle d'accès vit dans `src/monetization/access.ts` : sur téléphone, la Pro
+ne s'obtient que par l'achat intégré et ne se propose que lorsque l'App Store a répondu (règle 3.1.1 d'Apple).
