@@ -130,7 +130,8 @@ export function Result() {
     if (creator.recording) await creator.stop();
     const seats = game.players.map(({ id, name, avatar, color, photo }) => ({ id, name, avatar, color, photo }));
     start(seats, game.config, groupsFor(isPro(state.settings)), drawOptions(state, game.pair));
-    nav.replace({ name: state.settings.creatorMode ? 'creator' : 'reveal' });
+    // Le mode créateur est réservé à la Pro : un réglage resté allumé ne suffit pas à l'ouvrir.
+    nav.replace({ name: isPro(state.settings) && state.settings.creatorMode ? 'creator' : 'reveal' });
   };
 
   const finish = async () => {

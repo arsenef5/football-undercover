@@ -13,6 +13,7 @@ import { T } from '../i18n';
 import { thump } from '../native';
 import { useNav } from '../nav';
 import { drawOptions, findTeamByRoster, isPro, nextTeamName, type Player, useStore } from '../store/store';
+import { proOffered } from '../monetization/access';
 
 export function Setup() {
   const { state, dispatch, addPlayer, addTeam } = useStore();
@@ -311,7 +312,7 @@ export function Setup() {
           onChange={(v) => dispatch({ type: 'settings/set', patch: { timerSeconds: v } })}
         />
 
-        <SectionTitle>{T.creator.title}</SectionTitle>
+        {pro || proOffered ? <SectionTitle>{T.creator.title}</SectionTitle> : null}
         {pro ? (
           <div className={`list creator-setting ${state.settings.creatorMode ? 'is-on' : ''}`}>
             <Setting label={T.creator.title} hint={T.creator.hint}>
@@ -322,7 +323,7 @@ export function Setup() {
               />
             </Setting>
           </div>
-        ) : (
+        ) : !proOffered ? null : (
           <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
             <SparkIcon className="gold" />
             <span className="grow">

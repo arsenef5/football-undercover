@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNo
 import type { Category, Game, WordLang, WordPair } from '../game/types';
 import { ALL_CATEGORIES, duoKey } from '../game/engine';
 import type { Lang } from '../i18n';
+import { codesAllowed, proOffered } from '../monetization/access';
 
 /* ------------------------------------------------------------------ */
 /* Modèle persistant                                                   */
@@ -399,9 +400,17 @@ export function useStore(): StoreValue {
   return ctx;
 }
 
-/** Version Pro effective : achat en boutique OU code Pro accepté. Toujours passer par ici. */
+/**
+ * Version Pro effective. Toujours passer par ici.
+ *
+ * Sur téléphone, SEUL l'achat en boutique compte, et seulement si la boutique fonctionne : un code
+ * mémorisé par une ancienne version, ou un réglage `premium` resté vrai, ne débloque plus rien.
+ * C'est la règle 3.1.1 d'Apple, qui a refusé la 1.0 pour un déblocage par code. Sur le web, le
+ * code et l'interrupteur de test restent valables.
+ */
 export function isPro(settings: Settings): boolean {
-  return settings.premium || !!settings.proCode;
+  if (!proOffered) return false;
+  return settings.premium || (codesAllowed && !!settings.proCode);
 }
 
 /** Options de tirage communes à Nouvelle partie, Encore et Relancer : part de joueurs, catégories, mémoire. */

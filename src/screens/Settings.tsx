@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import pkg from '../../package.json';
 import { ChevronIcon, InfoIcon, SparkIcon, TrashIcon, UsersIcon, VideoIcon } from '../components/Icons';
 import { LangPickers } from '../components/LanguageSheet';
 import { Button, Confirm, Screen, SectionTitle, Segmented, Setting, Toggle } from '../components/ui';
 import { BASE_COMBO_COUNT, PRO_EXTRA_COMBOS } from '../data/words';
+import { listVideos } from '../creator/library';
 import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { requestProPromo } from '../monetization/promo';
 import { isNative } from '../native';
 import { useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
+import { proOffered } from '../monetization/access';
 
 export function Settings() {
   const { state, dispatch } = useStore();
+  const hasVideos = useMemo(() => listVideos().length > 0, []);
   const game = useGame();
   const nav = useNav();
   const [askReset, setAskReset] = useState(false);
@@ -37,17 +40,26 @@ export function Settings() {
           <ChevronIcon size={18} />
         </button>
 
-        <SectionTitle>{T.creator.title}</SectionTitle>
-        <button type="button" className="link-row" onClick={() => nav.go({ name: 'videos' })}>
-          <VideoIcon />
-          <span className="grow">
-            <span className="t">{T.videos.title}</span>
-            <span className="s" style={{ display: 'block' }}>
-              {T.videos.settingsHint}
-            </span>
-          </span>
-          <ChevronIcon size={18} />
-        </button>
+        {/*
+          * Sans la Pro, le mode créateur n'existe pas sur téléphone : la bibliothèque ne s'affiche
+          * que si elle contient déjà des vidéos (tournées avec une ancienne version), sinon elle
+          * inviterait à activer une fonction introuvable.
+          */}
+        {isPro(s) || proOffered || hasVideos ? (
+          <>
+            <SectionTitle>{T.creator.title}</SectionTitle>
+            <button type="button" className="link-row" onClick={() => nav.go({ name: 'videos' })}>
+              <VideoIcon />
+              <span className="grow">
+                <span className="t">{T.videos.title}</span>
+                <span className="s" style={{ display: 'block' }}>
+                  {T.videos.settingsHint}
+                </span>
+              </span>
+              <ChevronIcon size={18} />
+            </button>
+          </>
+        ) : null}
 
         <SectionTitle>{T.settings.game}</SectionTitle>
         <div className="list">
@@ -77,36 +89,41 @@ export function Settings() {
           </Setting>
         </div>
 
-        <SectionTitle>{T.settings.pro}</SectionTitle>
-        <div className="list">
-          <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
-            <SparkIcon className="gold" />
-            <span className="grow">
-              <span className="t">{isPro(s) ? T.pro.active : T.home.pro}</span>
-              <span className="s" style={{ display: 'block' }}>
-                {T.home.proHint}
-              </span>
-            </span>
-            <ChevronIcon size={18} />
-          </button>
-          {!isNative ? (
-            <Setting label={T.settings.proToggle} hint={T.settings.proToggleHint}>
-              <Toggle on={s.premium} label={T.settings.proToggle} onChange={(v) => set({ premium: v })} />
-            </Setting>
-          ) : null}
-          {!isPro(s) ? (
-            <button type="button" className="link-row" onClick={() => requestProPromo()}>
-              <SparkIcon />
-              <span className="grow">
-                <span className="t">{T.promo.preview}</span>
-                <span className="s" style={{ display: 'block' }}>
-                  {T.promo.previewHint}
+        {/* Sans boutique ouverte, la Version Pro n'existe pas sur téléphone : aucune section. */}
+        {proOffered ? (
+          <>
+            <SectionTitle>{T.settings.pro}</SectionTitle>
+            <div className="list">
+              <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
+                <SparkIcon className="gold" />
+                <span className="grow">
+                  <span className="t">{isPro(s) ? T.pro.active : T.home.pro}</span>
+                  <span className="s" style={{ display: 'block' }}>
+                    {T.home.proHint}
+                  </span>
                 </span>
-              </span>
-              <ChevronIcon size={18} />
-            </button>
-          ) : null}
-        </div>
+                <ChevronIcon size={18} />
+              </button>
+              {__PRO_CODES__ && !isNative ? (
+                <Setting label={T.settings.proToggle} hint={T.settings.proToggleHint}>
+                  <Toggle on={s.premium} label={T.settings.proToggle} onChange={(v) => set({ premium: v })} />
+                </Setting>
+              ) : null}
+              {!isPro(s) ? (
+                <button type="button" className="link-row" onClick={() => requestProPromo()}>
+                  <SparkIcon />
+                  <span className="grow">
+                    <span className="t">{T.promo.preview}</span>
+                    <span className="s" style={{ display: 'block' }}>
+                      {T.promo.previewHint}
+                    </span>
+                  </span>
+                  <ChevronIcon size={18} />
+                </button>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <SectionTitle>{T.settings.about}</SectionTitle>
         <div className="list">
@@ -121,7 +138,7 @@ export function Settings() {
             <span className="grow">
               <span className="t">{T.settings.version(pkg.version)}</span>
               <span className="s" style={{ display: 'block' }}>
-                {T.settings.words(BASE_COMBO_COUNT, PRO_EXTRA_COMBOS)}
+                {proOffered ? T.settings.words(BASE_COMBO_COUNT, PRO_EXTRA_COMBOS) : T.settings.wordsFree(BASE_COMBO_COUNT)}
               </span>
             </span>
           </div>

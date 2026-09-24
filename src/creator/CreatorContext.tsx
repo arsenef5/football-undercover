@@ -108,10 +108,15 @@ export function CreatorProvider({ children }: { children: ReactNode }) {
       hasVideo: !!r?.lastBlob,
       error: r?.error ?? null,
       canvas: r?.canvas ?? null,
-      openCamera: (opts) => (r ? r.openCamera(opts) : Promise.resolve(false)),
+      /*
+       * Verrou central : sans la Version Pro, ni caméra ni enregistrement, quel que soit l'écran
+       * qui le demande. Les renvois vers le mode créateur sont déjà filtrés ; ce verrou garantit
+       * qu'un chemin oublié ne suffirait pas à filmer (règle 3.1.1 d'Apple).
+       */
+      openCamera: (opts) => (r && enabled ? r.openCamera(opts) : Promise.resolve(false)),
       closeCamera: () => r?.closeCamera(),
-      beginRecording: () => (r ? r.beginRecording() : Promise.resolve(false)),
-      start: () => (r ? r.start() : Promise.resolve(false)),
+      beginRecording: () => (r && enabled ? r.beginRecording() : Promise.resolve(false)),
+      start: () => (r && enabled ? r.start() : Promise.resolve(false)),
       stop: async () => {
         if (!r) return null;
         const durationMs = r.elapsedMs;

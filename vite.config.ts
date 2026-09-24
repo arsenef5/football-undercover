@@ -5,7 +5,16 @@ import { VitePWA } from 'vite-plugin-pwa';
 // base './' : Capacitor charge l'app depuis le disque, les chemins doivent rester relatifs.
 // La PWA (manifeste + service worker) sert à la version web : « Ajouter à l'écran d'accueil »
 // donne une vraie icône, le plein écran et le fonctionnement hors ligne.
-export default defineConfig({
+/*
+ * __PRO_CODES__ : les codes Pro (et l'interrupteur de test) n'existent QUE dans la version web.
+ * Apple a refusé la 1.0 parce qu'un code débloquait la Version Pro (règle 3.1.1). Les builds
+ * iPhone et Android sont compilées sans ce drapeau : le code correspondant n'est pas seulement
+ * éteint, il est absent du binaire. La publication web (pages.yml) l'allume avec PRO_CODES=1.
+ */
+export default defineConfig(({ mode }) => ({
+  define: {
+    __PRO_CODES__: JSON.stringify(process.env.PRO_CODES === '1' || mode === 'development'),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -39,4 +48,4 @@ export default defineConfig({
   build: { outDir: 'dist', target: 'es2019', sourcemap: false },
   server: { port: 5173, strictPort: true },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
-});
+}));

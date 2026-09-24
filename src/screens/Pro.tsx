@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { CheckIcon, SparkIcon } from '../components/Icons';
 import { Button, Screen, Sheet, useToast } from '../components/ui';
 import { T } from '../i18n';
-import { checkProCode, normalizeCode } from '../monetization/codes';
 import { PRO_COMBOS_CLAIM } from '../monetization/config';
 import { fetchProOffer, purchasePro, purchasesAvailable, restorePro, type ProOffer } from '../monetization/purchases';
 import { isNative, notify } from '../native';
 import { useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
+import { codesAllowed, proOffered } from '../monetization/access';
 
 /**
  * Vitrine + achat de la Version Pro (RevenueCat). Sur le web ou sans clés : boutons inactifs
@@ -24,6 +24,11 @@ export function Pro() {
   const [code, setCode] = useState('');
   const [codeBusy, setCodeBusy] = useState(false);
   const premium = isPro(state.settings);
+
+  // Sans boutique ouverte, cet écran n'a rien à proposer sur téléphone : on n'y reste pas.
+  useEffect(() => {
+    if (!proOffered) nav.back();
+  }, [nav]);
 
   useEffect(() => {
     if (!purchasesAvailable) return;
@@ -56,7 +61,10 @@ export function Pro() {
   // Code Pro (Arsène et ses amis) : accepté → Version Pro sur cet appareil, sans boutique.
   const submitCode = async () => {
     if (codeBusy || !code.trim()) return;
+    // Import à la demande, et seulement dans la version web : absent du binaire des stores.
+    if (!__PRO_CODES__) return;
     setCodeBusy(true);
+    const { checkProCode, normalizeCode } = await import('../monetization/codes');
     const ok = await checkProCode(code);
     setCodeBusy(false);
     if (!ok) {
@@ -82,7 +90,8 @@ export function Pro() {
   };
 
   const perks = T.pro.perks.map((p, i) => (i === 1 ? T.pro.perkWords(PRO_COMBOS_CLAIM) : p));
-  const codeButton = premium ? null : (
+  // Les codes n'existent que sur le web : sur un store, seul l'achat de la boutique débloque.
+  const codeButton = !__PRO_CODES__ || premium || !codesAllowed ? null : (
     <Button variant="ghost" small onClick={() => setCodeOpen(true)}>
       {T.pro.haveCode}
     </Button>
@@ -151,6 +160,7 @@ export function Pro() {
           ))}
         </div>
       </Screen>
+      {__PRO_CODES__ ? (
       <Sheet
         open={codeOpen}
         onClose={() => setCodeOpen(false)}
@@ -197,6 +207,7 @@ export function Pro() {
           </button>
         </form>
       </Sheet>
+      ) : null}
       {toast}
     </>
   );

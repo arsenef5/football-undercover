@@ -41,7 +41,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-8681861872152811~8888064711</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Le mode créateur filme la partie pour en faire une vidéo avec les mots incrustés. / Creator mode films the game to make a video with the words overlaid.</string>
+	<string>Pour prendre la photo d'un joueur, et pour filmer la partie en mode créateur. / To take a player's photo, and to film the game in creator mode.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le mode créateur enregistre le son de la partie. / Creator mode records the game audio.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

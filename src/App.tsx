@@ -26,6 +26,7 @@ import { CreatorSetup } from './screens/CreatorSetup';
 import { Vote } from './screens/Vote';
 import { WhiteGuess } from './screens/WhiteGuess';
 import { isPro, StoreProvider, useStore } from './store/store';
+import { proOffered } from './monetization/access';
 
 const GAME_ROUTES: Route['name'][] = ['creator', 'reveal', 'discuss', 'vote', 'eliminated', 'whiteGuess', 'result'];
 
@@ -169,7 +170,7 @@ function Shell() {
       {isGameRoute && !game ? null : <CurrentScreen key={key} route={route} />}
       {isTab ? <TabBar current={route.name as TabName} /> : null}
       {isGameRoute && route.name !== 'creator' ? <CreatorPip /> : null}
-      <ProPromo open={promoOpen && !premium} onClose={() => setPromoOpen(false)} />
+      <ProPromo open={proOffered && promoOpen && !premium} onClose={() => setPromoOpen(false)} />
     </div>
   );
 }

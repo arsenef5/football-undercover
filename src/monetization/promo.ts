@@ -3,6 +3,7 @@
  * (une interstitielle sur deux), jamais deux fois en 12 h. Sur le web, où il n'y a pas de
  * pub, elle apparaît toutes les 6 parties pour pouvoir la tester.
  */
+import { proOffered } from './access';
 import { adsAvailable } from './ads';
 
 const KEY = 'fu.promo.lastShown';
@@ -30,6 +31,8 @@ export function markPromoShown(): void {
 
 /** À appeler après l'écran de résultat : la promo est-elle due ? */
 export function promoDue(gamesPlayed: number, interstitialShown: boolean): boolean {
+  // Pas de boutique, pas de promotion : annoncer un achat impossible est un motif de refus Apple.
+  if (!proOffered) return false;
   if (Date.now() - lastShown() < PROMO_MIN_INTERVAL_MS) return false;
   if (interstitialShown) {
     interstitialsShown += 1;
@@ -44,6 +47,7 @@ type Listener = () => void;
 const listeners = new Set<Listener>();
 
 export function requestProPromo(): void {
+  if (!proOffered) return;
   listeners.forEach((l) => l());
 }
 

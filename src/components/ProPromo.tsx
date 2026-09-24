@@ -8,6 +8,7 @@ import { thump } from '../native';
 import { useNav } from '../nav';
 import { CloseIcon } from './Icons';
 import { Button, FitText } from './ui';
+import { purchasesAvailable } from '../monetization/purchases';
 
 /**
  * Fenêtre promotionnelle plein écran, dans la DA du logo : le visuel (public/promo-pro.jpg)
@@ -64,7 +65,8 @@ export function ProPromo({ open, onClose }: { open: boolean; onClose: () => void
             nav.go({ name: 'pro' });
           }}
         >
-          {T.promo.cta(PRO_PRICE_LABEL)}
+          {/* Un prix ne s'affiche que si la boutique peut réellement encaisser. */}
+          {purchasesAvailable ? T.promo.cta(PRO_PRICE_LABEL) : T.promo.ctaNoPrice}
         </Button>
         <Button variant="ghost" small onClick={onClose}>
           {T.promo.later}

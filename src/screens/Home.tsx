@@ -8,6 +8,7 @@ import { useGame } from '../game/useGame';
 import { T } from '../i18n';
 import { routeForPhase, useNav } from '../nav';
 import { isPro, useStore } from '../store/store';
+import { proOffered } from '../monetization/access';
 
 /** Le vrai logo (assets → public/logo.png) s'il est présent, sinon le lockup texte. */
 function HeroArt() {
@@ -74,7 +75,7 @@ export function Home() {
           </span>
           <ChevronIcon size={18} />
         </button>
-        {!isPro(state.settings) ? (
+        {!proOffered ? null : !isPro(state.settings) ? (
           <button type="button" className="link-row gold" onClick={() => nav.go({ name: 'pro' })}>
             <SparkIcon className="gold" />
             <span className="grow">

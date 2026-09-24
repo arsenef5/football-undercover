@@ -301,6 +301,7 @@ export const fr = {
     resetAllConfirm: 'Effacer joueurs, équipes et scores ? Cette action est définitive.',
     about: 'À propos',
     version: (v: string) => `Football Undercover ${v}`,
+    wordsFree: (base: number) => `${base} combinaisons`,
     words: (base: number, pro: number) => `${base} combinaisons gratuites · +${pro} avec Pro`,
     rules: 'Règles du jeu',
   },
@@ -358,6 +359,7 @@ export const fr = {
   promo: {
     title: (n: number) => `+${n.toLocaleString('fr-FR')} combinaisons`,
     sub: 'Plus aucune publicité, et le mode créateur pour filmer tes parties.',
+    ctaNoPrice: 'Découvrir la Version Pro',
     cta: (price: string) => `Passer en Pro · ${price}`,
     later: 'Plus tard',
     preview: 'Aperçu de la fenêtre Pro',

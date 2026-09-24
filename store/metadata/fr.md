@@ -23,7 +23,7 @@ COMMENT ÇA MARCHE
 • Le Carton blanc éliminé a une dernière chance : deviner le mot.
 
 9 CATÉGORIES, DES CENTAINES DE COMBINAISONS
-Joueurs d'aujourd'hui et légendes, entraîneurs, clubs, trophées, stades, compétitions, moments légendaires (la Remontada, le triplé de Mbappé en finale, le retourné de Cristiano Ronaldo à Turin…), memes et lexique du foot (petit pont, lucarne, mercato, VAR…). Les deux mots d'une partie se ressemblent toujours : c'est ce qui rend l'imposteur dur à démasquer. Un réglage simple : la part de joueurs, et les catégories que tu veux.
+Joueurs d'aujourd'hui et légendes, entraîneurs, clubs, trophées, stades, compétitions, moments légendaires (la Remontada, le 4-0 de Liverpool contre le Barça, le retour du Real contre City…), memes et lexique du foot (le « Siuuu » de Cristiano Ronaldo, la Panenka, la lucarne, le coup du foulard…). Les deux mots d'une partie se ressemblent toujours : c'est ce qui rend l'imposteur dur à démasquer. Un réglage simple : la part de joueurs, et les catégories que tu veux.
 
 TOUT SE RÈGLE
 • Nombre d'undercovers, carton blanc ou non, chrono de discussion.
@@ -31,16 +31,13 @@ TOUT SE RÈGLE
 • Points façon Undercover : titulaire +2, undercover +10, carton blanc +6. Classement par session et au total.
 • Langue des menus et langue des mots, chacune en français ou en anglais.
 
-VERSION PRO
-Débloquée par un code : zéro publicité, plus de 1 000 combinaisons supplémentaires et le mode créateur pour filmer tes parties (mots, votes et éliminations incrustés, format TikTok).
-
 Plus qu'un jeu. Discrétion, bluff, légende.
 
 ## Mots-clés (App Store, 100 caractères max, séparés par des virgules)
 undercover,foot,football,soirée,bluff,jeu de société,imposteur,entre amis,mot secret,party game
 
 ## Nouveautés (version 1.0)
-Première version : 9 catégories, plus de 230 combinaisons gratuites en FR et EN et plus de 1 500 au total, équipes, classement, mode créateur en Pro.
+Première version : 9 catégories, plus de 230 combinaisons en français et en anglais, équipes enregistrées, classement.
 
 ## Catégories
 App Store : Jeux > Soirée (secondaire : Jeux > Mots)

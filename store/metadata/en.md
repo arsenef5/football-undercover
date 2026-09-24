@@ -23,7 +23,7 @@ HOW IT WORKS
 • An eliminated White Card gets one last chance: guess the word.
 
 9 CATEGORIES, HUNDREDS OF COMBOS
-Today's stars and legends, coaches, clubs, trophies, stadiums, competitions, legendary moments (the Remontada, Mbappé's final hat-trick, Ronaldo's bicycle kick in Turin…), memes and football lingo (nutmeg, top corner, transfer window, VAR…). The two words of a game always look alike: that's what makes the impostor hard to catch. One simple setting: the share of players, and the categories you want.
+Today's stars and legends, coaches, clubs, trophies, stadiums, competitions, legendary moments (the Remontada, Liverpool's 4-0 vs Barça, Real's comeback against City…), memes and football lingo (Ronaldo's "Siuuu", the Panenka, top corner, the trivela…). The two words of a game always look alike: that's what makes the impostor hard to catch. One simple setting: the share of players, and the categories you want.
 
 EVERYTHING IS ADJUSTABLE
 • Number of undercovers, White Card on or off, discussion timer.
@@ -31,16 +31,13 @@ EVERYTHING IS ADJUSTABLE
 • Undercover-style scoring: starter +2, undercover +10, White Card +6. Session and all-time rankings.
 • Menu language and word language, each in English or French.
 
-PRO VERSION
-Unlocked with a code: zero ads, 1,000+ extra combos and creator mode to film your games (words, votes and eliminations overlaid, TikTok format).
-
 More than a game. Stealth, bluff, legend.
 
 ## Keywords (App Store, 100 characters max, comma-separated)
 undercover,football,soccer,party game,bluff,board game,impostor,friends,secret word,word game
 
 ## What's new (version 1.0)
-First release: 9 categories, 230+ free combos in EN and FR and 1,500+ in total, teams, rankings, creator mode in Pro.
+First release: 9 categories, 230+ combos in English and French, saved teams, rankings.
 
 ## Categories
 App Store: Games > Party (secondary: Games > Word)

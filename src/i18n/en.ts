@@ -294,6 +294,7 @@ export const en: Strings = {
     resetAllConfirm: 'Erase players, teams and scores? This cannot be undone.',
     about: 'About',
     version: (v: string) => `Football Undercover ${v}`,
+    wordsFree: (base: number) => `${base} combos`,
     words: (base: number, pro: number) => `${base} free combos · +${pro} with Pro`,
     rules: 'Game rules',
   },
@@ -351,6 +352,7 @@ export const en: Strings = {
   promo: {
     title: (n: number) => `+${n.toLocaleString('en-GB')} combos`,
     sub: 'No more ads, plus creator mode to film your games.',
+    ctaNoPrice: 'Discover the Pro version',
     cta: (price: string) => `Go Pro · ${price}`,
     later: 'Not now',
     preview: 'Preview the Pro popup',

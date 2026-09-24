@@ -29,6 +29,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          PRO_CODES: '1' # codes Pro : version web uniquement (voir vite.config.ts)
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

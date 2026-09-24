@@ -54,6 +54,12 @@ export function CreatorSetup() {
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [, tick] = useState(0);
 
+  // Sans la Version Pro, pas de tournage : on file directement à la distribution des cartes.
+  useEffect(() => {
+    if (!creator.enabled) nav.replace({ name: 'reveal' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creator.enabled]);
+
   // Ouverture de la caméra à l'arrivée, fermeture si on quitte sans filmer.
   useEffect(() => {
     let alive = true;
