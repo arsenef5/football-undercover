@@ -81,6 +81,8 @@ function CurrentScreen({ route }: { route: Route }) {
     case 'rules':
       return <Rules />;
     case 'pro':
+      // Sans boutique ouverte, l'écran Pro n'existe pas sur téléphone : on retombe sur l'accueil.
+      if (!proOffered) return <Home />;
       return <Pro />;
     case 'setup':
       return <Setup />;

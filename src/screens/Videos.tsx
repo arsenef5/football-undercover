@@ -3,6 +3,7 @@ import { PlayIcon, ShareIcon, TrashIcon, VideoIcon } from '../components/Icons';
 import { Button, Confirm, EmptyState, Screen, Sheet, useToast } from '../components/ui';
 import { deleteVideo, formatBytes, formatDuration, listVideos, shareVideo, videoUrl, type VideoEntry } from '../creator/library';
 import { T } from '../i18n';
+import { proOffered } from '../monetization/access';
 import { isNative } from '../native';
 import { useNav } from '../nav';
 
@@ -51,7 +52,7 @@ export function Videos() {
     <>
       <Screen title={T.videos.title} onBack={() => nav.back()}>
         {items.length === 0 ? (
-          <EmptyState icon={<VideoIcon size={40} />} title={T.videos.empty} hint={T.videos.emptyHint} />
+          <EmptyState icon={<VideoIcon size={40} />} title={T.videos.empty} hint={proOffered ? T.videos.emptyHint : T.videos.emptyHintFree} />
         ) : (
           <>
             <p className="muted" style={{ fontSize: 12 }}>

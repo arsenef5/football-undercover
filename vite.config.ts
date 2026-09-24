@@ -8,8 +8,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 /*
  * __PRO_CODES__ : les codes Pro (et l'interrupteur de test) n'existent QUE dans la version web.
  * Apple a refusé la 1.0 parce qu'un code débloquait la Version Pro (règle 3.1.1). Les builds
- * iPhone et Android sont compilées sans ce drapeau : le code correspondant n'est pas seulement
- * éteint, il est absent du binaire. La publication web (pages.yml) l'allume avec PRO_CODES=1.
+ * iPhone et Android sont compilées sans ce drapeau : le mécanisme (empreintes, saisie, vérification,
+ * interrupteur) n'est pas seulement éteint, il est absent du binaire ; seuls restent des libellés de
+ * traduction inertes. La publication web (pages.yml) l'allume avec PRO_CODES=1.
  */
 export default defineConfig(({ mode }) => ({
   define: {

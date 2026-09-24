@@ -3,6 +3,7 @@ import { COLORS, DEFAULT_COLOR, randomAvatar } from '../data/avatars';
 import { fileToPhoto } from '../data/photo';
 import { T } from '../i18n';
 import type { Player } from '../store/store';
+import { proOffered } from '../monetization/access';
 import { tap } from '../native';
 import { CameraIcon, TrashIcon } from './Icons';
 import { Avatar, Button, Sheet } from './ui';
@@ -123,7 +124,7 @@ export function PlayerSheet({
             ) : null}
           </div>
           <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
-            {T.players.photoHint}
+            {proOffered ? T.players.photoHint : T.players.photoHintFree}
           </p>
           <input ref={fileRef} type="file" accept="image/*" hidden aria-hidden tabIndex={-1} onChange={(e) => void pick(e.target.files?.[0])} />
           <input ref={cameraRef} type="file" accept="image/*" capture="user" hidden aria-hidden tabIndex={-1} onChange={(e) => void pick(e.target.files?.[0])} />

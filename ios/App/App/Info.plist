@@ -41,13 +41,13 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-8681861872152811~8888064711</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Pour prendre la photo d'un joueur, et pour filmer la partie en mode créateur. / To take a player's photo, and to film the game in creator mode.</string>
+	<string>Pour prendre la photo d'un joueur. / To take a player's photo.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le mode créateur enregistre le son de la partie. / Creator mode records the game audio.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Pour enregistrer la vidéo de la partie dans tes photos. / To save the game video to your photos.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Ton autorisation permet d'afficher des publicités plus pertinentes dans la version gratuite. / Your permission lets the free version show more relevant ads.</string>
+	<string>Ton autorisation permet d'afficher des publicités plus pertinentes. / Your permission lets the app show more relevant ads.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

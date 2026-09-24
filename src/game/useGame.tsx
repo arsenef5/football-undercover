@@ -10,7 +10,7 @@ import {
   type CreateGameOptions,
 } from './engine';
 import type { Game, GameConfig, Seat, WordGroup } from './types';
-import { loadGame, saveGame } from '../store/store';
+import { isPro, loadGame, saveGame, useStore } from '../store/store';
 
 interface GameValue {
   game: Game | null;
@@ -31,6 +31,17 @@ const GameContext = createContext<GameValue | null>(null);
 /** La partie en cours, persistée à chaque changement pour survivre à une fermeture de l'app. */
 export function GameProvider({ children }: { children: ReactNode }) {
   const [game, setGame] = useState<Game | null>(() => loadGame());
+  const { state } = useStore();
+
+  /*
+   * Une partie inachevée tirée dans le paquet Pro ne se reprend pas sans la Pro : sinon un ancien
+   * détenteur de code (dont le code ne vaut plus rien sur téléphone) continuerait de jouer avec un
+   * mot payant. On l'abandonne une fois, au démarrage.
+   */
+  useEffect(() => {
+    if (game && game.phase !== 'over' && game.pair.pack === 'pro' && !isPro(state.settings)) setGame(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     saveGame(game);
